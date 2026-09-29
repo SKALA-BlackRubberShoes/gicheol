@@ -1,0 +1,5 @@
+# Runtime only. Python >=3.11; validated with Python 3.12.14.
+openai==3.20.0
+pydantic==2.13.5
+qdrant-client==1.19.1
+tiktoken==0.14.0
