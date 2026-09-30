@@ -1,0 +1,78 @@
+[
+  {
+    "document_id": "KIRIA_ROBOT_SURVEY_2024",
+    "file_name": "01_KIRIA_2024_robot_industry_survey_selected.pdf",
+    "title": "2024년 기준 로봇산업 실태조사 결과보고서",
+    "publisher": "한국로봇산업진흥원",
+    "published_year": 2025,
+    "source_url": "https://www.kiria.org/portal/reference/portalRefTrendDetail.do?retrCode=RETR_000000000000467",
+    "region": "KR",
+    "language": "ko",
+    "market_segments": [
+      "industrial_robot",
+      "professional_service_robot",
+      "consumer_service_robot",
+      "robot_component"
+    ]
+  },
+  {
+    "document_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+    "file_name": "02_IFR_2026_industrial_robots_selected.pdf",
+    "title": "World Robotics 2026 - Industrial Robots",
+    "publisher": "International Federation of Robotics",
+    "published_year": 2026,
+    "source_url": "https://ifr.org/wr-industrial-robots",
+    "region": "GLOBAL",
+    "language": "en",
+    "market_segments": ["industrial_robot", "physical_ai"]
+  },
+  {
+    "document_id": "IFR_SERVICE_ROBOTS_2026",
+    "file_name": "03_IFR_2026_service_robots_selected.pdf",
+    "title": "World Robotics 2026 - Service Robots",
+    "publisher": "International Federation of Robotics",
+    "published_year": 2026,
+    "source_url": "https://ifr.org/wr-service-robots",
+    "region": "GLOBAL",
+    "language": "en",
+    "market_segments": [
+      "professional_service_robot",
+      "consumer_service_robot",
+      "medical_robot",
+      "mobile_robot"
+    ]
+  },
+  {
+    "document_id": "MOTIE_ROBOT_PLAN_2024",
+    "file_name": "04_MOTIE_2024_robot_basic_plan_selected.pdf",
+    "title": "제4차 지능형로봇 기본계획(2024~2028)",
+    "publisher": "산업통상자원부",
+    "published_year": 2024,
+    "source_url": "https://www.korea.kr/briefing/pressReleaseView.do?newsId=156610879",
+    "region": "KR",
+    "language": "ko",
+    "market_segments": ["robot_policy", "industrial_robot", "service_robot"]
+  },
+  {
+    "document_id": "KIET_PHYSICAL_AI_2026",
+    "file_name": "05_KIET_2026_physical_ai_ecosystem_full.pdf",
+    "title": "제조 AX를 위한 피지컬 AI 생태계 발전 전략",
+    "publisher": "산업연구원",
+    "published_year": 2026,
+    "source_url": "https://www.kiet.re.kr/",
+    "region": "KR",
+    "language": "ko",
+    "market_segments": ["physical_ai", "manufacturing_ai", "humanoid_robot"]
+  },
+  {
+    "document_id": "JRC_AUTONOMOUS_MACHINES_2023",
+    "file_name": "06_EC_JRC_2023_autonomous_machines_selected.pdf",
+    "title": "AI Watch: Adoption of Autonomous Machines",
+    "publisher": "European Commission Joint Research Centre",
+    "published_year": 2023,
+    "source_url": "https://publications.jrc.ec.europa.eu/repository/handle/JRC132723",
+    "region": "EU",
+    "language": "en",
+    "market_segments": ["autonomous_machine", "robot_adoption", "adoption_barrier"]
+  }
+]
