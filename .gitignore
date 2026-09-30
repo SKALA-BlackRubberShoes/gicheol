@@ -2,9 +2,20 @@
 .env
 .env.*
 !.env.example
-.venv/
-__pycache__/
 .pytest_cache/
 *.py[cod]
-.DS_Store
 /docs/superpowers
+
+# Python
+.python-version
+__pycache__/
+.venv/
+venv/
+
+# OS / Editor
+.DS_Store
+.vscode/
+
+# 환경 스캐폴딩
+pyproject.toml
+uv.lock
