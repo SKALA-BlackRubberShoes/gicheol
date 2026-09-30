@@ -5,4 +5,5 @@
 -r agents/technology/requirements.txt
 -r agents/competition/requirements.txt
 -r agents/market/requirements.txt
+-r agents/report/requirements.txt
 langgraph>=1.0,<2

@@ -16,6 +16,10 @@ venv/
 .DS_Store
 .vscode/
 
+# Generated local reports and package cache
+/outputs/
+/.uv-cache/
+
 # 환경 스캐폴딩
 pyproject.toml
 uv.lock

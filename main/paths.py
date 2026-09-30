@@ -6,3 +6,5 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CSV_PATH = PROJECT_ROOT / "docs/data/base/raw/thevc_startups_30_updated.csv"
 DEFAULT_PDF_DIR = PROJECT_ROOT / "docs/data/market/raw"
 DEFAULT_MANIFEST_PATH = PROJECT_ROOT / "docs/data/market/sources.json"
+DEFAULT_REPORT_DIR = PROJECT_ROOT / "outputs/reports"
+DEFAULT_REPORT_SAMPLE_PATH = PROJECT_ROOT / "examples/reports/report_sample_state.json"

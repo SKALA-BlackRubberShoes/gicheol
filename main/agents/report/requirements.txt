@@ -1,0 +1,8 @@
+# Python >=3.11. Included by main/requirements.txt.
+langgraph>=1.0.1,<2
+langchain-core>=1.0.1,<2
+langchain-openai>=1.0.1,<2
+pydantic>=2.12,<3
+python-dotenv>=1.2,<2
+reportlab>=4.4,<5
+pypdf>=6,<7

@@ -13,6 +13,7 @@ from main.agents.investment import make_rag_investment_judge_node, route_after_i
 from main.agents.investment.agent import TeamResearcher
 from main.agents.common.evidence import as_evidence, get_selected_company
 from main.agents.common.llm import resolve_chat_model
+from main.agents.report import make_report_node as _make_report_node
 from .state import InvestmentState, reset_judge_state
 
 
@@ -116,3 +117,8 @@ def make_investment_node(
     return make_rag_investment_judge_node(
         rag, model, team_researcher=team_researcher, research_mode=research_mode,
     )
+
+
+def make_report_node(**options):
+    """추천·보류 payload를 받아 최종 보고서 갱신값만 반환합니다."""
+    return _make_report_node(**options)

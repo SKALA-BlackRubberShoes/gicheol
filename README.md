@@ -2,7 +2,7 @@
 
 기업 CSV와 시장 보고서 PDF를 공용 RAG로 조회하고, 선택한 회사의 기술력·경쟁력·시장성을 평가한 뒤 투자 추천 여부를 계산합니다. 회사는 CSV의 문자열 `company_id`로 식별합니다.
 
-현재 회사 선택, 세 평가, 투자 판단을 위한 **개별 에이전트와 LangGraph 노드 함수**가 있습니다. 전체 노드를 순서대로 실행하는 그래프 조립 파일, 자동 경쟁사 선정, 보고서 작성 에이전트는 아직 없습니다. 투자 판단 결과는 다음 에이전트가 읽을 수 있는 JSON으로 저장할 수 있습니다.
+현재 회사 선택, 세 평가, 투자 판단, 보고서 작성을 위한 **개별 에이전트와 LangGraph 노드 함수**가 있습니다. 투자 판단 결과 JSON을 받아 한글 PDF·Markdown·검증 기록 JSON을 생성할 수 있습니다. 전체 노드를 순서대로 실행하는 그래프 조립 파일과 자동 경쟁사 선정은 아직 없습니다.
 
 ## 폴더 구조
 
@@ -30,13 +30,21 @@ gicheol/
 │   │   ├── technology/                # 기술 요약과 100점 평가
 │   │   ├── competition/               # 지정 경쟁사 비교와 100점 평가
 │   │   ├── market/                    # PDF·웹 조사와 100점 평가
-│   │   └── investment/
-│   │       ├── agent.py               # 팀 평가 모델·자료 수집 조립
-│   │       ├── adapter.py             # 세 평가 출력을 판단 입력으로 변환
-│   │       ├── scoring.py             # 90점+10점 계산과 추천 분기
-│   │       ├── handoff.py             # 후속 에이전트용 payload
-│   │       ├── schemas.py             # 판단 State·근거 형식
-│   │       ├── prompts.py             # 팀 평가 프롬프트
+│   │   ├── investment/
+│   │   │   ├── agent.py               # 팀 평가 모델·자료 수집 조립
+│   │   │   ├── adapter.py             # 세 평가 출력을 판단 입력으로 변환
+│   │   │   ├── scoring.py             # 90점+10점 계산과 추천 분기
+│   │   │   ├── handoff.py             # 후속 에이전트용 payload
+│   │   │   ├── schemas.py             # 판단 State·근거 형식
+│   │   │   ├── prompts.py             # 팀 평가 프롬프트
+│   │   │   ├── docs/usage.md
+│   │   │   └── tests/
+│   │   └── report/
+│   │       ├── agent.py               # 보고서 LangGraph·노드·Python API
+│   │       ├── adapter.py             # 투자 판단 State/payload 변환
+│   │       ├── schemas.py             # 보고서 입력 계약
+│   │       ├── content.py             # 원문 기반 본문·출처 조립
+│   │       ├── renderers.py           # 한글 PDF·Markdown 출력
 │   │       ├── docs/usage.md
 │   │       └── tests/
 │   ├── graph/
@@ -47,11 +55,13 @@ gicheol/
 │       ├── build_market_index.py
 │       ├── run_agents.py              # 기술·경쟁 평가
 │       ├── evaluate_market_company.py # 시장 평가
-│       └── judge_investment.py        # 투자 판단·handoff JSON
+│       ├── judge_investment.py        # 투자 판단·handoff JSON
+│       └── generate_report.py         # 판단 JSON 또는 가상 데이터로 보고서 생성
 ├── docs/data/
 │   ├── base/raw/                       # 기업 CSV
 │   └── market/                         # 시장 PDF·sources.json
-├── examples/reports/                   # 이전 실행 참고 결과
+├── examples/reports/                   # 이전 참고 결과·보고서용 가상 입력
+├── outputs/reports/                    # 실행별 PDF·Markdown·검증 기록 (Git 제외)
 ├── compose.qdrant.yml
 └── .env.example
 ```
@@ -69,11 +79,13 @@ flowchart LR
     T --> J["투자 판단"]
     C --> J
     M --> J
-    J -->|invest| R["report_payload / 다음 에이전트 입력"]
+    J -->|invest| R["report_payload / 보고서 입력"]
     J -->|hold| H["hold_payload / 보류 사유"]
+    R --> F["보고서 생성: PDF · Markdown · JSON"]
+    H --> F
 ```
 
-이 그림은 **노드 간 데이터 계약**입니다. 현재 제공된 실행 파일은 회사 선택부터 보고서 작성까지 한 번에 실행하지 않습니다. 경쟁 비교에는 선택 회사와 다른 `competitor_ids`를 호출자가 지정해야 합니다. `company_id`가 없는 경우 평가 노드를 호출하지 않도록 전체 그래프를 조립할 때 분기해야 합니다.
+이 그림은 **노드 간 데이터 계약**입니다. 현재 제공된 실행 파일은 회사 선택부터 보고서 작성까지 한 번에 실행하지 않습니다. 보고서는 판단 결과 JSON으로 별도 실행하며 추천·보류 결과 모두 받을 수 있습니다. 경쟁 비교에는 선택 회사와 다른 `competitor_ids`를 호출자가 지정해야 합니다. `company_id`가 없는 경우 평가 노드를 호출하지 않도록 전체 그래프를 조립할 때 분기해야 합니다.
 
 공통 [InvestmentState](main/graph/state.py)는 회사 ID, 세 평가의 원본 출력, 투자 판단 입력과 결과를 담습니다. [노드 함수](main/graph/nodes.py)는 입력 State에서 선택 회사를 조회하고 자신이 갱신한 필드만 반환합니다. 회사 재선택 시 이전 평가와 판단 결과를 초기화합니다.
 
@@ -84,6 +96,7 @@ flowchart LR
 | 경쟁 비교 | `competitor_comparison`, `competitor_score` |
 | 시장 평가 | `market_evaluation` |
 | 투자 판단 | `upstream_score_90`, `judge_score_10`, `total_score`, `decision`, `report_payload` 또는 `hold_payload` |
+| 보고서 작성 | `final_report`, `report_pdf_path`, `report_markdown_path`, `report_json_path`, `report_page_count`, `report_warnings`, `report_status` |
 
 ## 투자 판단 규칙
 
@@ -124,7 +137,7 @@ source .env
 set +a
 ```
 
-기업 CSV의 정확 조회와 자료 없는 투자 판단에는 OpenAI·Qdrant가 필요하지 않습니다. 의미 검색과 실제 모델 평가에는 해당 서비스가 필요합니다.
+기업 CSV의 정확 조회, 자료 없는 투자 판단, 기본 보고서 생성에는 OpenAI·Qdrant가 필요하지 않습니다. 의미 검색과 실제 모델 평가에는 해당 서비스가 필요합니다.
 
 ## 개별 실행
 
@@ -167,15 +180,29 @@ python -m main.scripts.judge_investment \
   --handoff-output outputs/report_input_17.json
 ```
 
-`--team-model`을 생략하면 State의 `team_rating`을 사용하고, 둘 다 없으면 팀 0점으로 계산합니다. `judgment_17.json`에는 전체 판정이 저장됩니다. `report_input_17.json`에는 추천 시 `report_payload`, 보류 시 `null`이 저장되어 이전 실행의 추천 자료가 남지 않습니다. 보고서 작성 에이전트를 자동 호출하는 코드는 아직 없습니다.
+`--team-model`을 생략하면 State의 `team_rating`을 사용하고, 둘 다 없으면 팀 0점으로 계산합니다. `judgment_17.json`에는 전체 판정이 저장됩니다. `report_input_17.json`에는 추천 시 `report_payload`, 보류 시 `null`이 저장되어 이전 실행의 추천 자료가 남지 않습니다.
+
+```bash
+# API 없이 가상 입력으로 보고서 출력 확인
+python -m main.scripts.generate_report --demo
+
+# 추천·보류 모두 전체 판단 결과를 입력하면 됨
+python -m main.scripts.generate_report --input outputs/judgment_17.json
+
+# 추천 결과의 독립 report_payload도 직접 입력 가능
+python -m main.scripts.generate_report --input outputs/report_input_17.json
+```
+
+보류 결과에는 `null`인 handoff 파일 대신 `judgment_17.json`을 사용합니다. 보고서는 `outputs/reports/<실행 ID>/`에 저장됩니다. 점수와 판정은 다시 계산하지 않으며, 근거 부족·출처 연결 누락은 경고로 표시합니다. PDF는 첫 챕터 `SUMMARY`, 마지막 챕터 `REFERENCE`, 전체 5쪽 제한을 검사합니다. 입력 형식과 Python·LangGraph 연결 방법은 [보고서 생성 문서](main/agents/report/docs/usage.md)에 있습니다.
 
 ## 검증과 세부 문서
 
 ```bash
 python -m unittest discover -s main/agents/investment/tests -v
+python -m unittest discover -s main/agents/report/tests -v
 ```
 
-이 테스트는 투자 판단 규칙과 State 변환을 확인합니다. 실제 OpenAI·Qdrant를 통한 전체 실행 검증은 별도로 필요합니다. `examples/reports/`의 JSON은 이전 실행 참고 결과이며 현재 코드의 검증 결과가 아닙니다.
+투자 판단 테스트는 판단 규칙과 State 변환을, 보고서 테스트는 입력 변환·점수/출처 보존·한글 출력·PDF 분량 제한을 확인합니다. 실제 OpenAI·Qdrant를 통한 전체 실행 검증은 별도로 필요합니다. `examples/reports/company_17_vs_14.json`은 이전 실행 참고 결과이며 현재 코드의 검증 결과가 아닙니다. `report_sample_state.json`은 보고서 출력 검증용 가상 입력입니다.
 
 - [기업 RAG](main/rag/company/docs/rag-usage.md)
 - [시장 PDF RAG](main/rag/market/docs/rag-usage.md)
@@ -185,3 +212,4 @@ python -m unittest discover -s main/agents/investment/tests -v
 - [시장 평가](main/agents/market/docs/market_agent_guide.md)
 - [시장 점수](main/agents/market/docs/market_scoring_core.md)
 - [투자 판단](main/agents/investment/docs/usage.md)
+- [보고서 생성](main/agents/report/docs/usage.md)

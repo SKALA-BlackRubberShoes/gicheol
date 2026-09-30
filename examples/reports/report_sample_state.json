@@ -1,0 +1,229 @@
+{
+  "config": {
+    "domain": "Physical AI / Robotics",
+    "as_of": "2026-09-30",
+    "title": "로보틱스 스타트업 투자 평가 — 가상 데이터 시연",
+    "is_mock": true
+  },
+  "candidate_company_ids": ["mock-001", "mock-002"],
+  "results_by_company": {
+    "mock-001": {
+      "company_id": "mock-001",
+      "company_name": "가상 여울로보틱스",
+      "is_mock": true,
+      "company_record": {
+        "company_id": "mock-001",
+        "company_name": "가상 여울로보틱스",
+        "raw": {
+          "기업명": "가상 여울로보틱스",
+          "대표제품": "가상 물류 피킹 로봇",
+          "서비스": "보고서 출력 검증을 위한 허구의 물류 자동화 서비스",
+          "홈페이지": "https://example.com/mock-001",
+          "비고": "실재하지 않는 기업. 모든 수치는 합성한 테스트 값."
+        },
+        "values": {
+          "company_id": "mock-001",
+          "company_name": "가상 여울로보틱스",
+          "sector": "물류/유통",
+          "technology": "로봇",
+          "funding_stage": "Series A",
+          "funding_total_won": 8000000000,
+          "employees": 28,
+          "patent_count": 6
+        },
+        "content": "가상 기업의 합성 데이터이며 실제 투자 판단에 사용할 수 없습니다."
+      },
+      "eligibility": {
+        "status": "eligible",
+        "reason": "합성 데이터의 도메인·투자 단계 조건을 충족함.",
+        "evidence_ids": ["mock-r1"]
+      },
+      "technical_result": {
+        "status": "completed",
+        "summary": "가상 피킹 실험에서 비정형 물체 대응 성능을 확인했다는 합성 평가.",
+        "scores": {"technical": 25},
+        "evidence_ids": ["mock-p1"],
+        "score_evidence_ids": {"technical": ["mock-p1"]},
+        "strengths": ["가상 실험에서 동일 조건의 반복 측정을 제공함."],
+        "risks": ["실제 현장 데이터가 없는 시연용 평가임."]
+      },
+      "market_result": {
+        "status": "completed",
+        "summary": "가상 고객군의 피킹 자동화 수요를 근거로 확장 가능성을 평가함.",
+        "scores": {"market": 24},
+        "evidence_ids": ["mock-r1"],
+        "score_evidence_ids": {"market": ["mock-r1"]},
+        "risks": ["수요 및 고객 수는 모두 합성한 값임."]
+      },
+      "competition_result": {
+        "status": "completed",
+        "summary": "합성 비교 실험에서 다품종 처리와 설치 시간에 강점이 있는 것으로 설정함.",
+        "scores": {"competition": 25},
+        "evidence_ids": ["mock-p1"],
+        "score_evidence_ids": {"competition": ["mock-p1"]}
+      },
+      "team_result": {
+        "status": "completed",
+        "summary": "가상 인력 소개에 로봇 제어·현장 운영 역할이 모두 존재함.",
+        "scores": {"team": 8},
+        "evidence_ids": ["mock-w1"],
+        "score_evidence_ids": {"team": ["mock-w1"]}
+      },
+      "investment_result": {
+        "status": "completed",
+        "decision": "추천",
+        "final_score": 82,
+        "weighted_scores": {"technical": 25, "market": 24, "competition": 25, "team": 8},
+        "reasons": ["상위 평가 에이전트가 합성 자료를 바탕으로 총점 82점과 추천 판정을 전달함."],
+        "evidence_ids": ["mock-r1", "mock-p1", "mock-w1"],
+        "score_evidence_ids": {
+          "technical": ["mock-p1"],
+          "market": ["mock-r1"],
+          "competition": ["mock-p1"],
+          "team": ["mock-w1"]
+        },
+        "risks": ["가상 데이터 시연 결과이며 실제 기업에 관한 투자 의견이 아님."]
+      }
+    },
+    "mock-002": {
+      "company_id": "mock-002",
+      "company_name": "가상 별담오토메이션",
+      "is_mock": true,
+      "company_record": {
+        "company_id": "mock-002",
+        "company_name": "가상 별담오토메이션",
+        "raw": {
+          "기업명": "가상 별담오토메이션",
+          "대표제품": "가상 공장 점검 로봇",
+          "비고": "실재하지 않는 기업. 결측·충돌 표시를 검증하기 위한 합성 데이터."
+        },
+        "values": {
+          "company_id": "mock-002",
+          "company_name": "가상 별담오토메이션",
+          "sector": "제조/3D프린터",
+          "technology": "로봇",
+          "funding_stage": "Seed",
+          "funding_total_won": null,
+          "employees": null,
+          "patent_count": null
+        },
+        "content": "결측·상충 근거 처리를 검증하는 허구의 기업."
+      },
+      "eligibility": {
+        "status": "unknown",
+        "reason": "가상 보고서의 투자 단계 자료가 서로 달라 적격성을 확정하지 못함.",
+        "evidence_ids": ["mock-r2"]
+      },
+      "technical_result": {
+        "status": "insufficient",
+        "summary": "로봇 개념 설명만 있어 기술 성능 평가를 완료하지 못함.",
+        "scores": {"technical": null},
+        "evidence_ids": ["mock-r2"],
+        "missing_fields": ["현장 실증 결과", "재현 가능한 성능 지표"]
+      },
+      "market_result": {
+        "status": "insufficient",
+        "summary": "가상 자료의 유료 계약 수는 0건이며 시장 분석 자료는 부족함.",
+        "scores": {"market": null, "paid_contracts": 0},
+        "evidence_ids": ["mock-r2"],
+        "score_evidence_ids": {"paid_contracts": ["mock-r2"]},
+        "missing_fields": ["시장 규모 산정 근거"]
+      },
+      "competition_result": {
+        "status": "insufficient",
+        "summary": "경쟁 제품의 비교 조건이 제공되지 않음.",
+        "scores": {"competition": null},
+        "missing_fields": ["동일 조건 경쟁 제품 비교"]
+      },
+      "team_result": {
+        "status": "insufficient",
+        "summary": "가상 자료 간 인원 수가 상충하여 조직 규모를 확인하지 못함.",
+        "scores": {"team": null},
+        "evidence_ids": ["mock-r2"],
+        "conflicts": ["같은 기준일의 합성 인력표에 임직원 수가 8명과 12명으로 혼재함."]
+      },
+      "investment_result": {
+        "status": "insufficient",
+        "decision": "보류",
+        "final_score": null,
+        "weighted_scores": {"technical": null, "market": null, "competition": null, "team": null},
+        "reasons": ["상위 평가 에이전트가 근거 부족과 자료 충돌로 평가를 보류함."],
+        "evidence_ids": ["mock-r2"],
+        "missing_fields": ["기술 실증", "시장 규모", "팀 구성 확인"],
+        "conflicts": ["합성 보고서의 투자 단계 및 인원 수가 상충함."],
+        "risks": ["추가 근거 확보 전에는 총점과 적격성을 확정할 수 없음."]
+      }
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "mock-r1",
+      "title": "[합성 보고서] 여울로보틱스 가상 고객·사업 현황",
+      "kind": "report",
+      "issuer": "가상 시연자료 제작팀 (실재 기관 아님)",
+      "published_at": "2026-09-01",
+      "company_id": "mock-001",
+      "page": "2–3",
+      "data_year": 2026,
+      "doc_id": "SYNTHETIC-R1",
+      "chunk_id": "mock-r1-c1",
+      "quote": "모든 기업·고객·금액은 테스트를 위해 합성되었으며 실제 거래를 나타내지 않는다.",
+      "is_mock": true
+    },
+    {
+      "evidence_id": "mock-p1",
+      "title": "[합성 논문] 가상 피킹 로봇의 비교 실험",
+      "kind": "paper",
+      "author": "가상 연구자 A·B (실재 인물 아님)",
+      "issuer": "가상 시연자료 제작팀 (실재 기관 아님)",
+      "journal": "합성 로봇 실험집 (실재 학술지 아님)",
+      "volume": "1",
+      "issue": "1",
+      "pages": "1–4",
+      "page": 3,
+      "published_at": "2026-08-15",
+      "company_id": "mock-001",
+      "doc_id": "SYNTHETIC-P1",
+      "chunk_id": "mock-p1-c1",
+      "quote": "비교 대상과 측정치는 모두 보고서 레이아웃 검증을 위한 합성값이다.",
+      "is_mock": true
+    },
+    {
+      "evidence_id": "mock-w1",
+      "title": "[합성 웹 자료] 여울로보틱스 가상 인력 소개",
+      "kind": "web",
+      "issuer": "가상 시연자료 제작팀 (실재 기관 아님)",
+      "site_name": "가상 데모 사이트",
+      "url": "https://example.com/mock-001/team",
+      "published_at": "2026-09-01",
+      "collected_at": "2026-09-30",
+      "company_id": "mock-001",
+      "quote": "예약된 예시 URL이며 실제 기업 웹페이지를 수집한 자료가 아니다.",
+      "is_mock": true
+    },
+    {
+      "evidence_id": "mock-r2",
+      "title": "[합성 보고서] 별담오토메이션 결측·충돌 사례",
+      "kind": "report",
+      "issuer": "가상 시연자료 제작팀 (실재 기관 아님)",
+      "published_at": "2026-09-01",
+      "company_id": "mock-002",
+      "page": "1–2",
+      "data_year": 2026,
+      "doc_id": "SYNTHETIC-R2",
+      "quote": "유료 계약 0건, 실증 결과 미제공, 임직원 수 8명·12명 상충은 오류 처리를 위한 합성 사례다.",
+      "is_mock": true
+    },
+    {
+      "evidence_id": "mock-unused",
+      "title": "[미사용 합성 자료] 참고문헌에서 제외되어야 하는 사례",
+      "kind": "web",
+      "issuer": "가상 시연자료 제작팀 (실재 기관 아님)",
+      "site_name": "가상 데모 사이트",
+      "url": "https://example.com/unused",
+      "collected_at": "2026-09-30",
+      "quote": "어떤 평가에서도 인용하지 않은 자료로 실제 사용 출처만 표시하는지 검증한다.",
+      "is_mock": true
+    }
+  ]
+}
