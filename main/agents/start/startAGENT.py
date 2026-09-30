@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 from main.rag.company import BaseRAG, CompanyFilter, RAGStoreError, Scalar
 
-NO_COMPANY_MESSAGE = "조건에 맞는 회사가 없습니다."
+NO_COMPANY_MESSAGE = "조건에 해당하는 회사가 없습니다. 조건을 다시 입력해주세요."
 _SORT_FIELDS = (
     "funding_latest_won",
     "funding_total_won",
@@ -212,7 +212,7 @@ class StartAgent:
                     "조건을 만족한 후보가 있는데 모델이 회사를 선택하지 않았습니다."
                 )
 
-        # 동률은 ID 순서로 고정하고, 결측값은 금액·날짜 순위에서 제외합니다.
+        # 결측값은 순위에서 제외하고, 최대·최소값의 동률은 모델이 비교합니다.
         candidates = sorted(candidates, key=lambda c: c.company_id)
         if request.mode in ("max", "min"):
             candidates = [
@@ -221,9 +221,50 @@ class StartAgent:
             if not candidates:
                 raise ValueError("후보에 정렬할 항목의 값이 없습니다.")
             rank = max if request.mode == "max" else min
-            company_id = rank(
-                candidates, key=lambda c: c.values[request.sort_field]
-            ).company_id
+            best_value = rank(c.values[request.sort_field] for c in candidates)
+            tied = [c for c in candidates if c.values[request.sort_field] == best_value]
+            if len(tied) == 1:
+                company_id = tied[0].company_id
+            else:
+                # 요청 조건과 정렬값이 같은 후보 안에서만 투자 검토 우선순위를 판단합니다.
+                tie_choice = self._selection_chain.invoke(
+                    {
+                        "prompt": (
+                            f"{prompt.strip()}\n\n"
+                            "아래 후보는 요청 조건을 충족하고 정렬값도 같은 동률 기업입니다. "
+                            "사업·제품 설명, 투자 유치 내역, 업력, 인력 변화, 특허 등 "
+                            "제공된 CSV 근거를 함께 검토해 투자 검토 우선순위가 가장 "
+                            "높다고 추정되는 회사 하나를 선택하세요. "
+                            "회사 ID 순서로 결정하지 말고, 결측 정보는 추측하지 마세요. "
+                            "이는 후속 분석을 위한 후보 선정이며 최종 투자 판단은 아닙니다."
+                        ),
+                        "mode": "recommend",
+                        "semantic_query": "",
+                        "candidates": json.dumps(
+                            [
+                                c.model_dump(
+                                    include={
+                                        "company_id",
+                                        "company_name",
+                                        "content",
+                                        "values",
+                                    }
+                                )
+                                for c in tied
+                            ],
+                            ensure_ascii=False,
+                        ),
+                    },
+                    config=config,
+                )
+                tied_ids = {c.company_id for c in tied}
+                if (
+                    set(tie_choice.eligible_company_ids) - tied_ids
+                    or tie_choice.company_id not in tied_ids
+                    or tie_choice.company_id not in tie_choice.eligible_company_ids
+                ):
+                    raise ValueError("모델이 동률 후보 중 회사 하나를 선택해야 합니다.")
+                company_id = tie_choice.company_id
         elif request.mode == "random":
             company_id = random.choice(candidates).company_id
         else:

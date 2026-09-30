@@ -1,4 +1,4 @@
-# 지정 경쟁사 비교 사용법
+# 경쟁사 선정·비교 사용법
 
 프로젝트 루트에서 `python -m pip install -r main/agents/competition/requirements.txt`로 설치합니다.
 
@@ -16,7 +16,7 @@ finally:
     rag.close()
 ```
 
-경쟁사는 호출자가 `competitor_ids`에 CSV ID 문자열로 지정합니다. 자동 경쟁사 검색은 포함하지 않습니다.
+비교 노드는 호출자가 `competitor_ids`에 지정한 CSV ID 문자열을 받습니다. 자동 선정은 `main/agents/competitor_selection/`의 별도 `CompetitorSelectionAgent`가 담당하며 기존 비교·평가 로직은 그대로 사용합니다.
 중복 회사와 대상 회사 자신의 ID는 비교 대상으로 허용하지 않습니다.
 노드는 `competitor_comparison`, `competitor_score` 갱신값만 반환하고 입력 State는 수정하지 않습니다.
 `model=`에는 모델 식별자 또는 채팅 모델 객체를 전달합니다.
@@ -37,3 +37,25 @@ python -m main.scripts.run_agents --company-id 17 --competitor-id 14 --output ou
 
 `--competitor-id`를 반복해 여러 회사를 지정할 수 있습니다.
 `examples/reports/company_17_vs_14.json`은 구조 정리 전 생성된 참고 결과이며 현재 코드의 검증 결과가 아닙니다.
+
+## 경쟁사·비교 대상 자동 선정
+
+선정 에이전트는 그래프 State 대신 회사 ID를 받으므로 독립 호출할 수 있습니다.
+
+```python
+from main.agents.competitor_selection import CompetitorSelectionAgent
+from main.rag.company import BaseRAG
+
+rag = BaseRAG()
+try:
+    rag.build_index()
+    selection = CompetitorSelectionAgent(rag, model="openai:gpt-4.1").select("17")
+    print(selection["competitor_ids"])
+    print(selection["message"])
+finally:
+    rag.close()
+```
+
+같은 `sector`의 유사 기업 후보 최대 10개를 검색하고, 모델이 직접 경쟁사·대체재를 최대 3개 고릅니다. 직접 경쟁 관계가 불명확하면 동종 업종 기업 하나를 비교 대상으로 사용합니다. 동종 업종 기업이 없으면 업력 차이가 가장 작은 다른 회사 하나를 선택하며, 차이가 같으면 문자열 `company_id` 순으로 결정합니다. 업력 비교 대상은 동종 업종 경쟁사를 뜻하지 않으며 `message`에 선택 이유를 표시합니다.
+
+`main/graph/nodes.py`의 `make_competitor_selection_node(agent)`는 `state["company_id"]`를 `agent.select()`에 전달하는 어댑터입니다. `main/graph/workflow.py`는 선정 로직 없이 실행 순서·분기·병렬 합류를 구성합니다. 전체 터미널 실행은 저장소 루트에서 `python -m main.scripts.run_graph`를 사용합니다.
