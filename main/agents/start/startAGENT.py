@@ -11,12 +11,13 @@ import json
 import random
 from typing import Literal
 
+from langchain_core.exceptions import OutputParserException
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
-from main.rag.company import BaseRAG, CompanyFilter, RAGStoreError, Scalar
+from main.rag.company import BaseRAG, CompanyFilter, RAGDataError, RAGStoreError, Scalar
 
 NO_COMPANY_MESSAGE = "조건에 해당하는 회사가 없습니다. 조건을 다시 입력해주세요."
 _SORT_FIELDS = (
@@ -38,7 +39,22 @@ _SORT_FIELDS = (
 class FilterCondition(BaseModel):
     """BaseRAG에 전달할 조건 하나입니다. 값은 숫자·문자열·None을 사용합니다."""
 
-    field: str
+    field: Literal[
+        "company_name",
+        "location",
+        "sector",
+        "subsector",
+        "technology",
+        "product_type",
+        "funding_stage",
+        "funding_latest_won",
+        "funding_total_won",
+        "employees",
+        "employees_change",
+        "patent_count",
+        "funding_latest_date",
+        "company_age_years",
+    ]
     op: Literal["eq", "ne", "gt", "gte", "lt", "lte", "is_null", "not_null"]
     value: Scalar
 
@@ -46,6 +62,7 @@ class FilterCondition(BaseModel):
 class SelectionRequest(BaseModel):
     """사용자 요청을 정확 조회 조건과 의미 검색 문구로 나눈 결과입니다."""
 
+    company_id: str | None
     filters: list[FilterCondition]
     semantic_query: str | None
     mode: Literal["recommend", "max", "min", "random"]
@@ -66,7 +83,7 @@ class CandidateSelection(BaseModel):
 
 _REQUEST_PROMPT = """사용자 요청에서 기업 선택 조건을 추출하세요.
 숫자 조건은 filters, 제품·서비스·기술의 의미 조건은 semantic_query에 넣으세요.
-지원하는 필드는 company_id, company_name, location, sector, subsector, technology,
+filters에서 지원하는 필드는 company_name, location, sector, subsector, technology,
 product_type, funding_stage, funding_latest_won, funding_total_won, employees,
 employees_change, patent_count, funding_latest_date, company_age_years입니다.
 투자액은 원 단위입니다. 50억원은 5000000000원입니다. 최근 투자액과 누적 투자액을 구분하세요.
@@ -76,7 +93,12 @@ employees_change, patent_count, funding_latest_date, company_age_years입니다.
 제품·서비스 의미를 정확한 문자열 일치 조건으로 강제하지 마세요.
 최대·최소를 명시하면 mode=max/min과 해당 sort_field를 쓰세요. 랜덤은 mode=random입니다.
 그 외 일반 추천은 mode=recommend입니다. 조건이 없으면 filters=[], 필요 없는 항목은 None입니다.
-특정 회사 이름 또는 ID도 company_name/company_id 필터로 처리할 수 있습니다.
+특정 회사 이름은 company_name 필터로 처리하세요.
+특정 회사 ID 하나를 지정하면 별도 company_id 필드에 원래 문자열 ID를 넣으세요.
+예: "기업 아이디 3번으로 해줘"는 company_id="3", filters=[], semantic_query=None, mode=recommend입니다.
+company_id는 filters에 넣지 마세요. ID를 지정하지 않으면 company_id=None입니다.
+ID와 다른 조건이 함께 있으면 company_id와 filters를 모두 채우세요.
+여러 ID 지정이나 ID 제외·범위 조건은 unsupported_reason에 지원하지 않는 조건이라고 설명하세요.
 투자할 만한 회사를 찾는 일반 요청은 분석 후보 선정이며 투자 가치에 대한 확정 판정이 아닙니다.
 '투자할 만한'이라는 표현만으로 존재하지 않는 점수나 조건을 만들지 마세요.
 매출은 현재 CSV에 없습니다. 지원하지 않는 항목, OR 조건, 정렬 기준은
@@ -106,6 +128,11 @@ mode=max/min/random일 때 company_id는 None으로 두고 적합 ID 목록만 �
 # ──────────────────────────────────────────
 
 
+def _retry_selection(reason: str) -> dict:
+    """선택 실패를 기존 그래프의 프롬프트 재입력 분기로 전달합니다."""
+    return {"company_id": None, "message": f"{reason} 조건을 다시 입력해주세요."}
+
+
 class StartAgent:
     """프롬프트를 받아 회사 ID를 고릅니다. 선택 상태는 객체에 저장하지 않습니다."""
 
@@ -124,6 +151,13 @@ class StartAgent:
         if not isinstance(prompt, str) or not prompt.strip():
             raise ValueError("state['prompt']에 비어 있지 않은 문자열을 입력하세요.")
 
+        try:
+            return self._select(prompt.strip(), config)
+        except (ValidationError, OutputParserException):
+            # 회사 ID와 조건·선택 응답의 형식이 잘못되면 새 프롬프트를 받습니다.
+            return _retry_selection("회사 선택 응답을 해석하지 못했습니다.")
+
+    def _select(self, prompt: str, config: RunnableConfig | None) -> dict:
         # 현재 CSV의 표기를 알려줘 범주 이름이 다르게 해석되는 일을 줄입니다.
         rows = self.rag.list_companies()
         categories = {
@@ -131,6 +165,7 @@ class StartAgent:
                 {r.values[field] for r in rows if r.values[field] is not None}
             )
             for field in (
+                "company_id",
                 "company_name",
                 "location",
                 "sector",
@@ -149,12 +184,9 @@ class StartAgent:
         )
         if request.unsupported_reason:
             # 미지원 조건은 실행 오류 대신 기존 그래프의 재입력 분기로 전달합니다.
-            return {
-                "company_id": None,
-                "message": f"{request.unsupported_reason.strip()} 조건을 다시 입력해주세요.",
-            }
+            return _retry_selection(request.unsupported_reason.strip())
         if request.mode in ("max", "min") and request.sort_field not in _SORT_FIELDS:
-            raise ValueError(
+            return _retry_selection(
                 "최고·최저 선택에는 지원하는 숫자 또는 날짜 정렬 항목이 필요합니다."
             )
 
@@ -162,7 +194,19 @@ class StartAgent:
         filters = [
             CompanyFilter(**condition.model_dump()) for condition in request.filters
         ]
-        candidates = self.rag.list_companies(filters=filters)
+        if request.company_id is not None:
+            company_id = request.company_id.strip()
+            if not company_id:
+                return _retry_selection("회사 ID가 비어 있습니다.")
+            # ID는 별도 문자열 필드로 받고, 정확 일치 필터는 Python에서 만듭니다.
+            filters.append(CompanyFilter("company_id", "eq", company_id))
+        try:
+            candidates = self.rag.list_companies(filters=filters)
+        except RAGDataError:
+            raise
+        except ValueError as exc:
+            # 조건 오류만 재입력으로 처리하고 CSV·API·저장소 장애는 전달합니다.
+            return _retry_selection(f"선택 조건을 처리하지 못했습니다: {exc}.")
         if not candidates:
             return {"company_id": None, "message": NO_COMPANY_MESSAGE}
 
@@ -207,13 +251,13 @@ class StartAgent:
             if eligible - candidate_ids or (
                 choice.company_id is not None and choice.company_id not in eligible
             ):
-                raise ValueError("모델이 반환한 회사 ID가 적합 후보에 없습니다.")
+                return _retry_selection("모델이 반환한 회사 ID가 적합 후보에 없습니다.")
             if semantic_query:
                 candidates = [c for c in candidates if c.company_id in eligible]
                 if not candidates:
                     return {"company_id": None, "message": NO_COMPANY_MESSAGE}
             elif not eligible:
-                raise ValueError(
+                return _retry_selection(
                     "조건을 만족한 후보가 있는데 모델이 회사를 선택하지 않았습니다."
                 )
 
@@ -224,7 +268,7 @@ class StartAgent:
                 c for c in candidates if c.values[request.sort_field] is not None
             ]
             if not candidates:
-                raise ValueError("후보에 정렬할 항목의 값이 없습니다.")
+                return _retry_selection("후보에 정렬할 항목의 값이 없습니다.")
             rank = max if request.mode == "max" else min
             best_value = rank(c.values[request.sort_field] for c in candidates)
             tied = [c for c in candidates if c.values[request.sort_field] == best_value]
@@ -268,7 +312,9 @@ class StartAgent:
                     or tie_choice.company_id not in tied_ids
                     or tie_choice.company_id not in tie_choice.eligible_company_ids
                 ):
-                    raise ValueError("모델이 동률 후보 중 회사 하나를 선택해야 합니다.")
+                    return _retry_selection(
+                        "모델이 동률 후보 중 회사 하나를 선택해야 합니다."
+                    )
                 company_id = tie_choice.company_id
         elif request.mode == "random":
             company_id = random.choice(candidates).company_id
@@ -277,6 +323,8 @@ class StartAgent:
             if company_id is None or company_id not in {
                 c.company_id for c in candidates
             }:
-                raise ValueError("모델이 적합 후보 중 회사 하나를 선택해야 합니다.")
+                return _retry_selection(
+                    "모델이 적합 후보 중 회사 하나를 선택해야 합니다."
+                )
 
         return {"company_id": company_id, "message": None}
