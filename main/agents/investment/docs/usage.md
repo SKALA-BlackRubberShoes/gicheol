@@ -22,8 +22,7 @@ python3 -m unittest discover -s main/agents/investment/tests -v
 `--input`은 선택한 기업의 `company_id`가 포함된 JSON State입니다. 미입력 시
 CSV 조회 결과만으로 판단하므로 `hold`가 됩니다. `BaseRAG`의 정확 조회에는
 Qdrant 색인이나 OpenAI API가 필요하지 않습니다.
-`--team-model`을 지정하면 투자 판단 에이전트가 창업자·팀을 10점 만점으로
-평가합니다. 지정하지 않으면 입력 State의 `team_rating`을 사용하며, 둘 다
+`--team-model`을 지정하면 팀 전용 웹 검색으로 실제 공개 페이지의 본문을 수집하고 투자 판단 에이전트가 창업자·팀을 10점 만점으로 평가합니다. 검색 모델의 생성 요약은 원문 근거로 등록하지 않습니다. 인용 URL을 열 수 없거나 회사·팀 관련 본문을 확인할 수 없으면 미확인 항목에 기록합니다. `--env-file .env`로 API 키를 로드할 수 있습니다. 팀 모델을 지정하지 않으면 입력 State의 `team_rating`을 사용하며, 둘 다
 없으면 팀 점수는 `0`입니다. `--recommend-min-score`로 기본 추천 총점
 80점을 변경할 수 있습니다.
 `--handoff-output`을 지정하면 추천 시 다음 에이전트에 전달할
@@ -59,6 +58,7 @@ builder.add_conditional_edges(
 기존 분석의 상세 결과는 변환된 분석의 `breakdown`에 보존됩니다.
 `Evidence` 필드는 `schemas.py`에 정의돼 있습니다.
 팀 조사 함수는 `team_info`, `evidence`, `missing_items`, `conflicts`를 반환합니다.
+기본 CLI와 전체 CSV 실행에서는 `TeamWebResearcher`가 이 함수를 제공합니다. 외부 페이지에서 가져온 원문 단락과 URL은 `evidence_registry`와 판단 결과의 팀 평가 근거에 저장됩니다. 근거가 없으면 팀 점수를 임의로 올리지 않습니다.
 
 기본 추천 기준은 총점 80 이상, 기술 18·시장 19.5·경쟁 18·팀 0 이상입니다.
 점수 부족·상충·확인된 부적격·중대한 미해결 위험은 `hold`로 분기합니다.

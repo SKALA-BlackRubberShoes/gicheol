@@ -14,14 +14,16 @@ python -m pip install -r main/requirements.txt
 # API 키·Qdrant 없이 가상 입력으로 출력 확인
 python -m main.scripts.generate_report --demo
 
-# 추천·보류를 포함하는 투자 판단 전체 State
+# 추천 판정을 포함하는 투자 판단 전체 State
 python -m main.scripts.generate_report --input outputs/judgment_17.json
 
 # 추천일 때 저장된 독립 report_payload
 python -m main.scripts.generate_report --input outputs/report_input_17.json
 ```
 
-투자 판단 CLI의 `--handoff-output` 파일은 **보류일 때 `null`**이다. 보류 보고서는 `hold_payload`가 들어 있는 전체 `judgment_17.json`을 사용한다. 별도로 추출한 `hold_payload` 객체도 입력할 수 있지만 `null`은 입력 State가 아니다. `--demo`의 기업과 자료는 모두 가상이며 실제 투자 평가 결과가 아니다.
+투자 판단 CLI의 `--handoff-output` 파일은 **보류일 때 `null`**이다. 보류 판정만 있는 `judgment_17.json`이나 `hold_payload`를 보고서에 전달하면 파일을 만들기 전에 오류로 종료한다. `--demo`의 기업과 자료는 모두 가상이며 실제 투자 평가 결과가 아니다.
+
+전체 CSV 순위 실행(`python -m main.scripts.rank_csv_companies`)은 모든 회사의 점수를 저장한 뒤 1위만 `generate_report(..., allow_hold=True)`로 전달한다. 1위가 보류여도 점수와 보류 판정을 수정하지 않고 보고서에 표시한다. `allow_hold`는 순위 결과를 명시적으로 보고서화하는 경우에만 사용한다.
 
 각 실행은 `outputs/reports/<실행 ID>/`에 아래 파일을 만든다. `--output-dir`로 상위 출력 경로를, `--name`으로 확장자 없는 제출 파일명을 지정할 수 있다.
 
@@ -49,7 +51,7 @@ PDF는 macOS의 AppleMyungjo, Windows의 맑은 고딕, Linux의 Nanum TTF를 �
 기존 `results_by_company` 누적 입력과 정규화된 단일 기업 입력도 지원한다. 전체 필드는 [schemas.py](../schemas.py), 누적 입력 예시는 [가상 예제](../../../../examples/reports/report_sample_state.json)를 참고한다.
 
 - 회사는 CSV의 문자열 `company_id`로 식별한다. 누적 결과가 명시적으로 `{}`이면 이전 기업 결과를 다시 넣지 않는다.
-- 실제 투자 판단의 `invest`·`hold`를 각각 추천·보류로 표시한다. 총점, 반영점수, 원점수, 판단 사유를 보존하며 가중치를 다시 곱하거나 순위를 만들지 않는다. 현재 판단 배점은 기술 30·시장 30·경쟁 30·팀 10점이다.
+- 기본 호출은 추천 결과가 하나도 없으면 보고서를 생성하지 않는다. CSV 순위 실행은 1위의 보류 판정을 표시하기 위해 `allow_hold=True`를 명시한다. 누적 입력에 추천·보류가 함께 있으면 실제 투자 판단의 `invest`·`hold`를 각각 추천·보류로 표시한다. 총점, 반영점수, 원점수, 판단 사유를 보존하며 가중치를 다시 곱하거나 순위를 만들지 않는다. 현재 판단 배점은 기술 30·시장 30·경쟁 30·팀 10점이다.
 - `None`은 미확인, `0`은 수치상 0점으로 구분한다. 평가 실패·결측·상충 자료와 점수 합계 불일치를 경고에 남긴다.
 - 기술·경쟁 에이전트의 `0`은 근거 부족으로 부여된 점수일 수 있다. 이 경우 원본 점수표의 `status=insufficient_evidence`를 보고서의 근거 부족 상태와 누락 항목에 반영한다.
 - **출처나 적격성 정보가 없다는 이유만으로 추천을 보류로 바꾸지 않는다.** 보고서는 판단 정책을 적용하지 않으며, 연결되지 않은 근거를 표시하고 전달된 결정을 유지한다.
@@ -86,15 +88,16 @@ print(result["report_pdf_path"])
 
 ```python
 from langgraph.graph import END
-from main.graph import make_report_node
+from main.graph import make_report_node, route_after_investment
 
 # builder는 팀이 조립하는 기존 StateGraph
 builder.add_node("report", make_report_node(use_llm=False))
-builder.add_edge("investment", "report")
+builder.add_conditional_edges("investment", route_after_investment,
+                              {"report": "report", "hold": END})
 builder.add_edge("report", END)
 ```
 
-위 연결은 추천·보류 모두 보고서로 보내는 예시다. `investment`는 실제 노드 이름으로 바꾼다. 추천만 보낼 때는 투자 판단 이후 조건부 분기를 사용한다. 전체 에이전트를 실행하는 그래프의 조립은 별도로 필요하다.
+`investment`는 실제 노드 이름으로 바꾼다. 보류는 종료하고 추천만 보고서 노드로 보낸다. 보고서 노드도 추천 결과가 없으면 파일 생성 전에 중단한다. 전체 에이전트를 실행하는 그래프의 조립은 별도로 필요하다.
 
 노드는 기존 분석·판단을 변경하지 않고 다음 결과만 반환한다. 공통 `InvestmentState`에 이 필드가 선언되어 있다.
 

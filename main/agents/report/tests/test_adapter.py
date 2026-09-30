@@ -317,17 +317,27 @@ class ReportAdapterTests(unittest.TestCase):
                 self.assertIn("REFERENCE", text)
         self.assertEqual(judged, before)
 
-    def test_end_to_end_hold_payload_keeps_hold_reason(self):
+    def test_hold_judgment_does_not_create_report_files(self):
         state = sample_state()
         state["decision_policy"] = {"recommend_min_score": 84}
         judged = judge_investment(state)
+        before = list(self.output_dir.iterdir())
+        for source in (judged, judged["hold_payload"]):
+            with self.subTest(source="full" if source is judged else "payload"):
+                with self.assertRaisesRegex(ValueError, "추천 판정 회사가 없어"):
+                    generate_report(source, output_dir=self.output_dir)
+                self.assertEqual(list(self.output_dir.iterdir()), before)
 
-        result = generate_report(judged, output_dir=self.output_dir)
-
-        self.assertIn("보류", result["final_report"])
-        self.assertIn("추천 점수 기준 미충족", result["final_report"])
+    def test_explicit_ranking_handoff_can_report_hold_without_changing_decision(self):
+        state = sample_state()
+        state["decision_policy"] = {"recommend_min_score": 84}
+        judged = judge_investment(state)
+        with patch("main.agents.report.agent.render_pdf", return_value=1):
+            result = generate_report(judged, output_dir=self.output_dir, allow_hold=True)
         audit = json.loads(Path(result["report_json_path"]).read_text(encoding="utf-8"))
-        self.assertEqual(audit["source_payload"], judged["hold_payload"])
+        self.assertEqual(audit["source_payload"]["evaluation"]["decision"], "hold")
+        self.assertIn("보류", result["final_report"])
+        self.assertIn("83", result["final_report"])
 
     def test_rejects_null_handoff_or_unjudged_project_state(self):
         for state in (None, {"company_id": "17", "report_payload": None, "hold_payload": None}):
