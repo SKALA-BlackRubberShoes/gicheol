@@ -1,0 +1,202 @@
+{
+  "company_id": "17",
+  "competitor_ids": [
+    "14"
+  ],
+  "technology_summary": {
+    "company": "카본식스",
+    "technology_summary": "카본식스는 산업용 로봇에 적용 가능한 피지컬 AI 파운데이션 모델을 개발 중인 소프트웨어 기업이다. 제품은 제조 및 3D 프린터 분야의 로봇 자동화를 목표로 하는 것으로 보이지만, 해당 자료에서는 제품의 구체적 기능, 실증 사례, 실제 성능이나 적용 환경 등은 확인되지 않는다. AI 모델의 실제 동작 방식, 성능 검증, 고객 문제 해결 사례 등은 명시되지 않았다.",
+    "summary_evidence_ids": [
+      "CSV-17"
+    ],
+    "problem_solution": {
+      "problem": "고객이 직접 밝힌 문제는 제공된 자료에서 확인되지 않음",
+      "product_approach": "산업용로봇용 AI 파운데이션 모델(개발 중)",
+      "observed_outcome": "확인된 성과나 현장 실증은 없음",
+      "customer_problem_quote": "",
+      "baseline_or_goal_quote": "",
+      "verdict": "insufficient",
+      "evidence_ids": [
+        "CSV-17"
+      ],
+      "caveat": "제품의 구체적 적용 사례나 고객 효과에 대한 정보 없음 고객 문제에 대한 직접 근거가 없어 해결 여부는 확정할 수 없다."
+    },
+    "ai_role": {
+      "role": "제품에 AI 모델이 쓰인다고 명시했지만, 학습 방식·데이터·추론 역할은 확인되지 않음",
+      "status": "insufficient",
+      "evidence_ids": [
+        "CSV-17"
+      ],
+      "caveat": "AI가 실제 어떤 기능 또는 작업에 적용되는지 상세 내용 없음"
+    },
+    "performance_validations": [
+      {
+        "metric": "자료 없음",
+        "result": "제품 성능에 대한 측정, 시험 조건, 결과 모두 미확인",
+        "test_conditions": "자료 없음",
+        "evidence_ids": [
+          "CSV-17"
+        ],
+        "caveat": "실제 사례 및 표본, 환경 정보 없음"
+      }
+    ],
+    "claims": [
+      {
+        "category": "mechanism",
+        "statement": "산업용 로봇을 위한 AI 파운데이션 모델을 개발 중이다.",
+        "status": "supported",
+        "evidence_ids": [
+          "CSV-17"
+        ],
+        "caveat": "구체적 메커니즘 설명은 없음"
+      },
+      {
+        "category": "performance",
+        "statement": "제품의 성능, 고객 현장 실적 등에 대한 주장은 없음",
+        "status": "insufficient",
+        "evidence_ids": [
+          "CSV-17"
+        ],
+        "caveat": "실측 데이터 및 비교치 없음"
+      }
+    ],
+    "maturity": "unknown",
+    "maturity_evidence_ids": [
+      "CSV-17"
+    ],
+    "key_unknowns": [
+      "실제 적용 사례 및 고객 문제 해결 여부",
+      "AI 모델의 구조와 추론 또는 학습 방식",
+      "성능 검증 결과와 현장 적용 환경"
+    ],
+    "sources": [
+      {
+        "id": "CSV-17",
+        "title": "기업 정보 CSV의 한 행",
+        "locator": "/Users/ca37040281/Documents/Codex/2026-09-29/d/outputs/physical_ai_agents/gicheol/docs/data/base/raw/thevc_startups_30_updated.csv#record=18",
+        "date": null,
+        "is_mock": null
+      }
+    ],
+    "data_label": "UNVERIFIED PROVENANCE / 자료 유형 미확인"
+  },
+  "competitor_comparison": {
+    "company": "카본식스",
+    "comparisons": [
+      {
+        "competitor": "리얼월드",
+        "verdict": "insufficient",
+        "differentiation": "양사 모두 '산업용로봇을 위한 AI 파운데이션 모델' 개발 중으로 사업 목적과 제품 형태, 기술 분야 모두 동일하게 기재되어 있으나, 차별점이나 성능·운영상의 우위에 대한 자료가 없음.",
+        "comparison_conditions": "직접 비교 가능한 동일 환경(작업, 지표, 프로토콜, 환경, 설정, 단계)에 대한 정보 부족.",
+        "like_for_like": false,
+        "condition_checks": [
+          {
+            "dimension": "task",
+            "status": "aligned",
+            "reason": "두 회사 모두 산업용로봇을 위한 AI 모델을 주된 제품으로 제시함. (CSV-17, CSV-14)"
+          },
+          {
+            "dimension": "metric",
+            "status": "unverified",
+            "reason": "제품 성능 측정 지표에 관한 정보 없음."
+          },
+          {
+            "dimension": "protocol",
+            "status": "unverified",
+            "reason": "시험 방식, 검증 프로토콜 관련 정보 없음."
+          },
+          {
+            "dimension": "environment",
+            "status": "unverified",
+            "reason": "적용 환경 및 테스트 환경 정보가 불명확."
+          },
+          {
+            "dimension": "configuration",
+            "status": "unverified",
+            "reason": "모델/서비스의 구현 및 배포 설정 정보 없음."
+          },
+          {
+            "dimension": "stage",
+            "status": "aligned",
+            "reason": "두 회사 모두 '개발중' 단계에 있음. (CSV-17, CSV-14)"
+          }
+        ],
+        "target_evidence_ids": [
+          "CSV-17"
+        ],
+        "competitor_evidence_ids": [
+          "CSV-14"
+        ],
+        "caveat": "기업 소개 자료만으로는 직접적 비교 및 우위 검증이 불가함. 추가적 성능, 차별점, 실증 자료 필요."
+      }
+    ],
+    "risks": [
+      {
+        "category": "technical",
+        "description": "제품이 아직 개발 중이어서 구체적인 기술 성과 또는 한계가 드러나지 않음.",
+        "status": "insufficient",
+        "evidence_ids": [
+          "CSV-17"
+        ],
+        "caveat": "기술적 실증 데이터가 없어 위험 수준이나 도입 영향 예측 불가.",
+        "adoption_impact": "확인 불가: 대상 기업 자료 부족",
+        "scaling_impact": "확인 불가: 대상 기업 자료 부족"
+      },
+      {
+        "category": "operational",
+        "description": "운영 및 배포 경험 또는 노하우, 비즈니스 실적 관련 자료 없음.",
+        "status": "insufficient",
+        "evidence_ids": [
+          "CSV-17"
+        ],
+        "caveat": "운영 위험의 실체 파악이 불가능.",
+        "adoption_impact": "확인 불가: 대상 기업 자료 부족",
+        "scaling_impact": "확인 불가: 대상 기업 자료 부족"
+      },
+      {
+        "category": "legal",
+        "description": "법률 준수, 산업 규제, 데이터 권리 관련 정보 없음.",
+        "status": "insufficient",
+        "evidence_ids": [
+          "CSV-17"
+        ],
+        "caveat": "해당 제품의 법률 적용 범위를 파악할 자료가 없음.",
+        "adoption_impact": "확인 불가: 대상 기업 자료 부족",
+        "scaling_impact": "확인 불가: 대상 기업 자료 부족"
+      }
+    ],
+    "defensibility": {
+      "statement": "독자 기술, 데이터, 운영 노하우의 우위 지속 가능성을 뒷받침하는 근거가 없음.",
+      "status": "insufficient",
+      "evidence_ids": [
+        "CSV-17"
+      ],
+      "caveat": "개발 중 제품이라는 정보 외에 차별화 근거 없음."
+    },
+    "key_unknowns": [
+      "카본식스의 실제 피지컬 AI 모델 성능 및 차별성",
+      "구체적인 제품 데모, 운영 사례, 실증 데이터 부재",
+      "기술적 난제 및 데이터 출처, 고유 알고리즘 보유 여부",
+      "시장 진입 전략 및 고객 확보 방안"
+    ],
+    "sources": [
+      {
+        "id": "CSV-14",
+        "company": "리얼월드",
+        "title": "기업 정보 CSV의 한 행",
+        "locator": "/Users/ca37040281/Documents/Codex/2026-09-29/d/outputs/physical_ai_agents/gicheol/docs/data/base/raw/thevc_startups_30_updated.csv#record=15",
+        "date": null,
+        "is_mock": null
+      },
+      {
+        "id": "CSV-17",
+        "company": "카본식스",
+        "title": "기업 정보 CSV의 한 행",
+        "locator": "/Users/ca37040281/Documents/Codex/2026-09-29/d/outputs/physical_ai_agents/gicheol/docs/data/base/raw/thevc_startups_30_updated.csv#record=18",
+        "date": null,
+        "is_mock": null
+      }
+    ],
+    "data_label": "UNVERIFIED PROVENANCE / 자료 유형 미확인"
+  }
+}
