@@ -60,7 +60,7 @@ class ReportAdapterTests(unittest.TestCase):
         self.assertEqual(company.market_result.scores, {"market": 80})
         self.assertEqual(company.team_result.scores["team"], 8)
         self.assertEqual(company.eligibility.status, "eligible")
-        self.assertIn("가상 창업자", company.team_result.summary)
+        self.assertIn("가상 창업자", company.team_result.details["핵심 창업자"])
         self.assertIn("총점 80/100 이상", " ".join(company.investment_result.reasons))
         self.assertIn("판단 신뢰도", " ".join(company.investment_result.reasons))
         by_id = {item.evidence_id: item for item in normalized.evidence}

@@ -94,7 +94,7 @@ def select_summary(facts: dict[str, str], model: Any) -> list[str]:
 def _add_warning(document: dict, warning: str) -> dict:
     sections = []
     for item in document["sections"]:
-        if item["title"] == "분석 한계 및 추가 확인사항":
+        if item["title"] == "자료의 시점, 범위 한계":
             item = {**item, "bullets": [*item["bullets"], warning]}
         sections.append(item)
     return {**document, "sections": sections}

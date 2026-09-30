@@ -49,6 +49,9 @@ def _validate_document(document: dict) -> None:
         if not isinstance(section, dict):
             raise ValueError(f"{label} must be a dictionary.")
         _text(section.get("title", ""), f"{label}.title")
+        level = section.get("level", 2)
+        if isinstance(level, bool) or not isinstance(level, int) or not 2 <= level <= 4:
+            raise ValueError(f"{label}.level must be an integer from 2 to 4.")
         for field in ("paragraphs", "bullets"):
             entries = section.get(field, [])
             if not isinstance(entries, list):
@@ -104,7 +107,7 @@ def render_markdown(document: dict) -> str:
         chunks.append(_markdown_text(document["subtitle"]))
     chunks.extend(["## SUMMARY", _markdown_text(document.get("summary", ""))])
     for section in document.get("sections", []):
-        chunks.append(f"## {_markdown_text(section.get('title', ''))}")
+        chunks.append(f"{'#' * section.get('level', 2)} {_markdown_text(section.get('title', ''))}")
         for index, item in enumerate(section.get("paragraphs", [])):
             emphasis = section.get("emphasis", [""] * len(section.get("paragraphs", [])))[index]
             if emphasis:
@@ -197,8 +200,8 @@ def render_pdf(
     content_width = usable_width - 12
     ink, muted = colors.HexColor("#182A3B"), colors.HexColor("#586B7C")
     body = ParagraphStyle(
-        "ReportBody", fontName=font_name, fontSize=9.5, leading=14,
-        textColor=ink, spaceAfter=6, wordWrap="CJK", splitLongWords=1,
+        "ReportBody", fontName=font_name, fontSize=9.5, leading=13,
+        textColor=ink, spaceAfter=4, wordWrap="CJK", splitLongWords=1,
         alignment=TA_LEFT, allowWidows=0, allowOrphans=0,
     )
     title_style = ParagraphStyle("ReportTitle", parent=body, fontSize=19, leading=25, spaceAfter=7)
@@ -206,6 +209,11 @@ def render_pdf(
                                     textColor=muted, spaceAfter=12)
     heading_style = ParagraphStyle("ReportHeading", parent=body, fontSize=12, leading=17,
                                    spaceBefore=9, spaceAfter=7, keepWithNext=1)
+    subheading_style = ParagraphStyle("ReportSubheading", parent=heading_style, fontSize=10.5,
+                                      leading=14, spaceBefore=6, spaceAfter=4)
+    detail_heading_style = ParagraphStyle("ReportDetailHeading", parent=subheading_style,
+                                          fontSize=10, leading=13, spaceBefore=4, spaceAfter=3,
+                                          textColor=muted)
     cell_style = ParagraphStyle("ReportCell", parent=body, fontSize=8.5, leading=12, spaceAfter=0,
                                 allowWidows=1, allowOrphans=1)
     header_style = ParagraphStyle("ReportTableHeader", parent=cell_style, textColor=colors.white)
@@ -307,7 +315,8 @@ def render_pdf(
         )
     story: list[Any] = [KeepTogether(opening)]
     for section in document.get("sections", []):
-        story.append(paragraph(section.get("title", ""), heading_style))
+        style = {2: heading_style, 3: subheading_style, 4: detail_heading_style}[section.get("level", 2)]
+        story.append(paragraph(section.get("title", ""), style))
         for index, text in enumerate(section.get("paragraphs", [])):
             emphasis = section.get("emphasis", [""] * len(section.get("paragraphs", [])))[index]
             story.append(ReferenceParagraph(text, emphasis) if emphasis else paragraph(text))

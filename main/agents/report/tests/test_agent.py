@@ -81,7 +81,7 @@ class ReportAgentTests(unittest.TestCase):
         self.assertIn("N/A", text)
         self.assertIn("SUMMARY", reader.pages[0].extract_text())
         self.assertIn("REFERENCE", reader.pages[-1].extract_text())
-        self.assertLess(text.index("SUMMARY"), text.index("기업별 평가 비교"))
+        self.assertLess(text.index("SUMMARY"), text.index("기업별 평가점수 비교표"))
         audit = self.read_audit(result)
         self.assertEqual(audit["pdf_status"], "completed")
         self.assertEqual(audit["summary_mode"], "deterministic")

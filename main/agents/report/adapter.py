@@ -321,7 +321,8 @@ def _analysis_result(dimension: str, analysis: dict, card: dict, sources: dict) 
             ids += _strings(item.get("target_evidence_ids")) + _strings(item.get("competitor_evidence_ids"))
         defensibility = _dict(raw.get("defensibility"), "defensibility")
         if _text(defensibility.get("statement")):
-            paragraphs.append("방어력: " + defensibility["statement"])
+            details["시장에서의 위치"] = "차별성의 지속 가능성·방어력: " + defensibility["statement"]
+            detail_ids["시장에서의 위치"] = _strings(defensibility.get("evidence_ids"))
         ids += _strings(defensibility.get("evidence_ids"))
         risks += [_risk_text(item) for item in raw.get("risks", [])]
     source_score = card.get("source_score", analysis.get("score"))
@@ -346,6 +347,7 @@ def _analysis_result(dimension: str, analysis: dict, card: dict, sources: dict) 
 def _team_result(evaluation: dict, analysis: dict, card: dict) -> dict:
     info = _dict(analysis.get("team_info"), "team_info")
     paragraphs = [_text(card.get("reason"))]
+    details, detail_ids = {}, {}
     founders = info.get("founders", [])
     if founders:
         labels = {"name": "이름", "role": "역할", "title": "직책", "background": "경력",
@@ -353,7 +355,9 @@ def _team_result(evaluation: dict, analysis: dict, card: dict) -> dict:
         names = [item if isinstance(item, str) else ", ".join(
             f"{labels.get(key, key)}: {value}" for key, value in _dict(item, "founder").items()
             if key != "evidence_ids" and value not in (None, "", [])) for item in founders]
-        paragraphs.append("창업자: " + ", ".join(name for name in names if name))
+        details["핵심 창업자"] = ", ".join(name for name in names if name)
+        detail_ids["핵심 창업자"] = list(dict.fromkeys(_strings(info.get("evidence_ids")) + [
+            eid for item in founders if isinstance(item, dict) for eid in _strings(item.get("evidence_ids"))]))
     for key, label in (("expertise", "전문성"), ("roles", "역할 구성"),
                        ("experience", "실행 경험"), ("track_record", "주요 실적")):
         value = info.get(key)
@@ -374,6 +378,7 @@ def _team_result(evaluation: dict, analysis: dict, card: dict) -> dict:
     return {
         "status": "completed" if card.get("score") is not None else "insufficient",
         "summary": _join(paragraphs), "scores": scores,
+        "details": details, "detail_evidence_ids": detail_ids,
         "evidence_ids": list(dict.fromkeys(_strings(card.get("evidence_ids")) + _strings(info.get("evidence_ids")))),
         "score_evidence_ids": score_ids,
         "missing_fields": [value for value in _strings(evaluation.get("missing_items")) if value.startswith("창업자·팀")],
