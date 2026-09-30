@@ -18,6 +18,13 @@ class InvestmentState(InvestmentJudgeState, total=False):
     competitor_score: dict | None
     market_evaluation: dict | None
     company_data: dict | None
+    final_report: str | None
+    report_pdf_path: str | None
+    report_markdown_path: str | None
+    report_json_path: str | None
+    report_page_count: int | None
+    report_warnings: list[str]
+    report_status: str | None
 
 
 def reset_judge_state() -> dict:
@@ -57,6 +64,13 @@ def reset_judge_state() -> dict:
         "report_payload": None,
         "hold_payload": None,
         "company_data": None,
+        "final_report": None,
+        "report_pdf_path": None,
+        "report_markdown_path": None,
+        "report_json_path": None,
+        "report_page_count": None,
+        "report_warnings": [],
+        "report_status": None,
     }
 
 
