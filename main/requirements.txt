@@ -1,0 +1,8 @@
+# Python >=3.11. 저장소 루트에서 pip install -r main/requirements.txt
+-r rag/company/requirements-rag.txt
+-r rag/market/requirements-market.txt
+-r agents/start/requirements-startagent.txt
+-r agents/technology/requirements.txt
+-r agents/competition/requirements.txt
+-r agents/market/requirements.txt
+langgraph>=1.0,<2

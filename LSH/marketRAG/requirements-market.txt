@@ -1,5 +1,0 @@
-# BaseRAG와 같은 OpenAI, Pydantic, Qdrant, tiktoken 버전을 재사용합니다.
--r ../../main/baseRAG/requirements-rag.txt
-
-# PDF의 페이지별 텍스트를 추출할 때 사용합니다.
-pypdf==6.10.0
