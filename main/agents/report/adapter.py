@@ -73,6 +73,9 @@ def _risk_text(risk: Any) -> str:
         parts.append("해결됨" if risk["resolved"] else "미해결")
     if "evidence_verified" in risk:
         parts.append("근거 확인" if risk["evidence_verified"] else "근거 미확인")
+    refs = _strings(risk.get("evidence_ids"))
+    if refs:
+        parts.append("근거: " + ", ".join(refs))
     return _join(parts)
 
 
@@ -271,6 +274,7 @@ def _analysis_result(dimension: str, analysis: dict, card: dict, sources: dict) 
     ids = _strings(analysis.get("evidence_ids"))
     missing = _strings(analysis.get("missing_items")) + _strings(raw.get("key_unknowns"))
     risks = [_risk_text(item) for item in analysis.get("critical_risks", [])]
+    details, detail_ids = {}, {}
     if dimension == "technical":
         paragraphs.append(_text(raw.get("technology_summary")))
         ids += _strings(raw.get("summary_evidence_ids"))
@@ -292,8 +296,24 @@ def _analysis_result(dimension: str, analysis: dict, card: dict, sources: dict) 
         if _text(definition):
             paragraphs.append("시장 정의: " + definition)
         risks += _strings(raw.get("market_risks"))
-        for criterion in raw.get("criteria", []):
-            ids += _strings(criterion.get("source_ids"))
+        criteria = raw.get("criteria", [])
+        # 개별 항목의 사유가 이미 합쳐져 있으면 중복 없이 항목별로 표시한다.
+        combined = "; ".join(_text(item.get("reason")) for item in criteria if _text(item.get("reason")))
+        if combined and _text(analysis.get("reason")) == combined:
+            paragraphs.remove(combined)
+        labels = {"customer_willingness": "고객 수요·지불 의향", "market_size": "시장 규모",
+                  "growth_timing": "시장 성장성·진입 시점", "adoption_feasibility": "도입 가능성",
+                  "scalability": "확장 가능성"}
+        for criterion in criteria:
+            refs = _strings(criterion.get("source_ids"))
+            ids += refs
+            key = criterion.get("criterion", "시장 평가")
+            label = labels.get(key, key)
+            rating = criterion.get("score")
+            details[label] = (f"{rating}/5" if rating is not None else "점수 미확인") + ". " + (_text(criterion.get("reason")) or "판단 사유 미제공")
+            detail_ids[label] = refs
+        if "시장 규모" not in details:
+            missing.append("시장 규모: 별도의 규모·성장률 근거가 전달되지 않음; 확인 필요")
     else:
         for item in raw.get("comparisons", []):
             paragraphs.append("경쟁사 " + _text(item.get("competitor")) + ": " + _join([
@@ -308,6 +328,7 @@ def _analysis_result(dimension: str, analysis: dict, card: dict, sources: dict) 
     return {
         "status": "completed" if source_score is not None else "insufficient",
         "summary": _join(paragraphs), "scores": {dimension: source_score},
+        "details": details, "detail_evidence_ids": detail_ids,
         "evidence_ids": list(dict.fromkeys(ids)),
         "score_evidence_ids": {dimension: _strings(card.get("evidence_ids"))},
         "risks": list(dict.fromkeys(risks)), "missing_fields": list(dict.fromkeys(missing)),
@@ -320,9 +341,14 @@ def _team_result(evaluation: dict, analysis: dict, card: dict) -> dict:
     paragraphs = [_text(card.get("reason"))]
     founders = info.get("founders", [])
     if founders:
-        names = [item if isinstance(item, str) else _text(_dict(item, "founder").get("name")) for item in founders]
+        labels = {"name": "이름", "role": "역할", "title": "직책", "background": "경력",
+                  "experience": "경험", "expertise": "전문성"}
+        names = [item if isinstance(item, str) else ", ".join(
+            f"{labels.get(key, key)}: {value}" for key, value in _dict(item, "founder").items()
+            if key != "evidence_ids" and value not in (None, "", [])) for item in founders]
         paragraphs.append("창업자: " + ", ".join(name for name in names if name))
-    for key, label in (("expertise", "전문성"), ("roles", "역할 구성")):
+    for key, label in (("expertise", "전문성"), ("roles", "역할 구성"),
+                       ("experience", "실행 경험"), ("track_record", "주요 실적")):
         value = info.get(key)
         if isinstance(value, list):
             value = ", ".join(str(item) for item in value)
