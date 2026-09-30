@@ -2,9 +2,31 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 from main.agents.common.evidence import Evidence, validate_evidence_ids, source_metadata
 from .schemas import CompetitorComparison, SCORE_CRITERIA
+
+
+CONDITION_DIMENSIONS = (
+    "task", "metric", "protocol", "environment", "configuration", "stage"
+)
+
+
+class ConditionChecksError(ValueError):
+    """Only missing or repeated comparison dimensions qualify for correction."""
+
+    def __init__(self, issues: list[dict[str, Any]], *, retry_exhausted: bool = False):
+        self.issues = issues
+        details = "; ".join(
+            f"Comparison with {issue['competitor']!r} needs all six condition checks "
+            f"exactly once (count={issue['count']}, missing={issue['missing']}, "
+            f"duplicates={issue['duplicates']})"
+            for issue in issues
+        )
+        if retry_exhausted:
+            details = "Invalid condition_checks after one correction retry: " + details
+        super().__init__(details)
 
 
 def _validate_requested_structure(
@@ -28,13 +50,23 @@ def _validate_requested_structure(
     scored = [score.criterion for score in report.criterion_scores]
     if len(scored) != len(SCORE_CRITERIA) or set(scored) != set(SCORE_CRITERIA):
         raise ValueError("Scores must contain each of the four criteria exactly once")
-    dimensions = {"task", "metric", "protocol", "environment", "configuration", "stage"}
+    issues = []
+    for item in report.comparisons:
+        counts = Counter(check.dimension for check in item.condition_checks)
+        missing = [name for name in CONDITION_DIMENSIONS if not counts[name]]
+        duplicates = [name for name in CONDITION_DIMENSIONS if counts[name] > 1]
+        if missing or duplicates:
+            issues.append({
+                "competitor": item.competitor,
+                "count": len(item.condition_checks),
+                "missing": missing,
+                "duplicates": duplicates,
+            })
+    if issues:
+        raise ConditionChecksError(issues)
+
     for item in report.comparisons:
         checks = item.condition_checks
-        if len(checks) != 6 or {check.dimension for check in checks} != dimensions:
-            raise ValueError(
-                f"Comparison with {item.competitor!r} needs all six condition checks"
-            )
         all_aligned = all(check.status == "aligned" for check in checks)
         if item.like_for_like and not all_aligned:
             raise ValueError(

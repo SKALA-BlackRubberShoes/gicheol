@@ -26,6 +26,13 @@ finally:
 기본 근거는 이름의 CSV 정확 조회와 대상·경쟁사 각각의 PDF 검색 결과입니다. 추가 근거는 `search_company`, `evidence_adapter`로 전달합니다. `search_company`를 명시하면 자동 PDF 조회를 생략합니다.
 직접 호출은 전달한 딕셔너리를 갱신합니다.
 
+`condition_checks`의 여섯 항목(`task`, `metric`, `protocol`, `environment`,
+`configuration`, `stage`)이 누락되거나 중복되면, 해당 경쟁사와 잘못된 항목을 알려
+동일한 기업 근거로 LLM 교정을 한 번만 재요청합니다. 자료가 없는 항목은 `unverified`로
+작성하도록 요청하며 코드가 임의로 판정이나 점수를 채우지 않습니다. 교정 응답에도
+기존 기업·출처·점수 검증을 모두 적용합니다. 다시 누락·중복되면 구체적인 오류로
+종료하고, 다른 검증 오류나 API 오류는 이 교정 재시도의 대상이 아닙니다.
+
 회사 한 행은 `CSV-{company_id}` 출처 하나입니다. 제공한 근거가 없으면 직접 성능 우위나 법적 위험을 확정하지 않습니다.
 점수는 네 항목의 0~5점에 각각 5를 곱합니다. LLM은 필수 근거 조건 평가 `criterion_scores`, 문서 평가 `rag_assessment_scores`, CSV 해석 `csv_assessment_scores`를 구분합니다. 필수 조건 점수가 있으면 우선 사용하고 나머지는 PDF, CSV 순서로 보완합니다. PDF가 뒷받침하는 0점을 더 높은 CSV 점수로 바꾸지 않습니다.
 
