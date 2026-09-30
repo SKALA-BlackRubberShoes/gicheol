@@ -59,6 +59,8 @@ def _adapt_existing_analyses(working: dict[str, Any]) -> None:
             "missing_items": (
                 (["제품·기술력: 근거 부족 항목 0점 처리"]
                  if technical.get("status") == "insufficient_evidence" else [])
+                + (["제품·기술력: PDF·CSV 기반 잠정 점수 포함; 고객·성능 독립 검증 필요"]
+                   if technical.get("status") == "provisional" else [])
                 + (list((summary or {}).get("key_unknowns") or [])
                    if isinstance(summary, dict) else [])
             ),
@@ -78,6 +80,8 @@ def _adapt_existing_analyses(working: dict[str, Any]) -> None:
             "missing_items": (
                 (["경쟁 우위: 근거 부족 항목 0점 처리"]
                  if competitive.get("status") == "insufficient_evidence" else [])
+                + (["경쟁 우위: PDF·CSV 기반 잠정 점수 포함; 특허·위험·성능 비교 검증 필요"]
+                   if competitive.get("status") == "provisional" else [])
                 + (list((comparison or {}).get("key_unknowns") or [])
                    if isinstance(comparison, dict) else [])
             ),

@@ -148,6 +148,8 @@ flowchart LR
 
 [판단 어댑터](main/agents/investment/adapter.py)는 같은 `company_id`의 `technical_score.total`, `competitor_score.total`, `market_evaluation.market_score_100`을 100점 만점 입력으로 받습니다. 시장 결과의 `investment_score_25`는 사용하지 않습니다.
 
+기술·경쟁 평가에는 회사별 PDF RAG가 기본 연결되어 있습니다. LLM이 자료 내용과 출처를 근거로 항목별 평점을 정하며 고정 회사별 점수는 없습니다. 필수 근거 조건을 충족한 점수, PDF 문서 판단, CSV 해석 순으로 사용하고 문서 근거가 있는 0점도 유지합니다. 문서 해석이 포함되면 `status=provisional`, 항목별 `basis=llm_pdf_assessment` 또는 `llm_csv_assessment`로 구분합니다. `verified_score`는 기존 필수 조건 점수이며 독립기관 인증을 뜻하지 않습니다. 투자 판단은 `total`과 미확인 사항을 함께 받습니다. 검색·캐시·실행은 [PDF RAG 사용법](main/rag/company_pdf/README.md), 항목 기준은 [기술 사용법](main/agents/technology/docs/usage.md)과 [경쟁 비교 사용법](main/agents/competition/docs/usage.md)에 있습니다.
+
 | 항목 | 계산 | 최대 |
 | --- | --- | ---: |
 | 기술력 | 기술 원점수 × 0.3 | 30 |
@@ -227,6 +229,7 @@ python -m main.scripts.build_market_index
 # 같은 회사를 기술·경쟁 평가
 python -m main.scripts.run_agents \
   --company-id 17 --competitor-id 14 \
+  --env-file .env \
   --output outputs/company_17_vs_14.json
 
 # 시장 평가 JSON 저장

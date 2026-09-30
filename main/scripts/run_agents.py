@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from dotenv import load_dotenv
 
 from main.graph import make_comparison_node, make_technology_node
 from main.rag.company import BaseRAG
@@ -16,7 +17,12 @@ def main() -> None:
     parser.add_argument("--competitor-id", action="append", required=True)
     parser.add_argument("--model", default="openai:gpt-4.1")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--env-file", type=Path)
     args = parser.parse_args()
+    if args.env_file:
+        if not args.env_file.is_file():
+            parser.error("--env-file 파일이 없습니다.")
+        load_dotenv(args.env_file, override=False)
 
     state = {"company_id": args.company_id, "competitor_ids": args.competitor_id}
     rag = BaseRAG()

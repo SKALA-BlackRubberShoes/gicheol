@@ -77,6 +77,20 @@ class AdapterTests(unittest.TestCase):
         self.assertIsNone(result["report_payload"])
         self.assertEqual(result["hold_payload"]["source_outputs"]["technical_score"], state["technical_score"])
 
+    def test_provisional_scores_are_used_and_flagged_for_review(self):
+        state = {
+            "company_id": "demo",
+            "technology_summary": {"key_unknowns": []},
+            "technical_score": {"total": 25, "max": 100, "status": "provisional", "criteria": []},
+            "competitor_comparison": {"key_unknowns": []},
+            "competitor_score": {"total": 15, "max": 100, "status": "provisional", "criteria": []},
+        }
+        prepared = prepare_judge_state(FakeRAG(), state)
+        self.assertEqual(prepared["technology_analysis"]["score"], 25)
+        self.assertEqual(prepared["competition_analysis"]["score"], 15)
+        self.assertIn("잠정 점수", prepared["technology_analysis"]["missing_items"][0])
+        self.assertIn("잠정 점수", prepared["competition_analysis"]["missing_items"][0])
+
     def test_high_scores_do_not_require_separate_eligibility_or_team_evidence(self):
         state = {
             "company_id": "demo",

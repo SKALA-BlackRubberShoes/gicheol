@@ -8,10 +8,17 @@ from main.rag.company import BaseRAG
 from main.agents.common.evidence import (
     Evidence,
     normalize_evidence,
-    search_company_evidence,
     data_label,
 )
 from main.agents.common.llm import resolve_chat_model
+from main.agents.common.pdf_evidence import collect_company_evidence
+from main.agents.common.rag_judgment import validate_rag_judgment, merge_rag_judgment, complete_sources
+from main.agents.common.csv_judgment import (
+    COMPETITION_CRITERIA,
+    find_unique_company_record,
+    merge_csv_judgment,
+    validate_csv_judgment,
+)
 from .schemas import CompetitorComparison
 from .prompts import SYSTEM_PROMPT
 from .scoring import validate_citations, _build_scorecard
@@ -75,6 +82,7 @@ def run_agent(
     *,
     search_company: Callable[[str], Any] | None = None,
     evidence_adapter: Callable[[Any, str], Any] | None = None,
+    pdf_rag: Any = None,
 ) -> dict[str, Any]:
     """조회·모델 호출 후 검증된 비교 결과를 반환합니다. 경쟁사는 호출자가 지정합니다."""
     if not isinstance(state, dict):
@@ -84,8 +92,12 @@ def run_agent(
         company,
         competitors if competitors is not None else state.get("competitors"),
     )
+    retrieval = []
     if search_company is None:
-        search_company = lambda name: search_company_evidence(rag, name)
+        def search_company(name):
+            evidence, trace = collect_company_evidence(rag, name, "competition", pdf_rag=pdf_rag)
+            retrieval.append(trace)
+            return evidence
     if not callable(search_company):
         raise ValueError("search_company must be callable")
     if evidence_adapter is not None and not callable(evidence_adapter):
@@ -113,7 +125,28 @@ def run_agent(
     report = CompetitorComparison.model_validate(response)
     sources = validate_citations(report, records, company, names)
     scorecard = _build_scorecard(report)
+    strict_score = scorecard
+    csv_matches = [find_unique_company_record(rag, name) for name in [company, *names]]
+    csv_records = [record for record in csv_matches if record is not None]
+    evidence_ids = {item.id for item in records}
+    if len(csv_records) == len(names) + 1 and all(
+        f"CSV-{item.company_id}" in evidence_ids for item in csv_records
+    ):
+        scorecard = merge_csv_judgment(
+            scorecard,
+            validate_csv_judgment(
+                report.csv_assessment_scores, csv_records, records,
+                COMPETITION_CRITERIA,
+            ),
+        )
+    rag_scores = validate_rag_judgment(
+        report.rag_assessment_scores, records, company, COMPETITION_CRITERIA, strict_score,
+    )
+    scorecard = merge_rag_judgment(strict_score, scorecard, rag_scores)
+    sources = complete_sources(sources, records, scorecard)
     result = report.model_dump(mode="json")
+    result["rag_assessment_scores"] = rag_scores
+    result["rag_retrieval"] = retrieval
     result["criterion_scores"] = scorecard["criteria"]
     result["sources"] = sources
     result["data_label"] = data_label(sources)

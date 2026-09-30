@@ -1,0 +1,84 @@
+{
+  "pdf_count": 6,
+  "total_pages": 143,
+  "total_chunks": 495,
+  "extraction": "pypdf plain text; tables, formulas and reading order need source-page verification",
+  "documents": [
+    {
+      "document_id": "RLWRLD_RLDX1_V2_2026",
+      "file_name": "raw/rlwrld_rldx1_2605.03269v2.pdf",
+      "bytes": 8304750,
+      "sha256": "882fba553790218cd215276818c0a8efd41c74db7d9b525d464d762f0850cea9",
+      "pages": 55,
+      "text_characters": 198998,
+      "empty_pages": [],
+      "short_text_pages": [],
+      "chunks": 187,
+      "parser_warnings": []
+    },
+    {
+      "document_id": "CARBON6_OFFICIAL_WEB_NOTES_20260930",
+      "file_name": "derived/carbon6_official_source_notes.pdf",
+      "bytes": 81441,
+      "sha256": "bfc37dec90a67b03db32409f7c1c6d9c2337964f2ef771892377b0d2f7eb9e41",
+      "pages": 3,
+      "text_characters": 1896,
+      "empty_pages": [],
+      "short_text_pages": [],
+      "chunks": 3,
+      "parser_warnings": []
+    },
+    {
+      "document_id": "STARTUPRECIPE_20260608",
+      "file_name": "raw/startuprecipe_20260608.pdf",
+      "bytes": 1435564,
+      "sha256": "c470528145959efe83cc107c85d949c9f41b59ebe5c2d0eeb9c11521f2f12a75",
+      "pages": 10,
+      "text_characters": 8465,
+      "empty_pages": [],
+      "short_text_pages": [
+        1
+      ],
+      "chunks": 1,
+      "parser_warnings": []
+    },
+    {
+      "document_id": "PI05_2504_16054_V1",
+      "file_name": "raw/pi05_2504.16054v1.pdf",
+      "bytes": 16213397,
+      "sha256": "6a1029fd8ab6944b74cf22f5e5d30e60bc15699d964b2900af799b807a34b64c",
+      "pages": 19,
+      "text_characters": 98390,
+      "empty_pages": [],
+      "short_text_pages": [],
+      "chunks": 90,
+      "parser_warnings": []
+    },
+    {
+      "document_id": "OPENVLA_2406_09246_V3",
+      "file_name": "raw/openvla_2406.09246v3.pdf",
+      "bytes": 13240309,
+      "sha256": "353c37df34458f12f969b14dfd8b77175b727b9cddea7bb891759beddeefe1be",
+      "pages": 37,
+      "text_characters": 135580,
+      "empty_pages": [],
+      "short_text_pages": [],
+      "chunks": 122,
+      "parser_warnings": []
+    },
+    {
+      "document_id": "DIFFUSION_POLICY_IJRR_2024",
+      "file_name": "raw/diffusion_policy_ijrr_2024.pdf",
+      "bytes": 5985158,
+      "sha256": "efc284c0e414f90c6ef69e1a4eb43423618971be68f9401801f34b0ddff3c073",
+      "pages": 19,
+      "text_characters": 101748,
+      "empty_pages": [],
+      "short_text_pages": [],
+      "chunks": 92,
+      "parser_warnings": [
+        "could not convert string to float: b'0.00-28645087' : FloatObject (b'0.00-28645087') invalid; use 0.0 instead"
+      ]
+    }
+  ]
+}

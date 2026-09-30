@@ -23,16 +23,22 @@ finally:
 
 직접 호출은 `from main.agents.competition import run_agent`로 가져와
 `run_agent({"company": "대상 기업명", "competitors": ["경쟁사 기업명"]}, rag, model=llm)`을 사용합니다.
-기본 근거는 이름의 CSV 정확 조회입니다. 추가 근거는 `search_company`, `evidence_adapter`로 전달합니다.
+기본 근거는 이름의 CSV 정확 조회와 대상·경쟁사 각각의 PDF 검색 결과입니다. 추가 근거는 `search_company`, `evidence_adapter`로 전달합니다. `search_company`를 명시하면 자동 PDF 조회를 생략합니다.
 직접 호출은 전달한 딕셔너리를 갱신합니다.
 
 회사 한 행은 `CSV-{company_id}` 출처 하나입니다. 제공한 근거가 없으면 직접 성능 우위나 법적 위험을 확정하지 않습니다.
-점수는 네 항목의 0~5점에 각각 5를 곱합니다. 근거가 부족한 항목은 `rating=0`, `points=0`으로 처리하고 합계에도 0점을 반영합니다. 이때 `status=insufficient_evidence`로 근거 부족을 표시합니다.
+점수는 네 항목의 0~5점에 각각 5를 곱합니다. LLM은 필수 근거 조건 평가 `criterion_scores`, 문서 평가 `rag_assessment_scores`, CSV 해석 `csv_assessment_scores`를 구분합니다. 필수 조건 점수가 있으면 우선 사용하고 나머지는 PDF, CSV 순서로 보완합니다. PDF가 뒷받침하는 0점을 더 높은 CSV 점수로 바꾸지 않습니다.
+
+CSV 해석 점수는 대상·경쟁사의 제품과 서비스 설명, 특허 기재, 제품 단계 및 자료의 빈틈을 모델이 종합해 항목별 0~5점으로 정합니다. 코드에는 `특허 3건 이상=2점` 같은 수치별 고정 점수가 없습니다. 양수 점수에는 실제 CSV 컬럼명(`source_fields`)과 출처 ID가 필요합니다. 차별성·비교 성능은 양쪽 회사의 근거가 필요하고, 동일 조건 성능 자료가 없으면 비교 성능 점수는 부여하지 않습니다. 특허 수만으로 권리의 질이나 경쟁 우위를 확정하지 않습니다.
+
+현재 CSV의 17번과 14번은 설명이 비슷하지만 PDF에는 제품과 구현 내용이 더 있습니다. 문서 차별성은 제품·고객 작업·구현 차이를 평가하며 직접 성능 우위를 의미하지 않습니다. 동일 조건 성능 자료가 없으면 `comparable_performance`는 계속 0점입니다. 잠정 결과는 `status=provisional`, 항목별 `basis=llm_pdf_assessment` 또는 `llm_csv_assessment`로 표시합니다. `verified_score`는 기존 필수 조건 점수이며 독립기관 인증을 의미하지 않습니다. 투자 판단에는 `total`과 미확인 사항을 전달합니다.
+
+`rag_retrieval`에 양사별 검색 기록을, `sources`에 실제 인용 PDF의 페이지·URL을 남깁니다. 일반 기술 논문은 두 회사 실적으로 사용하지 않습니다. 자세한 검색·캐시·점수 연결은 [PDF RAG 사용법](../../../rag/company_pdf/README.md)을 참고하세요.
 
 기술·경쟁 결과를 함께 저장하는 명령:
 
 ```bash
-python -m main.scripts.run_agents --company-id 17 --competitor-id 14 --output outputs/company_17_vs_14.json
+python -m main.scripts.run_agents --company-id 17 --competitor-id 14 --env-file .env --output outputs/company_17_vs_14_pdf_rag_live.json
 ```
 
 `--competitor-id`를 반복해 여러 회사를 지정할 수 있습니다.

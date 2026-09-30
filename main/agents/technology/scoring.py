@@ -71,8 +71,26 @@ def _validate_citations(
         "ai_role",
         summary.ai_role.status == "supported",
     )
+    # 모델이 '자료 없음'을 성능 항목으로 만들면서 출처를 비우는 경우가 있다.
+    # 출처 없는 성능 진술은 결과와 점수 양쪽에서 제외한다.
+    attributed_validations = [
+        validation for validation in summary.performance_validations
+        if validation.evidence_ids
+    ]
+    if len(attributed_validations) != len(summary.performance_validations):
+        summary.performance_validations = attributed_validations
+        note = "출처가 없는 성능 진술을 제외함"
+        if note not in summary.key_unknowns:
+            summary.key_unknowns.append(note)
     for index, validation in enumerate(summary.performance_validations):
         check(validation.evidence_ids, f"performance_validations[{index}]", True)
+        # A generated web summary or CSV introduction cannot prove measured performance.
+        if not any(
+            by_id[ref].evidence_scope == "company_technical"
+            and not by_id[ref].is_derived
+            for ref in validation.evidence_ids
+        ):
+            validation.measurement_basis = "unverified"
     check(summary.maturity_evidence_ids, "maturity", summary.maturity != "unknown")
     for index, claim in enumerate(summary.claims):
         label = f"claims[{index}]"
@@ -127,6 +145,7 @@ def _build_scorecard(summary: TechnologySummary) -> dict[str, Any]:
         for validation in summary.performance_validations
         if validation.metric.strip()
         and validation.result.strip()
+        and validation.measurement_basis in {"controlled_experiment", "field_measurement"}
         and validation.test_conditions.strip().casefold() not in missing_conditions
     ]
     section_ids = {
@@ -159,6 +178,8 @@ def _build_scorecard(summary: TechnologySummary) -> dict[str, Any]:
             raise ValueError(f"{criterion} needs a score rationale")
         if (
             criterion != "performance_validation"
+            and score.rating > 0
+            and not unverified[criterion]
             and not set(score.evidence_ids) <= section_ids[criterion]
         ):
             raise ValueError(f"{criterion} score cites evidence outside its assessment")

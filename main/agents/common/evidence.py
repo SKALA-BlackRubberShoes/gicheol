@@ -6,6 +6,13 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from main.rag.company import BaseRAG, CompanyRecord, CompanyFilter
 
+CSV_EVIDENCE_COLUMNS = (
+    "기업명", "대표제품", "서비스", "분야", "소분야", "기술", "제품 형태",
+    "특허 수", "투자 유치 단계 (최근)", "투자 유치 금액 (최근)",
+    "투자 유치 금액 (누적)", "임직원 수", "1개월전 대비 임직원 수", "업력",
+    "성능 지표", "시험 결과", "시험 조건",
+)
+
 
 class Evidence(BaseModel):
     """Normalized result supplied by BaseRAG or an evidence_adapter."""
@@ -20,6 +27,14 @@ class Evidence(BaseModel):
     date: str | None = None
     stage: Literal["demo", "pilot", "commercial", "unknown"] = "unknown"
     is_mock: bool | None = None
+    document_id: str | None = None
+    page: int | None = Field(default=None, ge=1)
+    source_url: str | None = None
+    file_name: str | None = None
+    source_type: str = "unspecified"
+    evidence_scope: str = "company_description"
+    is_derived: bool = False
+    limitations: str = ""
 
     @model_validator(mode="after")
     def nonempty_fields(self) -> "Evidence":
@@ -42,12 +57,19 @@ def as_evidence(record: CompanyRecord) -> dict[str, object]:
     """One CSV row is one source; its provenance remains unverified."""
     if not record.content.strip():
         raise ValueError(f"Company {record.company_id} has no searchable CSV content")
+    # 평가 에이전트에는 검색 본문에 빠진 사업·기술 신호도 같은 CSV 행으로 전달한다.
+    text = "\n".join(
+        f"{column}: {value}"
+        for column in CSV_EVIDENCE_COLUMNS
+        if (value := record.raw.get(column, "").strip())
+        and value.casefold() not in {"null", "n/a", "없음", "해당 없음", "미상"}
+    )
     return {
         "id": f"CSV-{record.company_id}",
         "company": record.company_name,
         "title": "기업 정보 CSV의 한 행",
         "locator": f"{record.source.csv_path}#record={record.source.record_number}",
-        "text": record.content,
+        "text": text,
         "stage": "unknown",
         "is_mock": None,
     }
@@ -148,6 +170,13 @@ def source_metadata(records, *, include_company: bool = False) -> list[dict[str,
         }
         if include_company:
             source["company"] = record.company
+        if record.document_id:
+            source.update({
+                "document_id": record.document_id, "page": record.page,
+                "source_url": record.source_url, "file_name": record.file_name,
+                "source_type": record.source_type, "evidence_scope": record.evidence_scope,
+                "is_derived": record.is_derived, "limitations": record.limitations,
+            })
         sources.append(source)
     return sources
 

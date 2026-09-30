@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from main.agents.common.csv_judgment import CsvJudgmentScore
+from main.agents.common.rag_judgment import RagJudgmentScore
 
 
 class ComparisonCondition(BaseModel):
@@ -88,3 +90,5 @@ class CompetitorComparison(BaseModel):
     defensibility: DefensibilityAssessment
     criterion_scores: list[CriterionScore]
     key_unknowns: list[str]
+    csv_assessment_scores: list[CsvJudgmentScore] = Field(min_length=4, max_length=4)
+    rag_assessment_scores: list[RagJudgmentScore] = Field(default_factory=list)

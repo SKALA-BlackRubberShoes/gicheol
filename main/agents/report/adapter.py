@@ -330,9 +330,13 @@ def _analysis_result(dimension: str, analysis: dict, card: dict, sources: dict) 
         "technical": "technical_score", "competition": "competitor_score"
     }.get(dimension)
     upstream_scorecard = _dict(sources.get(scorecard_key), scorecard_key) if scorecard_key else {}
-    insufficient = upstream_scorecard.get("status") == "insufficient_evidence"
+    score_status = upstream_scorecard.get("status")
+    insufficient = score_status in {"insufficient_evidence", "provisional"}
     if insufficient:
-        missing.append("근거 부족 항목 0점 처리")
+        missing.append(
+            "CSV 기재 기반 잠정 점수 포함; 독립 검증 필요"
+            if score_status == "provisional" else "근거 부족 항목 0점 처리"
+        )
     return {
         "status": "insufficient" if source_score is None or insufficient else "completed",
         "summary": _join(paragraphs), "scores": {dimension: source_score},

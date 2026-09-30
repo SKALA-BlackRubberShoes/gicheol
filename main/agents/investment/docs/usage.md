@@ -48,6 +48,7 @@ builder.add_conditional_edges(
 각각 `technology_analysis`, `competition_analysis`, `market_analysis`로 옮깁니다.
 이미 명시한 세 `*_analysis`는 우선합니다. 시장의 `investment_score_25`는 사용하지
 않습니다. 판단 배점은 시장 원점수 `/100`을 `/30`으로 환산합니다.
+기술·경쟁 점수표가 `status=provisional`이면 `total`에 CSV 기재 기반 잠정 점수가 포함됩니다. 판단 어댑터는 이를 실제 입력 점수로 사용하면서 고객 성과·성능·특허 권리 등의 검증 필요 사항을 `missing_items`에 남깁니다. 원래 독립 근거 점수는 각 점수표의 `verified_score`에서 확인할 수 있습니다.
 
 기존 세 분석의 `sources`에는 판단 에이전트가 요구하는 원문, 출처 유형,
 기업 소유권이 모두 들어 있지 않습니다. 변환부는 이를 근거 원장으로 승격하지

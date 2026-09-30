@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Literal
 from pydantic import BaseModel, Field, field_validator
+from main.agents.common.csv_judgment import CsvJudgmentScore
+from main.agents.common.rag_judgment import RagJudgmentScore
 
 
 class TechnologyClaim(BaseModel):
@@ -50,6 +52,7 @@ class PerformanceValidation(BaseModel):
     )
     evidence_ids: list[str]
     caveat: str = Field(description="Limits on generalizing the result")
+    measurement_basis: Literal["controlled_experiment", "field_measurement", "author_claim", "unverified"] = "unverified"
 
 
 class TechnicalCriterionScore(BaseModel):
@@ -84,3 +87,5 @@ class TechnologySummary(BaseModel):
     maturity_evidence_ids: list[str]
     key_unknowns: list[str]
     criterion_scores: list[TechnicalCriterionScore] = Field(min_length=4, max_length=4)
+    csv_assessment_scores: list[CsvJudgmentScore] = Field(min_length=4, max_length=4)
+    rag_assessment_scores: list[RagJudgmentScore] = Field(default_factory=list)

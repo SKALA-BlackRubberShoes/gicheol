@@ -15,7 +15,7 @@ from main.agents.investment import (
     route_after_investment as route_after_investment,
 )
 from main.agents.investment.agent import TeamResearcher
-from main.agents.common.evidence import as_evidence, get_selected_company
+from main.agents.common.evidence import get_selected_company
 from main.agents.common.llm import resolve_chat_model
 from main.agents.report import make_report_node as _make_report_node
 from .state import InvestmentState, reset_judge_state
@@ -58,18 +58,17 @@ def make_competitor_selection_node(agent: CompetitorSelectionAgent):
     return selection_node
 
 
-def make_technology_node(rag: BaseRAG, model: str | Any = "openai:gpt-4.1"):
+def make_technology_node(rag: BaseRAG, model: str | Any = "openai:gpt-4.1", *, pdf_rag=None):
     """선택된 회사의 기술 요약과 점수 갱신값만 반환합니다."""
     llm = resolve_chat_model(model)
 
     def technology_node(state: InvestmentState) -> dict:
         record = get_selected_company(rag, state.get("company_id"))
-        evidence = [as_evidence(record)]
         result = run_technology(
             {"company": record.company_name},
             rag,
             model=llm,
-            search_company=lambda _name: evidence,
+            pdf_rag=pdf_rag,
         )
         return {
             "technology_summary": result["technology_summary"],
@@ -79,7 +78,7 @@ def make_technology_node(rag: BaseRAG, model: str | Any = "openai:gpt-4.1"):
     return technology_node
 
 
-def make_comparison_node(rag: BaseRAG, model: str | Any = "openai:gpt-4.1"):
+def make_comparison_node(rag: BaseRAG, model: str | Any = "openai:gpt-4.1", *, pdf_rag=None):
     """호출자가 competitor_ids에 지정한 회사들만 비교합니다."""
     llm = resolve_chat_model(model)
 
@@ -94,12 +93,11 @@ def make_comparison_node(rag: BaseRAG, model: str | Any = "openai:gpt-4.1"):
             raise ValueError(
                 "Target and competitor IDs must identify distinct companies"
             )
-        evidence = {record.company_name: [as_evidence(record)] for record in records}
         result = run_comparison(
             {"company": target.company_name, "competitors": names[1:]},
             rag,
             model=llm,
-            search_company=lambda name: evidence[name],
+            pdf_rag=pdf_rag,
         )
         return {
             "competitor_comparison": result["competitor_comparison"],
