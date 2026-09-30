@@ -6,6 +6,8 @@ from .nodes import (
     make_technology_node,
     make_comparison_node,
     make_market_node,
+    make_investment_node,
+    route_after_investment,
 )
 
 __all__ = [
@@ -15,4 +17,6 @@ __all__ = [
     "make_technology_node",
     "make_comparison_node",
     "make_market_node",
+    "make_investment_node",
+    "route_after_investment",
 ]
