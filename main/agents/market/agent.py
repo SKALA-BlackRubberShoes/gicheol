@@ -139,17 +139,6 @@ class MarketEvaluationAgent:
         )
         self._validate_source_ids(draft, evidence)
 
-        # 인용한 근거가 없거나 비어 있으면 점수를 보류합니다.
-        usable = {item.source_id for item in evidence if item.excerpt.strip()}
-        for criterion in draft.criteria:
-            if not criterion.source_ids or not all(
-                source_id in usable for source_id in criterion.source_ids
-            ):
-                if criterion.score is not None:
-                    criterion.reason += (
-                        " 판단을 뒷받침할 근거가 없어 점수를 보류했습니다."
-                    )
-                criterion.score = None
         scores = scores_from_results(draft.criteria)
         score_100, score_25 = calculate_market_score(scores)
 

@@ -53,7 +53,7 @@ class CriterionResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     criterion: CriterionName
-    score: int | None = Field(ge=1, le=5)
+    score: int = Field(ge=1, le=5)
     reason: str = Field(min_length=1)
     source_ids: list[str] = Field(default_factory=list)
 
@@ -77,8 +77,8 @@ class MarketEvaluationResult(BaseModel):
     market_definition: str
     criteria: list[CriterionResult]
     evidence: list[EvidenceSource]
-    market_score_100: float | None = Field(ge=0, le=100)
-    investment_score_25: float | None = Field(ge=0, le=25)
+    market_score_100: float = Field(ge=0, le=100)
+    investment_score_25: float = Field(ge=0, le=25)
     market_risks: list[str] = Field(default_factory=list)
 
 
