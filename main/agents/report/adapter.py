@@ -305,8 +305,15 @@ def _analysis_result(dimension: str, analysis: dict, card: dict, sources: dict) 
         ids += _strings(defensibility.get("evidence_ids"))
         risks += [_risk_text(item) for item in raw.get("risks", [])]
     source_score = card.get("source_score", analysis.get("score"))
+    scorecard_key = {
+        "technical": "technical_score", "competition": "competitor_score"
+    }.get(dimension)
+    upstream_scorecard = _dict(sources.get(scorecard_key), scorecard_key) if scorecard_key else {}
+    insufficient = upstream_scorecard.get("status") == "insufficient_evidence"
+    if insufficient:
+        missing.append("근거 부족 항목 0점 처리")
     return {
-        "status": "completed" if source_score is not None else "insufficient",
+        "status": "insufficient" if source_score is None or insufficient else "completed",
         "summary": _join(paragraphs), "scores": {dimension: source_score},
         "evidence_ids": list(dict.fromkeys(ids)),
         "score_evidence_ids": {dimension: _strings(card.get("evidence_ids"))},

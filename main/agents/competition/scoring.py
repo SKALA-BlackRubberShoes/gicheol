@@ -138,7 +138,7 @@ def validate_citations(
             qualified = [
                 item for item in report.comparisons if item.verdict != "insufficient"
             ]
-            if score.rating is not None and not any(
+            if score.rating > 0 and not any(
                 score_ids.intersection(item.target_evidence_ids)
                 and score_ids.intersection(item.competitor_evidence_ids)
                 for item in qualified
@@ -152,7 +152,7 @@ def validate_citations(
                     "Defensibility score must cite the defensibility finding"
                 )
             if (
-                score.rating is not None
+                score.rating > 0
                 and report.defensibility.status == "insufficient"
             ):
                 raise ValueError(
@@ -161,7 +161,7 @@ def validate_citations(
         else:
             if not score_ids.issubset(risk_ids):
                 raise ValueError("Adoption risk score must cite risk findings")
-            if score.rating is not None:
+            if score.rating > 0:
                 if any(risk.status == "insufficient" for risk in report.risks):
                     raise ValueError(
                         "An unknown risk category prevents an adoption risk rating"
@@ -181,19 +181,22 @@ def _build_scorecard(report: CompetitorComparison) -> dict[str, Any]:
     criteria = []
     for criterion in SCORE_CRITERIA:
         score = by_criterion[criterion]
+        rationale = score.rationale
+        if score.rating == 0:
+            rationale += " 필수 근거가 부족해 0점 처리했다."
         criteria.append(
             {
                 "criterion": criterion,
                 "rating": score.rating,
-                "points": score.rating * 5 if score.rating is not None else None,
-                "rationale": score.rationale,
+                "points": score.rating * 5,
+                "rationale": rationale,
                 "evidence_ids": score.evidence_ids,
             }
         )
-    complete = all(item["points"] is not None for item in criteria)
+    complete = all(item["rating"] > 0 for item in criteria)
     return {
         "criteria": criteria,
-        "total": sum(item["points"] for item in criteria) if complete else None,
+        "total": sum(item["points"] for item in criteria),
         "max": 100,
         "status": "scored" if complete else "insufficient_evidence",
     }

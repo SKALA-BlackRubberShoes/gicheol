@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ComparisonCondition(BaseModel):
@@ -54,16 +54,21 @@ SCORE_CRITERIA = (
 
 
 class CriterionScore(BaseModel):
-    """A rating is unavailable when the company evidence cannot support a score."""
+    """A rating is zero when the company evidence cannot support a score."""
 
     model_config = ConfigDict(strict=True)
 
     criterion: Literal[
         "differentiation", "comparable_performance", "defensibility", "adoption_risk"
     ]
-    rating: int | None = Field(ge=1, le=5)
+    rating: int = Field(ge=0, le=5)
     rationale: str
     evidence_ids: list[str]
+
+    @field_validator("rating", mode="before")
+    @classmethod
+    def missing_rating_is_zero(cls, value: object) -> object:
+        return 0 if value is None else value
 
     @model_validator(mode="after")
     def validate_score(self) -> "CriterionScore":
@@ -71,7 +76,7 @@ class CriterionScore(BaseModel):
             raise ValueError(
                 "A score needs a rationale, including when evidence is insufficient"
             )
-        if self.rating is not None and not self.evidence_ids:
+        if self.rating > 0 and not self.evidence_ids:
             raise ValueError("A numeric rating needs supporting company evidence IDs")
         return self
 

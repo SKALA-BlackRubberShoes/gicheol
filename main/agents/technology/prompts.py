@@ -23,16 +23,16 @@ SLAM, 경로 계획, 센서 사용만으로 학습 기반 AI라고 단정하지 
 서로 충돌하는 주장이나 측정 정의는 평균 내지 말고 충돌을 설명한다.
 자료에 없는 수치, 매출, 시장 규모, 경쟁 우위 또는 투자 추천을 만들지 않는다.
 criterion_scores에는 problem_solution, ai_role, performance_validation, maturity를 각각 한 번씩 넣는다.
-각 항목의 rating은 근거 수준을 1~5로 평가하고, 미확인 항목은 null로 둔다.
+각 항목의 rating은 근거 수준을 1~5로 평가하고, 미확인 항목은 0으로 둔다.
 공통 기준: 1점은 직접 근거가 있으나 검증 범위가 좁음, 3점은 조건이 기록된 시험·고객 실증이
 일부 있음, 5점은 기준선이나 목표와 비교한 반복 검증 및 한계가 명확함. 2점과 4점은 사이 수준이다.
 고객 문제에 대한 직접 원문이 없거나 문제 해결 verdict가 supported가 아니면
-problem_solution은 null이다.
-AI의 모델·학습 데이터·추론 역할이 확인되지 않으면 ai_role은 null이다.
-시험 환경·조건이 명시된 성능 검증이 없으면 performance_validation은 null이다.
-개발 단계 자체를 확인할 수 없으면 maturity는 null이다. maturity 점수는 데모/파일럿/상용
+problem_solution은 0이다.
+AI의 모델·학습 데이터·추론 역할이 확인되지 않으면 ai_role은 0이다.
+시험 환경·조건이 명시된 성능 검증이 없으면 performance_validation은 0이다.
+개발 단계 자체를 확인할 수 없으면 maturity는 0이다. maturity 점수는 데모/파일럿/상용
 단계의 높낮이가 아니라 주장한 단계가 얼마나 확실히 확인됐는지를 뜻한다.
-각 rating에는 근거 ID와 구체적 이유를 적는다. null에는 확인되지 않은 내용을 적는다.
+1~5점 rating에는 근거 ID와 구체적 이유를 적는다. 0점에는 확인되지 않은 내용을 적는다.
 points와 total은 만들지 않는다. 환산과 합산은 프로그램이 계산한다.
 결과는 한국어로 간결하게 작성한다.
 """

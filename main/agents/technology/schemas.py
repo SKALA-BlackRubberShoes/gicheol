@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class TechnologyClaim(BaseModel):
@@ -56,15 +56,20 @@ class TechnicalCriterionScore(BaseModel):
     criterion: Literal[
         "problem_solution", "ai_role", "performance_validation", "maturity"
     ]
-    rating: int | None = Field(
-        ge=1,
+    rating: int = Field(
+        ge=0,
         le=5,
-        description="Evidence-based rating from 1 to 5; null when evidence is insufficient",
+        description="Evidence-based rating from 1 to 5; 0 when evidence is insufficient",
     )
-    rationale: str = Field(description="Why this rating or null was assigned")
+    rationale: str = Field(description="Why this rating or zero was assigned")
     evidence_ids: list[str] = Field(
         description="Company evidence IDs supporting the rating"
     )
+
+    @field_validator("rating", mode="before")
+    @classmethod
+    def missing_rating_is_zero(cls, value: object) -> object:
+        return 0 if value is None else value
 
 
 class TechnologySummary(BaseModel):

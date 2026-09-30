@@ -83,7 +83,7 @@ def _validate_citations(
         check(
             score.evidence_ids,
             f"criterion_scores[{index}]",
-            score.rating is not None,
+            score.rating > 0,
         )
 
     if summary.maturity != "unknown" and not any(
@@ -162,23 +162,23 @@ def _build_scorecard(summary: TechnologySummary) -> dict[str, Any]:
             and not set(score.evidence_ids) <= section_ids[criterion]
         ):
             raise ValueError(f"{criterion} score cites evidence outside its assessment")
-        rating = None if unverified[criterion] else score.rating
+        rating = 0 if unverified[criterion] else score.rating
         rationale = score.rationale.strip()
-        if unverified[criterion] and score.rating is not None:
-            rationale += " 해당 항목의 필수 근거가 확인되지 않아 점수를 보류했다."
+        if rating == 0:
+            rationale += " 필수 근거가 부족해 0점 처리했다."
         criteria.append(
             {
                 "criterion": criterion,
                 "rating": rating,
-                "points": rating * 5 if rating is not None else None,
+                "points": rating * 5,
                 "rationale": rationale,
                 "evidence_ids": score.evidence_ids,
             }
         )
-    complete = all(item["points"] is not None for item in criteria)
+    complete = all(item["rating"] > 0 for item in criteria)
     return {
         "criteria": criteria,
-        "total": sum(item["points"] for item in criteria) if complete else None,
+        "total": sum(item["points"] for item in criteria),
         "max": 100,
         "status": "scored" if complete else "insufficient_evidence",
     }

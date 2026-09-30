@@ -56,8 +56,12 @@ def _adapt_existing_analyses(working: dict[str, Any]) -> None:
             "score": technical.get("total"), "max_score": technical.get("max"),
             "reason": _reason(criteria, "rationale"),
             "evidence_ids": _unique_ids(criteria, "evidence_ids"),
-            "missing_items": list((summary or {}).get("key_unknowns") or [])
-            if isinstance(summary, dict) else [],
+            "missing_items": (
+                (["제품·기술력: 근거 부족 항목 0점 처리"]
+                 if technical.get("status") == "insufficient_evidence" else [])
+                + (list((summary or {}).get("key_unknowns") or [])
+                   if isinstance(summary, dict) else [])
+            ),
             "conflicts": [],
             "breakdown": deepcopy(summary),
         }
@@ -71,8 +75,12 @@ def _adapt_existing_analyses(working: dict[str, Any]) -> None:
             "score": competitive.get("total"), "max_score": competitive.get("max"),
             "reason": _reason(criteria, "rationale"),
             "evidence_ids": _unique_ids(criteria, "evidence_ids"),
-            "missing_items": list((comparison or {}).get("key_unknowns") or [])
-            if isinstance(comparison, dict) else [],
+            "missing_items": (
+                (["경쟁 우위: 근거 부족 항목 0점 처리"]
+                 if competitive.get("status") == "insufficient_evidence" else [])
+                + (list((comparison or {}).get("key_unknowns") or [])
+                   if isinstance(comparison, dict) else [])
+            ),
             "conflicts": [],
             "breakdown": deepcopy(comparison),
         }
