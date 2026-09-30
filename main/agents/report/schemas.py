@@ -50,6 +50,8 @@ class Evidence(Contract):
 class AnalysisResult(Contract):
     status: Literal["completed", "insufficient", "failed"] = "insufficient"
     summary: str = ""
+    details: dict[str, str] = Field(default_factory=dict)
+    detail_evidence_ids: dict[str, list[str]] = Field(default_factory=dict)
     scores: dict[str, float | None] = Field(default_factory=dict)
     evidence: list[Evidence] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)

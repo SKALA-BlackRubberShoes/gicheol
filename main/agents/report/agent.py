@@ -11,7 +11,7 @@ from uuid import uuid4
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
-from main.paths import DEFAULT_REPORT_DIR
+from main.paths import DEFAULT_REPORT_DIR, DEFAULT_REPORT_FILENAME
 
 from .content import apply_summary, build_document
 from .schemas import SummarySelection, normalize_state
@@ -100,14 +100,35 @@ def _add_warning(document: dict, warning: str) -> dict:
     return {**document, "sections": sections}
 
 
+def submission_filename(campus: str, class_name: str, members: list[str]) -> str:
+    """과제 지정 파일명. 실제 팀 정보를 받아 생성하며 이름을 추정하지 않는다."""
+    if not isinstance(members, list) or not members:
+        raise ValueError("제출 파일명에는 팀원 이름 목록이 필요합니다.")
+    parts = [campus, class_name, *members]
+    if any(not isinstance(part, str) or not part.strip() or
+           not re.fullmatch(r"[\w가-힣 .()-]+", part.strip()) for part in parts):
+        raise ValueError("캠퍼스·반·팀원 이름은 경로 구분자 없는 문자열이어야 합니다.")
+    campus, class_name, *members = [part.strip() for part in parts]
+    if not class_name.endswith("반"):
+        class_name += "반"
+    return f"RAG-Output_{campus}-{class_name}_{'+'.join(members)}"
+
+
 def build_report_graph(*, output_dir: str | Path | None = None, use_llm: bool = False,
                        model: Any = None, model_name: str | None = None,
-                       font_path: str | None = None, filename: str = "RAG-Output"):
+                       font_path: str | None = None, filename: str | None = None,
+                       campus: str | None = None, class_name: str | None = None,
+                       members: list[str] | None = None):
     """정규화 → SUMMARY 편집 → Markdown/PDF 저장. API 호출은 use_llm=True일 때만.
 
     각 실행은 고유 하위 디렉터리에 출력하여 병렬 실행 시 덮어쓰지 않는다.
     실패 시 예외를 올리고 기존의 성공한 결과를 반환하지 않는다.
     """
+    if any(value is not None for value in (campus, class_name, members)):
+        if filename is not None:
+            raise ValueError("filename과 캠퍼스·반·팀원 옵션 중 하나만 지정하세요.")
+        filename = submission_filename(campus, class_name, members)
+    filename = DEFAULT_REPORT_FILENAME if filename is None else filename
     if not re.fullmatch(r"[\w가-힣 .+()-]+", filename) or filename in {".", ".."}:
         raise ValueError("filename에는 파일 이름만 입력하세요 (경로 구분자 불가).")
     destination = Path(output_dir) if output_dir else DEFAULT_REPORT_DIR

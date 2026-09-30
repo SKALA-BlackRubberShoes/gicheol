@@ -55,6 +55,14 @@ def _validate_document(document: dict) -> None:
                 raise ValueError(f"{label}.{field} must be a list.")
             for entry in entries:
                 _text(entry, f"{label}.{field}")
+        if "emphasis" in section:
+            emphasis = section["emphasis"]
+            if not isinstance(emphasis, list) or len(emphasis) != len(section.get("paragraphs", [])):
+                raise ValueError(f"{label}.emphasis must match paragraphs.")
+            for entry, text in zip(emphasis, section.get("paragraphs", [])):
+                _text(entry, f"{label}.emphasis")
+                if entry and entry not in text:
+                    raise ValueError(f"{label}.emphasis must refer to existing plain text.")
         tables = section.get("tables", [])
         if not isinstance(tables, list):
             raise ValueError(f"{label}.tables must be a list.")
@@ -97,7 +105,13 @@ def render_markdown(document: dict) -> str:
     chunks.extend(["## SUMMARY", _markdown_text(document.get("summary", ""))])
     for section in document.get("sections", []):
         chunks.append(f"## {_markdown_text(section.get('title', ''))}")
-        chunks.extend(_markdown_text(item) for item in section.get("paragraphs", []))
+        for index, item in enumerate(section.get("paragraphs", [])):
+            emphasis = section.get("emphasis", [""] * len(section.get("paragraphs", [])))[index]
+            if emphasis:
+                before, _, after = item.partition(emphasis)
+                chunks.append(_markdown_text(before) + "*" + _markdown_text(emphasis) + "*" + _markdown_text(after))
+            else:
+                chunks.append(_markdown_text(item))
         if section.get("bullets"):
             chunks.append("\n".join(f"- {_markdown_text(item).replace(chr(10), chr(10) + '  ')}"
                                     for item in section["bullets"]))
@@ -168,7 +182,7 @@ def render_pdf(
         from reportlab.lib.styles import ParagraphStyle
         from reportlab.pdfgen.canvas import Canvas
         from reportlab.platypus import (
-            KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
+            Flowable, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
         )
         from reportlab.platypus.doctemplate import LayoutError
     except ImportError as exc:
@@ -200,6 +214,73 @@ def render_pdf(
     def paragraph(text: str, style: Any = body) -> Any:
         return Paragraph(html.escape(_text(text, "text"), quote=False).replace("\n", "<br/>"), style)
 
+    class ReferenceParagraph(Flowable):
+        """안전한 평문을 줄바꿈하고 지정된 서지 항목만 기울인다.
+
+        한글 TTF에는 italic 변형이 없는 경우가 많아 글꼴을 바꾸지 않고
+        지정 문자열의 그리기 좌표만 기울인다. 원문 HTML은 해석하지 않는다.
+        """
+        def __init__(self, text="", emphasis="", lines=None):
+            super().__init__()
+            self.text = _text(text, "reference")
+            self.emphasis = _text(emphasis, "reference emphasis")
+            self.lines = lines
+            self.spaceAfter = body.spaceAfter
+
+        def wrap(self, available_width, available_height):
+            from reportlab.pdfbase.pdfmetrics import stringWidth
+            if self.lines is None:
+                start = self.text.find(self.emphasis) if self.emphasis else -1
+                end = start + len(self.emphasis)
+                self.lines, line, used = [], [], 0.0
+                for index, char in enumerate(self.text):
+                    char_width = stringWidth(char, font_name, body.fontSize)
+                    if char == "\n" or used + char_width > available_width - 3:
+                        self.lines.append(line)
+                        line, used = [], 0.0
+                        if char == "\n":
+                            continue
+                    italic = start <= index < end if start >= 0 else False
+                    if line and line[-1][1] == italic:
+                        line[-1] = (line[-1][0] + char, italic)
+                    else:
+                        line.append((char, italic))
+                    used += char_width
+                if line:
+                    self.lines.append(line)
+            self.width = available_width
+            self.height = len(self.lines) * body.leading
+            return self.width, self.height
+
+        def split(self, available_width, available_height):
+            self.wrap(available_width, available_height)
+            count = int(available_height // body.leading)
+            if count < 1:
+                return []
+            if count >= len(self.lines):
+                return [self]
+            first = ReferenceParagraph(lines=self.lines[:count])
+            first.spaceAfter = 0
+            return [first, ReferenceParagraph(lines=self.lines[count:])]
+
+        def draw(self):
+            from reportlab.pdfbase.pdfmetrics import stringWidth
+            canvas = self.canv
+            y = self.height - body.fontSize
+            for line in self.lines:
+                x = 0.0
+                for text, italic in line:
+                    canvas.saveState()
+                    canvas.translate(x, y)
+                    if italic:
+                        canvas.transform(1, 0, math.tan(math.radians(12)), 1, 0, 0)
+                    canvas.setFont(font_name, body.fontSize)
+                    canvas.setFillColor(ink)
+                    canvas.drawString(0, 0, text)
+                    canvas.restoreState()
+                    x += stringWidth(text, font_name, body.fontSize)
+                y -= body.leading
+
     summary = [paragraph("SUMMARY", heading_style), paragraph(document.get("summary", ""))]
     summary_height = sum(item.wrap(content_width, usable_height)[1]
                          + item.getSpaceBefore() + item.getSpaceAfter() for item in summary)
@@ -227,7 +308,9 @@ def render_pdf(
     story: list[Any] = [KeepTogether(opening)]
     for section in document.get("sections", []):
         story.append(paragraph(section.get("title", ""), heading_style))
-        story.extend(paragraph(text) for text in section.get("paragraphs", []))
+        for index, text in enumerate(section.get("paragraphs", [])):
+            emphasis = section.get("emphasis", [""] * len(section.get("paragraphs", [])))[index]
+            story.append(ReferenceParagraph(text, emphasis) if emphasis else paragraph(text))
         story.extend(paragraph("- " + text, bullet_style) for text in section.get("bullets", []))
         for table in section.get("tables", []):
             count = len(table["headers"])

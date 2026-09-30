@@ -77,6 +77,45 @@ def _compact_messages(messages: list[str]) -> list[str]:
     return singles + [f"{', '.join(subjects)}: {detail}" for detail, subjects in groups.items()]
 
 
+def _summary_excerpt(value: str, limit: int) -> str:
+    """완결된 원문 문장/절만 발췌한다. 긴 문장 중간을 잘라 의미를 바꾸지 않는다."""
+    value = " ".join(value.split())
+    if len(value) <= limit:
+        return value
+    parts = re.split(r"(?<=[.!?。])\s+|;\s*", value)
+    selected = []
+    for part in parts:
+        if len("; ".join([*selected, part])) > limit:
+            break
+        selected.append(part)
+    return "; ".join(selected)
+
+
+def _summary_fact(company, budget: int) -> str:
+    """사업·결론·핵심 근거·위험을 요약한다. 원 점수와 판정을 그대로 사용한다."""
+    inv = company.investment_result
+    raw = (company.company_record or {}).get("raw") or {}
+    parts = [f"{company.company_name}: {inv.decision if inv else '판단 미확인'}, 총점 {score(inv.final_score if inv else None)}."]
+    business = raw.get("서비스") or raw.get("대표제품") or (company.technical_result.summary if company.technical_result else "")
+    candidates = [("사업", _summary_excerpt(str(business), 110))]
+    if inv:
+        candidates.append(("판단 근거", _summary_excerpt(_decision_reasons(inv), 120)))
+    analyses = [company.technical_result, company.market_result, company.competition_result, company.team_result]
+    ratings = [f"{label} {score(result.scores[key])}" for result, key, label in zip(
+        analyses, ("technical", "market", "competition", "team"), ("기술", "시장", "경쟁", "팀"))
+        if result and key in result.scores]
+    candidates.append(("원점수(기술·시장·경쟁 /100, 팀 /10)", ", ".join(ratings)))
+    risks = list(inv.risks if inv else []) + [risk for result in analyses if result for risk in result.risks]
+    missing = list(inv.missing_fields if inv else []) + [item for result in analyses if result for item in result.missing_fields]
+    candidates.append(("주요 위험", next((text for item in risks if (text := _summary_excerpt(item, 220))), "")))
+    candidates.append(("추가 확인", next((text for item in missing if (text := _summary_excerpt(item, 100))), "")))
+    for label, text in candidates:
+        line = f"{label}: {text}"
+        if text and len(" ".join([*parts, line])) <= budget:
+            parts.append(line)
+    return " ".join(parts)
+
+
 def _reference_paragraphs(refs: "Citations") -> list[str]:
     """출처별 서지정보를 유지하면서 동일한 출처 유형 설명만 한 번 싣는다."""
     shared = Counter(refs.catalog[eid].provenance_note for eid in refs.used
@@ -144,6 +183,8 @@ def build_document(inputs: ReportInput) -> tuple[dict, list[str], dict[str, str]
         if result.summary and not citation:
             warnings.append(f"{name}: {label} 요약의 출처 미제공")
         lines = [f"{label} ({STATUS[result.status]}): {result.summary or '요약 미제공'} {citation}".strip()]
+        lines.extend(f"{title}: {text} {refs.use(result.detail_evidence_ids.get(title, []))}".strip()
+                     for title, text in result.details.items())
         for label2, values in (("강점", result.strengths), ("위험", result.risks)):
             for value in dict.fromkeys(values):
                 # 서술에 명시된 근거 ID는 개별 연결한다. 절 전체의 긴 인용 목록을
@@ -184,7 +225,8 @@ def build_document(inputs: ReportInput) -> tuple[dict, list[str], dict[str, str]
         inv_refs = refs.result(inv) if inv else ""
         compare_rows.append([name, ELIGIBILITY[c.eligibility.status], decision, total,
                              f"종합 평가·한계 항목 참조 {inv_refs}".strip()])
-        facts[f"company-{index}"] = f"{name}: {decision}, 총점 {total}. {reason} {inv_refs}".strip()
+        summary_budget = max(220, (650 - len(overview)) // min(len(companies), 2))
+        facts[f"company-{index}"] = _summary_fact(c, summary_budget)
         if inv and inv.decision == "추천" and (c.eligibility.status == "ineligible" or inv.status != "completed" or inv.final_score is None):
             warnings.append(f"{name}: 전달된 추천 판정과 적격성/완료 상태/총점이 일치하지 않음. 투자 판단 에이전트 재확인 필요")
         if inv and inv.reasons and not inv_refs:
@@ -305,8 +347,13 @@ def build_document(inputs: ReportInput) -> tuple[dict, list[str], dict[str, str]
     # 줄바꿈과 중복 문구를 줄이며 어떤 경고나 근거 ID도 생략하지 않는다.
     sections.append(section("분석 한계 및 추가 확인사항", paragraphs=list(dict.fromkeys(limits)) +
                             (["출력 확인: " + "; ".join(_compact_messages(warnings))] if warnings else [])))
-    sections.append(section("REFERENCE", paragraphs=_reference_paragraphs(refs)
-                            or ["실제로 사용한 근거 자료가 전달되지 않았습니다. 출처를 임의로 생성하지 않았습니다."]))
+    reference = section("REFERENCE", paragraphs=_reference_paragraphs(refs)
+                        or ["실제로 사용한 근거 자료가 전달되지 않았습니다. 출처를 임의로 생성하지 않았습니다."])
+    # 과제의 서체 지정: 보고서·웹은 제목, 논문은 학술지명을 기울여 표시한다.
+    emphasis = [refs.catalog[eid].journal if refs.catalog[eid].kind == "paper" else
+                refs.catalog[eid].title if refs.catalog[eid].kind != "csv" else "" for eid in refs.used]
+    reference["emphasis"] = emphasis + [""] * (len(reference["paragraphs"]) - len(emphasis))
+    sections.append(reference)
     document = {"title": inputs.config.title, "subtitle": f"{inputs.config.domain} | 평가 기준일: {inputs.config.as_of}",
                 "summary": overview, "sections": sections}
     return document, warnings, facts

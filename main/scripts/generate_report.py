@@ -20,7 +20,10 @@ def main() -> int:
     parser.add_argument("--env-file", type=Path, help="명시적으로 지정한 .env만 로드; 기존 환경값 유지")
     parser.add_argument("--font", help="한글 글리프를 지원하는 TTF 경로")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_REPORT_DIR)
-    parser.add_argument("--name", default="RAG-Output", help="확장자를 제외한 제출 파일명")
+    parser.add_argument("--name", help="확장자를 제외한 파일명 (팀 정보 옵션과 함께 사용 불가)")
+    parser.add_argument("--campus", help="제출 파일명의 캠퍼스")
+    parser.add_argument("--class-name", help="제출 파일명의 반 (예: 1반)")
+    parser.add_argument("--members", nargs="+", help="제출 파일명의 팀원 이름을 순서대로 입력")
     args = parser.parse_args()
     try:
         if args.env_file:
@@ -32,7 +35,8 @@ def main() -> int:
         if not isinstance(state, dict):
             raise ValueError("입력 JSON 최상위는 State 객체여야 합니다.")
         result = generate_report(state, output_dir=args.output_dir, use_llm=args.llm,
-                                 model_name=args.model, font_path=args.font, filename=args.name)
+                                 model_name=args.model, font_path=args.font, filename=args.name,
+                                 campus=args.campus, class_name=args.class_name, members=args.members)
     except (ValueError, OSError) as exc:
         print(f"보고서 생성 실패: {exc}", file=sys.stderr)
         return 1

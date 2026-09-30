@@ -25,11 +25,20 @@ python -m main.scripts.generate_report --input outputs/report_input_17.json
 
 각 실행은 `outputs/reports/<실행 ID>/`에 아래 파일을 만든다. `--output-dir`로 상위 출력 경로를, `--name`으로 확장자 없는 제출 파일명을 지정할 수 있다.
 
+과제의 제출 이름 패턴은 `RAG-Output_{캠퍼스}-{X반}_{이름1+이름2+...}.pdf`다. 현재 팀이 지정한 기본 파일명은 `RAG-Output_울산_3반_김동욱_김주현_이수현_이웅희_이효진_장수영`이며 `main/paths.py`에 정의한다. 아래 옵션을 지정하면 과제의 구분자 패턴으로 생성한다. PDF·Markdown·JSON은 같은 파일명을 사용하며 `--name`과 팀 정보 옵션은 함께 사용하지 않는다.
+
+```bash
+python -m main.scripts.generate_report --input outputs/judgment_17.json \
+  --campus 판교 --class-name 1반 --members 김철수 이영희
+```
+
+Python API에서도 `generate_report(state, campus="판교", class_name="1반", members=["김철수", "이영희"])`처럼 지정한다. 위 이름은 사용법 예시이며 실제 팀원으로 바꾼다.
+
 | 파일 | 내용 |
 | --- | --- |
-| `RAG-Output.pdf` | 5쪽 이내 한글 보고서 |
-| `RAG-Output.md` | 같은 본문의 Markdown. `final_report`로도 반환 |
-| `RAG-Output.json` | 본문, 경고, 요약 방식, PDF 상태·페이지 수, `source_payload` 원본 기록 |
+| `<보고서파일명>.pdf` | 5쪽 이내 한글 보고서 |
+| `<보고서파일명>.md` | 같은 본문의 Markdown. `final_report`로도 반환 |
+| `<보고서파일명>.json` | 본문, 경고, 요약 방식, PDF 상태·페이지 수, `source_payload` 원본 기록 |
 
 PDF는 macOS의 AppleMyungjo, Windows의 맑은 고딕, Linux의 Nanum TTF를 자동 탐색한다. 없으면 `--font /path/to/NanumGothic.ttf` 또는 `REPORT_FONT_PATH`로 설치된 한글 TTF를 지정한다. 폰트를 PDF에 포함하며 시스템 폰트 파일은 저장소에 복사하지 않는다.
 
@@ -50,6 +59,10 @@ PDF는 macOS의 AppleMyungjo, Windows의 맑은 고딕, Linux의 Nanum TTF를 �
 - 설정, 기업 또는 사용한 근거에 가상 자료 표시가 있으면 SUMMARY에도 이를 명시한다.
 
 원문 사실 검증과 투자 판단은 앞선 에이전트의 책임이다. 보고서는 값의 전달 일관성, 출처 연결, 출력 형식을 검사한다.
+
+[과제의 E. 투자 보고서](https://actually-war-1ea.notion.site/AI-1cf7f4c86693800e9e11fa490ed1a2ff?pvs=143)에 맞춰 SUMMARY에는 사업 내용, 투자 결론과 근거, 전달된 점수, 주요 위험·추가 확인사항의 핵심을 담는다. 긴 문장을 임의로 잘라 의미를 바꾸지 않고 완결된 원문 문장·절을 선택하며, 세부 내용은 본문에 남긴다. 시장의 규모·수요·성장·도입·확장 평가를 항목별로 표시하고 창업자 이름과 함께 전달된 역할·경력도 표시한다. 새 시장 수치나 팀 경력을 추정하지 않는다.
+
+REFERENCE는 기관 보고서의 기관·연도·제목·URL, 논문의 저자·연도·제목·학술지·권(호)·쪽수, 웹페이지의 작성자/기관·날짜·제목·사이트·URL 순서로 작성한다. 보고서·웹페이지는 제목, 논문은 학술지명을 PDF와 Markdown에서 기울여 표시한다. 출처에 날짜나 서지정보가 없으면 미확인으로 남기므로 해당 정보는 앞단에서 보완해야 한다.
 
 참고문헌은 투자 판단의 `evidence_registry`에 더해 기술·경쟁 결과의 `sources`와 시장 결과의 `market_evaluation.evidence`에 전달된 서지정보를 보고서 안에서만 연결한다. 이 보완은 투자 판단 원장, 점수, 정책을 변경하지 않는다. `content_kind=metadata_only`는 원문이 전달되지 않은 서지정보이고, `source_excerpt`는 상위 에이전트가 제공한 발췌를 `quote`에 보존한다. `generated_summary`는 모델이 작성한 문장을 `summary`에 별도로 보존하며 `quote`로 취급하지 않는다. 참고문헌에는 생성 요약·원문 미전달 여부와 `provenance_note`를 표시한다. `is_mock=None`은 실제/가상 자료 유형 미확인으로 유지하며, `False`도 자료 진위 검증을 뜻하지 않는다.
 
