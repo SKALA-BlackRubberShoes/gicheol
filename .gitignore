@@ -1,6 +1,8 @@
 /tests/
 .env
 .env.*
+.Env
+.Env.*
 !.env.example
 .pytest_cache/
 *.py[cod]

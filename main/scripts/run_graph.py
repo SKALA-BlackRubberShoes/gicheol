@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 from uuid import uuid4
 
+from dotenv import load_dotenv
 from langgraph.types import Command
 
 from main.agents.common.llm import resolve_chat_model
@@ -31,6 +32,7 @@ from main.graph import (
     new_request_state,
 )
 from main.graph.workflow import build_graph
+from main.paths import PROJECT_ROOT
 from main.rag.company import BaseRAG
 from main.rag.market import MarketRAG
 
@@ -159,6 +161,7 @@ def run_terminal(graph, rag: BaseRAG, *, output: Path | None = None) -> dict | N
 
 
 def main() -> int:
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
     parser = argparse.ArgumentParser(
         description="스타트업 투자 분석 전체 LangGraph 실행"
     )

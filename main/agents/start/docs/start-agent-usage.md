@@ -18,6 +18,8 @@ export START_AGENT_MODEL="팀에서_정한_채팅_모델명"
 
 `START_AGENT_MODEL`에는 실제 사용할 채팅 모델명을 지정합니다. 노드는 모델명을 고정하지 않으며, 호출자가 만든 `BaseRAG`와 `BaseChatModel` 객체를 받습니다. `.env`를 자동으로 읽지 않으므로 환경변수는 실행 프로세스에 설정합니다. 공용 RAG 설정과 CSV 변경 후 색인 준비는 [BaseRAG 사용법](../../../rag/company/docs/rag-usage.md)을 참고하세요.
 
+아래 `ChatOpenAI` 직접 호출 예시는 `START_AGENT_MODEL=gpt-4.1`처럼 OpenAI 모델명만 사용합니다. 전체 그래프에서 로컬 Ollama 모델을 쓰려면 저장소 [README](../../../../README.md)의 모델 준비 단계를 거쳐 `.env`에 `START_AGENT_MODEL=ollama:blackrubbershoes-start:4b`를 설정합니다. 직접 호출에서 같은 모델을 쓰려면 `ChatOpenAI(...)` 대신 `ChatOllama(model="blackrubbershoes-start:4b")` 객체를 만드세요.
+
 ## 직접 호출
 
 ```python

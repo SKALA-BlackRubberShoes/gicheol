@@ -92,6 +92,8 @@ employees_change, patent_count, funding_latest_date, company_age_years입니다.
 여러 filters는 AND입니다. 문자열 범주는 아래 CSV 표기를 활용하세요.
 제품·서비스 의미를 정확한 문자열 일치 조건으로 강제하지 마세요.
 최대·최소를 명시하면 mode=max/min과 해당 sort_field를 쓰세요. 랜덤은 mode=random입니다.
+최대·최소의 비교 기준 자체를 filters에 넣지 마세요. 제품·서비스·기술 조건이 없으면 semantic_query=None입니다.
+예: "최근 투자액이 가장 큰 회사"는 filters=[], semantic_query=None, mode=max, sort_field=funding_latest_won입니다.
 그 외 일반 추천은 mode=recommend입니다. 조건이 없으면 filters=[], 필요 없는 항목은 None입니다.
 특정 회사 이름은 company_name 필터로 처리하세요.
 특정 회사 ID 하나를 지정하면 별도 company_id 필드에 원래 문자열 ID를 넣으세요.

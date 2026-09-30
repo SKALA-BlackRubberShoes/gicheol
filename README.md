@@ -423,13 +423,16 @@ python -m pip install -r main/requirements.txt
 docker compose -p company-rag -f compose.qdrant.yml up -d
 ```
 
-모듈은 `.env`를 자동으로 읽지 않습니다. API 키를 실행 프로세스의 환경변수로 설정합니다. `.env` 파일을 사용한다면 저장소 루트에서 다음과 같이 로드할 수 있습니다.
+전체 그래프(`python main.py` 또는 `python -m main.scripts.run_graph`)는 저장소 루트의 소문자 `.env`를 자동으로 읽습니다. 각 환경에서 `.env.example`을 `.env`로 복사하고 `OPENAI_API_KEY`를 입력하세요. `.env` 파일 탐색은 현재 작업 디렉터리에 의존하지 않지만, 명령은 저장소 루트에서 실행하거나 `main.py`의 절대 경로를 지정해야 합니다. 이미 설정된 환경변수 값이 `.env`보다 우선합니다. `START_AGENT_MODEL`은 선택 사항이며 비워 두면 `--model`을 사용합니다.
 
 ```bash
-set -a
-source .env
-set +a
+cp -n .env.example .env  # 기존 .env가 있으면 유지
+chmod 600 .env
+# .env의 OPENAI_API_KEY 값을 입력한 뒤 실행
+python main.py --output outputs/investment_result.json
 ```
+
+`.env`는 Git에서 제외됩니다. `--env-file`을 지원하는 개별 스크립트는 아래처럼 `--env-file .env`를 지정할 수 있습니다. 그 외 스크립트에는 실행 프로세스의 환경변수를 설정합니다.
 
 기업 CSV의 정확 조회, 자료 없는 투자 판단, 기본 보고서 생성에는 OpenAI·Qdrant가 필요하지 않습니다. 의미 검색과 실제 모델 평가에는 해당 서비스가 필요합니다.
 
@@ -454,6 +457,15 @@ python -m main.scripts.run_graph \
 ```
 
 `--model`은 회사·경쟁사 선택과 기술·경쟁 평가에 사용합니다. `--start-model` 또는 환경변수 `START_AGENT_MODEL`로 회사 선택 모델만 바꿀 수 있습니다. `--team-model`을 생략하면 투자 판단의 팀 평가도 `--model`을 공유합니다. 시장 모델은 기존 `OPENAI_MARKET_MODEL`, `OPENAI_WEB_SEARCH_MODEL` 설정을 사용합니다. 추가 팀 조사 도구는 연결하지 않았으므로 팀 근거가 부족한 항목에는 기존 모듈의 점수 제한이 적용됩니다.
+
+회사 선택에만 로컬 [Qwen3-4B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507)을 사용하려면 Ollama를 실행한 뒤 아래 모델을 준비하고, `.env`에 `START_AGENT_MODEL=ollama:blackrubbershoes-start:4b`를 설정합니다. [Modelfile](main/agents/start/Modelfile)은 긴 후보 목록을 처리하도록 16,384토큰 컨텍스트를 지정합니다. 다른 환경에서도 같은 명령으로 모델을 준비할 수 있습니다.
+
+```bash
+ollama pull qwen3:4b-instruct-2507-q4_K_M
+ollama create blackrubbershoes-start:4b -f main/agents/start/Modelfile
+```
+
+이 설정은 회사 선택 모델에만 적용됩니다. 기업·시장 검색의 OpenAI 임베딩과 다른 평가 모델에는 계속 `OPENAI_API_KEY`가 필요합니다.
 
 ### Batch and Individual Execution
 
