@@ -72,9 +72,20 @@ export OPENAI_API_KEY="발급받은_API_키"
 # 선택 사항. 생략하면 코드의 기본 모델을 사용한다.
 export OPENAI_WEB_SEARCH_MODEL="gpt-5-mini"
 export OPENAI_MARKET_MODEL="gpt-5-mini"
+
+# 선택 사항: 웹 검색 안정성 설정(아래 값이 기본값)
+export OPENAI_WEB_SEARCH_BATCH_SIZE="2"
+export OPENAI_WEB_SEARCH_TIMEOUT_SECONDS="90"
+export OPENAI_WEB_SEARCH_MAX_RETRIES="0"
 ```
 
 API 키를 코드, PDF 메타데이터, Git 커밋에 넣지 않는다.
+
+웹 검색어는 기본 두 개씩 나누어 처리한다. 한 묶음만 실패하면 성공한 묶음의
+근거를 유지하고, 모든 묶음이 timeout 또는 실패하면 기업 CSV와 PDF 근거만으로
+평가를 계속한다. 이 경우 결과의 `market_risks`에 웹 근거 한계를 남긴다.
+묶음 단위 복구와 SDK 재시도가 중복되어 대기 시간이 커지지 않도록 SDK 자동
+재시도 기본값은 0회다.
 
 ## 6. Qdrant 시작
 
@@ -210,10 +221,16 @@ graph.add_node("market_evaluation", market_node)
 근거가 제한적이어도 다섯 항목에 1~5점을 부여하며, 확인되지 않은 내용과 근거의 한계는 판단 이유와 시장 리스크에 기록한다. 출처 ID의 존재 여부와 5개 평가항목의 중복·누락은 코드에서 검증한다. 이는
 평가기준 추가가 아니라 JSON 결과가 깨지지 않도록 보장하는 기본 데이터 검증이다.
 
-## 12. 로컬 검증 파일
+## 12. 로컬 검증
 
-기존 시장 테스트는 루트 `tests/market/`에 로컬 보관하며 `.gitignore`의 `/tests/`로 Git에서 제외합니다.
-이번 구조 변경 과정에서는 테스트와 외부 API를 실행하지 않았습니다.
+```bash
+python -m unittest discover -s main/agents/market/tests -v
+```
+
+테스트는 기업 ID 전달, PDF·웹 근거 정규화, 가중점수 계산, 알 수 없는 출처 ID
+차단뿐 아니라 웹 검색어 분할, 부분 실패 시 성공 근거 보존, 전체 timeout 시
+PDF-only 점수 산출을 확인한다. 외부 API를 호출하지 않으므로 네트워크 상태와
+관계없이 비즈니스 로직 회귀 여부를 검사할 수 있다.
 
 ## 13. 오류가 발생할 때
 
@@ -225,6 +242,7 @@ graph.add_node("market_evaluation", market_node)
 | sources.json 관련 오류 | PDF 파일명과 manifest의 `file_name` 일치 여부 확인 |
 | unknown source ID | 평가 LLM이 제공된 `Pxxx`, `Wxxx` 외 ID를 생성했는지 확인 |
 | 컬렉션 차원 불일치 | `build_market_index.py --rebuild` 실행 |
+| 웹 검색 timeout | 자동으로 검색어를 나누고, 전부 실패하면 PDF-only 평가로 복구되는지 `market_risks` 확인 |
 
 ## 근거 해석
 

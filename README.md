@@ -1,14 +1,260 @@
 # 스타트업 투자 분석 RAG · 에이전트
 
-기업 CSV와 시장 보고서 PDF를 공용 RAG로 조회하고 기술력·경쟁력·시장성을 평가한 뒤 투자 추천 여부를 계산합니다. 회사는 CSV의 문자열 `company_id`로 식별합니다.
+본 프로젝트는 **Physical AI / Robotics** 스타트업의 투자 검토 가능성을 자동으로 평가하는 멀티 에이전트·Agentic RAG 실습 프로젝트입니다. The VC에서 수집한 30개 기업을 후보 풀로 사용하며, 기본 대화형 파이프라인은 사용자 조건에 맞는 기업 한 곳을 선택해 기술력·시장성·경쟁 우위·창업자 및 팀 역량을 평가합니다. 최종 `invest`는 투자 집행 확정이 아니라 **후속 투자 검토 추천**을 의미합니다.
 
-터미널에서 조건을 입력하면 **회사 선택 → CSV 안에서 경쟁사 자동 선정 → 시장·경쟁·기술 병렬 평가 → 투자 판단 → PDF 보고서 생성**을 실행합니다. 추천이면 보고서를 생성한 뒤 종료하고, 보류하거나 조건에 맞는 회사를 찾지 못하면 새 프롬프트를 받습니다. PDF 경로를 포함한 결과를 전체 State JSON으로 저장할 수 있습니다.
+## Overview
 
-보고서 작성 모듈은 판단 결과 JSON으로 한글 PDF·Markdown·검증 기록 JSON을 별도로 생성할 수 있습니다.
+- **Domain**: Physical AI / Robotics
+- **Objective**: 기술력, 시장성, 경쟁 우위, 창업자·팀 역량을 기준으로 스타트업의 투자 검토 적합성을 분석
+- **Method**: Multi-Agent System, Agentic RAG, PDF RAG, Web Search, Structured Output, Deterministic Scoring
+- **Candidate Pool**: The VC 기반 국내 Physical AI / Robotics 스타트업 30개
+- **Default Flow**: 사용자 프롬프트 → 기업 1곳 탐색 → 경쟁사 자동 선정 → 기술·시장·경쟁 병렬 평가 → 투자 판단 → 추천 시 보고서 생성
+- **Batch Flow**: 별도 명령으로 CSV 전체 기업을 평가·저장하고 총점 1위 기업의 보고서 1개 생성
 
-CSV 전체 평가에는 별도의 `rank_csv_companies` 명령을 사용합니다. 모든 회사를 평가·저장하고 총점 1위의 보고서 한 개를 생성합니다.
+기본 대화형 실행은 추천이면 보고서를 생성한 뒤 종료하고, 보류하거나 조건에 맞는 회사를 찾지 못하면 새 프롬프트를 받습니다. 실행 결과와 PDF 경로를 전체 State JSON으로 저장할 수 있습니다.
 
-## 폴더 구조
+## Features
+
+- 자연어 조건을 구조화해 30개 후보 중 평가 대상 기업 한 곳 선정
+- 기업 CSV의 정량 필터링과 Qdrant 의미 검색
+- 대상 기업을 제외한 동종 업종 후보에서 경쟁사·비교 대상 자동 선정
+- 시장 보고서 PDF 추출·청킹·벡터 검색 및 웹 검색 기반 시장 조사
+- 기술력·시장성·경쟁 우위 평가의 병렬 실행
+- 기술 30점·시장 30점·경쟁 30점·창업자 및 팀 10점의 결정론적 투자 판단
+- 점수 기준, 자료 상충, 적격성, 중대한 미해결 위험에 따른 `invest`/`hold` 분기
+- 판단 결과와 근거를 보존한 한글 PDF·Markdown·검증 기록 JSON 생성
+- 전체 CSV 평가 결과의 중간 저장, 순위 산출 및 1위 기업 보고서 생성
+- Pydantic 기반 구조화 출력과 기업 ID·근거 ID 검증
+
+## Tech Stack
+
+| Category | Technology |
+| --- | --- |
+| Framework | LangGraph 1.x, LangChain 1.x |
+| LLM / Generator | 기본 `openai:gpt-4.1`: 기업·경쟁사 선택, 기술·경쟁 평가 / 기본 `gpt-5-mini`: 시장 평가·웹 검색 |
+| LLM / Judge | 총점·추천 분기는 Python 결정론적 로직 / 전체 그래프의 창업자·팀 평가는 기본 `openai:gpt-4.1` |
+| Report Generator | 기본 규칙 기반 생성, 선택적으로 사용자가 지정한 OpenAI 모델로 SUMMARY 문장 선택 |
+| Retrieval | Qdrant 1.19.1 — Company RAG 오프라인 평가 `Hit Rate@5=1.00`, `MRR=0.833` |
+| Embedding | OpenAI `text-embedding-3-small`, 512 dimensions |
+| Structured Data | Pydantic 2.x |
+| PDF | pypdf, ReportLab |
+| Runtime | Python 3.11+ |
+
+검색 지표는 2026-09-29에 30개 기업과 12개 질의로 측정한 **Company RAG 전용 결과**입니다. `Recall@5=1.00`, Top-1 적중은 8/12였으며 일반적인 한국어 검색 또는 Market PDF RAG 성능을 보장하지 않습니다. 세부 결과는 [기업 RAG 검증 기록](main/rag/company/docs/rag-usage.md#검증-기록--2026-09-29)에 있습니다. 현재 임베딩은 오픈소스 모델이 아니라 OpenAI API 모델입니다.
+
+모델은 실행 옵션과 환경변수로 변경할 수 있습니다. `--model`은 기업·경쟁사 선택과 기술·경쟁 평가, `--team-model`은 팀 평가, `OPENAI_MARKET_MODEL`과 `OPENAI_WEB_SEARCH_MODEL`은 시장 평가와 웹 검색에 사용됩니다.
+
+## Agents
+
+| Agent | Role | Main Output |
+| --- | --- | --- |
+| Startup Discovery Agent | 사용자 프롬프트를 정량 조건·의미 조건으로 해석하고 후보 기업 한 곳 선정 | `company_id`, `message` |
+| Competitor Selection Agent | 같은 업종의 CSV 후보에서 직접 경쟁사 또는 비교 대상 최대 3곳 선정 | `competitor_ids`, `message` |
+| Technology Summary Agent | 선택 기업의 기술 구조·AI 역할·성능·구현 가능성 요약 및 평가 | `technology_summary`, `technical_score` |
+| Market Evaluation Agent | 기업 정보, Market PDF RAG, 웹 검색으로 5개 시장성 기준 평가 | `market_evaluation`, `market_score_100` |
+| Competitor Comparison Agent | 선정된 기업들과 제품·고객·차별성·방어력 비교 | `competitor_comparison`, `competitor_score` |
+| Investment Decision Agent | 세 영역 점수와 창업자·팀 평가를 결합해 추천 또는 보류 결정 | `total_score`, `decision`, `report_payload` 또는 `hold_payload` |
+| Report Generation Agent | 추천 결과와 근거를 재계산하지 않고 투자 검토 보고서로 변환 | PDF, Markdown, audit JSON |
+
+## Agent Business Logic
+
+모든 에이전트는 문자열 `company_id`를 기준으로 동일한 기업을 처리하고, 자신이 담당하는 State 필드만 갱신합니다. 탐색과 평가는 LLM을 사용하지만 점수 환산, 근거 ID 확인, 추천 기준 적용과 그래프 분기는 Python 코드가 담당합니다.
+
+### 1. Startup Discovery Agent
+
+```mermaid
+flowchart LR
+    A["사용자 프롬프트"] --> B["LLM: 요청 구조화"]
+    B --> C["정량 filters · semantic_query · mode"]
+    C --> D["전체 CSV에 정량 필터 적용"]
+    D -->|후보 없음| E["company_id = null"]
+    D -->|후보 있음| F{"의미 조건이 있는가?"}
+    F -->|예| G["Qdrant 의미 검색 후 LLM 적합성 검토"]
+    F -->|아니오| H["필터 통과 후보 유지"]
+    G --> I["후보 중 기업 1곳 선택"]
+    H --> I
+    I --> J["company_id 출력"]
+```
+
+사용자 문장에서 투자 단계·지역·투자금·업력 같은 정량 조건과 제품·서비스·기술 같은 의미 조건을 분리합니다. 정량 조건은 검색 상위 결과가 아니라 전체 CSV에 먼저 적용하고, 의미 조건이 있을 때만 Qdrant 검색 결과를 LLM이 다시 검토합니다. 일반 추천은 적합 후보 중 한 곳을 선택하며, 최대·최소·무작위 요청은 코드가 해당 규칙으로 한 곳을 결정합니다.
+
+- 입력: `prompt`
+- 출력: `company_id`, `message`
+- 핵심 통제: CSV에 없는 ID를 만들 수 없으며 검색 유사도는 투자 가치 점수가 아님
+- 실패·무결과: 지원하지 않는 조건은 오류, 정상적인 무결과는 `company_id=null`로 프롬프트 단계에 복귀
+
+### 2. Competitor Selection Agent
+
+```mermaid
+flowchart TD
+    A["선택 기업 company_id"] --> B["BaseRAG에서 대상 기업 정확 조회"]
+    B --> C["대상과 같은 sector의 다른 기업 조회"]
+    C --> D{"동종 업종 후보가 있는가?"}
+    D -->|예| E["Qdrant로 유사 후보 최대 10곳 탐색"]
+    E --> F["LLM: 제품 · 고객 · 문제 중첩 검토"]
+    F -->|직접 경쟁사 확인| G["최대 3개 competitor_ids"]
+    F -->|불명확| H["동종 업종 첫 기업을 비교 대상으로 선택"]
+    D -->|아니오| I["업력 차이가 가장 작은 다른 기업 선택"]
+    G --> J["경쟁 비교 노드로 전달"]
+    H --> J
+    I --> J
+```
+
+대상 기업을 제외한 동일 업종 기업을 우선 탐색하고, LLM이 직접 경쟁사 또는 대체재인지 검토합니다. 직접 경쟁 관계를 확정하지 못해도 파이프라인을 중단하지 않고 동종 업종 회사를 비교 대상으로 사용합니다. 동일 업종 후보 자체가 없으면 CSV 전체에서 업력 차이가 가장 작은 기업을 고르며, 이 경우에는 동종 경쟁사가 아니라는 안내를 함께 남깁니다.
+
+- 입력: `company_id`
+- 출력: `competitor_ids`, `message`
+- 핵심 통제: 대상 기업 자신과 CSV 밖 기업은 선택할 수 없음
+- 비교 목적: 경쟁사 검색 결과는 비교 대상을 정할 뿐 경쟁 우위 점수로 직접 사용하지 않음
+
+### 3. Technology Summary Agent
+
+```mermaid
+flowchart LR
+    A["대상 기업"] --> B["BaseRAG 기업 근거 조회"]
+    B --> C["근거 형식 · 소유 기업 · 길이 제한 검증"]
+    C --> D["LLM 구조화 기술 분석"]
+    D --> E["문제 해결 · AI 역할 · 성능 검증 · 성숙도"]
+    E --> F["인용 ID · 직접 인용문 · 성숙도 근거 검증"]
+    F --> G["Python: 4개 항목 rating × 5"]
+    G --> H["technical_score / 100"]
+```
+
+기업 자료로 고객 문제와 제품 접근, AI의 실제 역할, 검증된 성능, 제품 성숙도를 구조화합니다. LLM이 제시한 인용 ID가 대상 기업 자료에 실제로 존재하는지 확인하고, 고객 문제 인용문은 원문에 포함된 정확한 문장인지 검사합니다. 네 평가항목은 각각 0~5점이며 Python이 `rating × 5`로 항목당 최대 25점, 전체 100점으로 환산합니다.
+
+| Technical Criterion | 의미 | 배점 |
+| --- | --- | ---: |
+| `problem_solution` | 고객 문제가 직접 확인되고 제품이 이를 해결하는가 | rating 0~5 × 5 |
+| `ai_role` | 학습 기반 AI가 제품에서 실질적인 역할을 하는가 | rating 0~5 × 5 |
+| `performance_validation` | 측정지표·결과·시험조건이 확인되는가 | rating 0~5 × 5 |
+| `maturity` | Demo·Pilot·Commercial 단계가 근거로 확인되는가 | rating 0~5 × 5 |
+
+네 항목은 동일한 25점 배점이며, 표의 `rating × 5`는 각 항목 최대 25점을 의미합니다. 필수 근거가 부족한 항목은 LLM 추정치로 채우지 않고 0점 처리하며 `status=insufficient_evidence`를 남깁니다.
+
+- 입력: 선택 기업 정보와 기업 근거
+- 출력: `technology_summary`, `technical_score`
+- 핵심 통제: LLM은 평가내용을 작성하고 최종 산술은 Python이 수행
+
+### 4. Market Evaluation Agent
+
+```mermaid
+flowchart TD
+    A["대상 기업 company_id"] --> B["BaseRAG 기업정보 조회"]
+    B --> C["LLM: 시장 정의와 PDF · 웹 검색 계획 생성"]
+    C --> D["Market RAG: PDF 청크 검색"]
+    C --> E["웹 검색어를 기본 2개씩 분할"]
+    E --> E2["OpenAI Web Search: 최신 시장 · 고객 근거 검색"]
+    D --> F["PDF 근거 P001... 정규화"]
+    E2 -->|성공 또는 부분 성공| G["웹 근거 W001... 정규화"]
+    E2 -->|전체 timeout| H
+    F --> H["LLM: 5개 시장성 항목을 1~5점 평가"]
+    G --> H
+    H --> I["제공되지 않은 source_id 인용 차단"]
+    I --> J["Python 가중합: market_score_100"]
+```
+
+먼저 기업의 지역·고객·업무·제품을 한 문장으로 고정해 평가 시장을 정의합니다. 그 정의를 기준으로 PDF 검색어와 웹 검색어를 만들고, 프로젝트의 공식 시장 PDF와 최신 웹 자료를 함께 수집합니다. PDF는 청크 ID, 웹은 URL 기준으로 중복을 제거한 뒤 LLM이 다섯 항목을 각각 1~5점으로 평가합니다.
+
+| Market Criterion | 판단 질문 | 가중치 |
+| --- | --- | ---: |
+| 고객 문제와 지불의향 | 고객이 실제로 비용을 지불할 이유가 있는가 | 25% |
+| 시장 크기와 획득 가능성 | 시장은 크고 현실적으로 접근 가능한가 | 25% |
+| 성장성과 진입 타이밍 | 성장 동력과 구매 시점이 적절한가 | 20% |
+| 고객 도입 가능성 | ROI·통합·조달·인증 장벽을 넘을 수 있는가 | 20% |
+| 사업 확장성 | 표준화·반복매출·지역 및 업종 확장이 가능한가 | 10% |
+
+근거가 제한적이어도 기업 간 비교가 가능하도록 숫자 점수는 항상 반환하되, 확인되지 않은 내용은 보수적으로 평가하고 `reason`과 `market_risks`에 남깁니다. 웹 검색은 기본 두 검색어씩 나눠 호출하므로 한 번의 긴 요청이 전체 조사를 막지 않습니다. 일부 묶음만 실패하면 성공한 웹 근거를 유지하고, 전부 timeout 또는 실패하면 기업 CSV와 PDF 근거만으로 평가를 계속하면서 해당 한계를 `market_risks`에 기록합니다. 가중합은 LLM이 아니라 Python이 계산합니다.
+
+- 입력: `company_id`, 기업 CSV, 시장 PDF, 웹 검색 결과
+- 출력: `market_evaluation`, `market_score_100`, 항목별 이유·`source_ids`, `market_risks`
+- 핵심 통제: LLM이 실제로 제공되지 않은 `Pxxx`·`Wxxx` 근거를 인용하면 실행 오류
+
+### 5. Competitor Comparison Agent
+
+```mermaid
+flowchart LR
+    A["대상 기업 + competitor_ids"] --> B["각 기업의 BaseRAG 근거 정확 조회"]
+    B --> C["LLM: 기업별 구조화 비교"]
+    C --> D["과업 · 지표 · 절차 · 환경 · 구성 · 단계 정렬 확인"]
+    D --> E["기술 · 운영 · 법률 위험과 방어력 분석"]
+    E --> F["기업별 인용 소유권과 비교 가능성 검증"]
+    F --> G["Python: 4개 항목 rating × 5"]
+    G --> H["competitor_score / 100"]
+```
+
+대상 기업과 선정된 비교 기업의 자료를 함께 입력하고 차별성, 비교 가능한 성능, 방어력, 도입 위험을 평가합니다. 성능 우위를 주장하려면 과업·지표·시험 절차·환경·구성·제품 단계가 정렬되어야 하며, 대상 기업과 경쟁사 양쪽의 근거가 모두 있어야 합니다. 조건이 다르면 직접 우위 판정을 허용하지 않습니다.
+
+| Competition Criterion | 의미 | 배점 |
+| --- | --- | ---: |
+| `differentiation` | 제품·고객가치의 차별성 | rating 0~5 × 5 |
+| `comparable_performance` | 동일 조건에서 확인되는 성능 우위 | rating 0~5 × 5 |
+| `defensibility` | 특허·데이터·통합·네트워크 등 방어력 | rating 0~5 × 5 |
+| `adoption_risk` | 기술·운영·법률 위험을 고려한 도입 가능성 | rating 0~5 × 5 |
+
+네 항목은 동일한 25점 배점입니다. 비교 조건이나 필수 근거가 부족하면 해당 항목은 0점이며, 기술·운영·법률 위험은 각각 정확히 한 번씩 구조화됩니다.
+
+- 입력: `company_id`, `competitor_ids`
+- 출력: `competitor_comparison`, `competitor_score`
+- 핵심 통제: 다른 기업의 근거를 대상 기업 근거로 인용하거나 비교 조건이 다른데 명확한 우위로 판정할 수 없음
+
+### 6. Investment Decision Agent
+
+```mermaid
+flowchart TD
+    A["기술 · 시장 · 경쟁 평가"] --> B["어댑터: 세 결과를 각각 100점 입력으로 통일"]
+    B --> C["팀 평가: 전문성 4 + 역할 2 + 실행 4"]
+    C --> D["기술 30 + 시장 30 + 경쟁 30 + 팀 10"]
+    D --> E{"평가대상 외인가?"}
+    E -->|예| H["hold"]
+    E -->|아니오| F{"미해결 중대 위험 · 점수 null · 자료 상충이 있는가?"}
+    F -->|예| H
+    F -->|아니오| G{"총점과 영역별 최소점수를 충족하는가?"}
+    G -->|아니오| H
+    G -->|예| I["invest"]
+    H --> J["hold_payload + 사유 → 새 프롬프트"]
+    I --> K["report_payload → 보고서 에이전트"]
+```
+
+기술·시장·경쟁 에이전트가 반환한 100점 점수를 각각 30점으로 환산하고, 창업자·팀은 분야 전문성 4점·핵심 역할 구성 2점·실행 경험 4점으로 평가합니다. 총점과 분기는 코드로 결정되므로 LLM이 최종 투자 판단을 임의로 바꿀 수 없습니다.
+
+| Decision Component | 계산 | 최대점수 |
+| --- | --- | ---: |
+| 기술력 | 기술 원점수 × 0.3 | 30 |
+| 시장성 | 시장 원점수 × 0.3 | 30 |
+| 경쟁 우위 | 경쟁 원점수 × 0.3 | 30 |
+| 창업자·팀 | 전문성 4 + 역할 2 + 실행 4 | 10 |
+| 합계 | 네 영역 합산 | 100 |
+
+기본 추천 기준은 총점 80점 이상, 기술 18/30 이상, 시장 19.5/30 이상, 경쟁 18/30 이상입니다. 확인된 평가대상 외 기업, 중대한 미해결 위험, 점수 산정 불가, 자료 상충 또는 기준 미달은 `hold`입니다. 단순한 근거 부족만으로 점수를 삭제하거나 자동 보류하지 않고 `missing_items`와 신뢰도에 기록합니다. 팀의 외부 검증 근거가 없으면 팀 점수는 최대 4/10으로 제한합니다.
+
+- 입력: 세 평가 원본, 기업정보, 팀정보·근거, 선택적 판단 정책
+- 출력: `scorecard`, `total_score`, `decision`, `decision_reasons`, `report_payload` 또는 `hold_payload`
+- 그래프 분기: `invest`는 보고서 작성, `hold`는 보류 사유를 보여준 뒤 새 프롬프트 입력
+
+### 7. Report Generation Agent
+
+```mermaid
+flowchart LR
+    A["report_payload"] --> B["기업 ID · 판정 · 원본 평가 정규화"]
+    B --> C["점수 · 사유 · 위험 · 근거로 문서 본문 구성"]
+    C --> D["누락 근거와 분석 한계를 warning으로 기록"]
+    D --> E{"선택적 SUMMARY LLM 사용?"}
+    E -->|아니오| F["기존 사실 중 앞선 항목을 결정론적으로 선택"]
+    E -->|예| G["LLM은 기존 fact_id만 최대 4개 선택"]
+    F --> H["Markdown · audit JSON · PDF 렌더링"]
+    G --> H
+    H --> I["5쪽 제한 · 출력 경로 · 상태 반환"]
+```
+
+투자 판단의 `report_payload`를 보고서 입력 형식으로 정규화하고, 이미 계산된 점수·판정·분석 사유·출처를 이용해 본문을 구성합니다. 보고서 단계에서는 투자 점수나 판정을 다시 계산하지 않습니다. 기본 SUMMARY도 추가 API 호출 없이 기존 사실에서 구성하며, 선택적으로 LLM을 사용해도 새로운 사실을 쓰는 것이 아니라 기존 `fact_id`만 선택할 수 있습니다.
+
+- 입력: 기본 대화형 그래프의 추천 `report_payload`
+- 출력: `final_report`, PDF 경로, Markdown 경로, audit JSON 경로, 페이지 수, 경고, 상태
+- 핵심 통제: 기업 ID 불일치와 추천 판정 부재를 차단하고 인용 누락은 숨기지 않고 경고로 표시
+- 산출물: 첫 챕터 `SUMMARY`, 마지막 챕터 `REFERENCE`, PDF 최대 5쪽
+- 예외: 전체 CSV 순위 실행은 최고점 기업의 실제 판정을 보존하기 위해 명시적으로 보류 보고서 생성을 허용
+
+## Directory Structure
 
 ```text
 gicheol/
@@ -80,7 +326,7 @@ gicheol/
 
 각 에이전트 폴더에는 필요한 `__init__.py`와 의존성 파일도 있습니다. `main/`은 네임스페이스 패키지로 사용하며 아래 명령은 저장소 루트에서 실행합니다.
 
-## 데이터 흐름
+## Architecture
 
 ### 터미널 프롬프트 실행
 
@@ -162,11 +408,13 @@ flowchart LR
 
 기본 추천 조건은 **총점 80점 이상**, 기술 18/30 이상, 시장 19.5/30 이상, 경쟁 18/30 이상입니다. 팀 최소점수는 0/10입니다. 입력 State의 `decision_policy.recommend_min_score`와 `decision_policy.minimum_scores`로 기준을 바꿀 수 있습니다.
 
-적격성 자료 또는 근거 ID가 **없다는 이유만으로** 보류하지 않습니다. 부족한 자료는 `missing_items`와 신뢰도에 표시합니다. 기술·경쟁 평가에서 근거가 부족한 항목은 0점으로 합산하고 각 점수표의 `status=insufficient_evidence`에 남깁니다. 시장 평가 등에서 점수가 `null`이면 90점 합계와 총점을 낼 수 없어 보류합니다. 기준 점수 미달, 자료 상충, 근거로 확인된 대상 부적격, 명시된 중대한 미해결 위험도 보류합니다. `invest`는 투자 집행 확정이 아니라 후속 검토 추천입니다.
+적격성 자료 또는 근거 ID가 **없다는 이유만으로** 보류하지 않습니다. 부족한 자료는 `missing_items`와 신뢰도에 표시합니다. 기술·경쟁 평가에서 근거가 부족한 항목은 0점으로 합산하고 각 점수표의 `status=insufficient_evidence`에 남깁니다. 시장성 에이전트는 근거가 제한적이어도 한계를 이유에 명시하고 1~5점의 보수적인 점수를 반환합니다. 투자 판단 입력의 세 영역 중 어느 한 점수라도 `null`이면 90점 합계와 총점을 낼 수 없어 보류합니다. 기준 점수 미달, 자료 상충, 근거로 확인된 대상 부적격, 명시된 중대한 미해결 위험도 보류합니다. `invest`는 투자 집행 확정이 아니라 후속 검토 추천입니다.
 
 추천 시 [handoff payload](main/agents/investment/handoff.py)에 회사 정보, 원본 평가 출력 5개, 90점·10점·총점, 판단 사유, 팀 평가, 근거 원장을 담습니다. 보류 시 같은 자료와 보류 사유를 `hold_payload`에 담습니다. 기존 기술·경쟁 출력의 `sources`는 판단용 원문 근거 형식과 다르므로 자동 등록되지 않습니다. 원본 평가 결과는 그대로 보존됩니다.
 
-## 설치
+## Usage
+
+### Installation
 
 Python 3.11 이상을 사용합니다.
 
@@ -177,17 +425,20 @@ python -m pip install -r main/requirements.txt
 docker compose -p company-rag -f compose.qdrant.yml up -d
 ```
 
-모듈은 `.env`를 자동으로 읽지 않습니다. API 키를 실행 프로세스의 환경변수로 설정합니다. `.env` 파일을 사용한다면 저장소 루트에서 다음과 같이 로드할 수 있습니다.
+전체 그래프(`python main.py` 또는 `python -m main.scripts.run_graph`)는 저장소 루트의 소문자 `.env`를 자동으로 읽습니다. 각 환경에서 `.env.example`을 `.env`로 복사하고 `OPENAI_API_KEY`를 입력하세요. `.env` 파일 탐색은 현재 작업 디렉터리에 의존하지 않지만, 명령은 저장소 루트에서 실행하거나 `main.py`의 절대 경로를 지정해야 합니다. 이미 설정된 환경변수 값이 `.env`보다 우선합니다. `START_AGENT_MODEL`은 선택 사항이며 비워 두면 `--model`을 사용합니다.
 
 ```bash
-set -a
-source .env
-set +a
+cp -n .env.example .env  # 기존 .env가 있으면 유지
+chmod 600 .env
+# .env의 OPENAI_API_KEY 값을 입력한 뒤 실행
+python main.py --output outputs/investment_result.json
 ```
+
+`.env`는 Git에서 제외됩니다. `--env-file`을 지원하는 개별 스크립트는 아래처럼 `--env-file .env`를 지정할 수 있습니다. 그 외 스크립트에는 실행 프로세스의 환경변수를 설정합니다.
 
 기업 CSV의 정확 조회, 자료 없는 투자 판단, 기본 보고서 생성에는 OpenAI·Qdrant가 필요하지 않습니다. 의미 검색과 실제 모델 평가에는 해당 서비스가 필요합니다.
 
-## 전체 그래프 실행
+### End-to-End Graph
 
 설치와 API 키 설정, Qdrant 실행 후 저장소 루트에서 실행합니다.
 
@@ -209,7 +460,16 @@ python -m main.scripts.run_graph \
 
 `--model`은 회사·경쟁사 선택과 기술·경쟁 평가에 사용합니다. `--start-model` 또는 환경변수 `START_AGENT_MODEL`로 회사 선택 모델만 바꿀 수 있습니다. `--team-model`을 생략하면 투자 판단의 팀 평가도 `--model`을 공유합니다. 시장 모델은 기존 `OPENAI_MARKET_MODEL`, `OPENAI_WEB_SEARCH_MODEL` 설정을 사용합니다. 추가 팀 조사 도구는 연결하지 않았으므로 팀 근거가 부족한 항목에는 기존 모듈의 점수 제한이 적용됩니다.
 
-## 개별 실행
+회사 선택에만 로컬 [Qwen3-4B-Instruct-2507](https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507)을 사용하려면 Ollama를 실행한 뒤 아래 모델을 준비하고, `.env`에 `START_AGENT_MODEL=ollama:blackrubbershoes-start:4b`를 설정합니다. [Modelfile](main/agents/start/Modelfile)은 긴 후보 목록을 처리하도록 16,384토큰 컨텍스트를 지정합니다. 다른 환경에서도 같은 명령으로 모델을 준비할 수 있습니다.
+
+```bash
+ollama pull qwen3:4b-instruct-2507-q4_K_M
+ollama create blackrubbershoes-start:4b -f main/agents/start/Modelfile
+```
+
+이 설정은 회사 선택 모델에만 적용됩니다. 기업·시장 검색의 OpenAI 임베딩과 다른 평가 모델에는 계속 `OPENAI_API_KEY`가 필요합니다.
+
+### Batch and Individual Execution
 
 전체 CSV를 평가하고 상위 1곳만 보고서로 만들려면 다음 명령을 사용합니다. OpenAI API 키와 Qdrant, 시장 PDF 색인이 필요합니다. `.env`에 키를 넣었다면 `--env-file .env`를 지정합니다.
 
@@ -277,25 +537,26 @@ python -m main.scripts.generate_report --input outputs/report_input_17.json
 
 단일 보고서 명령에 보류 판정만 담긴 입력을 직접 전달하면 오류로 종료합니다. 전체 CSV 순위 실행에서는 1위 회사의 보류 판정도 그대로 표시하기 위해 명시적인 순위 보고서 경로를 사용합니다. 일반 추천 보고서는 `outputs/reports/<실행 ID>/`에 저장됩니다. 점수와 판정은 다시 계산하지 않으며, 근거 부족·출처 연결 누락은 경고로 표시합니다. PDF는 첫 챕터 `SUMMARY`, 마지막 챕터 `REFERENCE`, 전체 5쪽 제한을 검사합니다. 입력 형식과 Python·LangGraph 연결 방법은 [보고서 생성 문서](main/agents/report/docs/usage.md)에 있습니다.
 
-## 검증과 세부 문서
+## Validation and Detailed Documentation
 
 ```bash
+python -m unittest discover -s main/agents/market/tests -v
 python -m unittest discover -s main/agents/investment/tests -v
 python -m unittest discover -s main/agents/report/tests -v
 ```
 
-투자 판단 테스트는 판단 규칙과 State 변환을, 보고서 테스트는 입력 변환·점수/출처 보존·한글 출력·PDF 분량 제한을 확인합니다. 실제 OpenAI·Qdrant를 통한 전체 실행 검증은 별도로 필요합니다. `examples/reports/company_17_vs_14.json`은 이전 실행 참고 결과이며 현재 코드의 검증 결과가 아닙니다. `report_sample_state.json`은 보고서 출력 검증용 가상 입력입니다.
+시장성 테스트는 탐색된 기업 ID 전달·근거 수집·가중점수·잘못된 출처 차단뿐 아니라 웹 검색 분할, 부분 실패 보존, 전체 timeout 시 PDF-only 점수 산출도 확인합니다. 투자 판단 테스트는 판단 규칙과 State 변환을, 보고서 테스트는 입력 변환·점수/출처 보존·한글 출력·PDF 분량 제한을 확인합니다. 실제 OpenAI·Qdrant를 통한 전체 실행 검증은 별도로 필요합니다. `examples/reports/company_17_vs_14.json`은 이전 실행 참고 결과이며 현재 코드의 검증 결과가 아닙니다. `report_sample_state.json`은 보고서 출력 검증용 가상 입력입니다.
 
 ## Contributors
+
 - 동욱 : Startup Discovery Agent, Competitor Selection Node, Data Preprocessing, LangGraph Construction & Assembly
 - 주현 : Technology Summary Agent, Competitor Comparison Agent
 - 웅희 : Workflow Orchestration, Agent Integration, State Management
-- 수현 : Market Evaluation Agent, PDF Crawling, Web Search Integration
+- 수현 : Market Evaluation Agent, Market RAG Pipeline, Web Search Integration
 - 수영 : Investment Decision Agent, Decision Logic
 - 효진 : Report Generation Agent, Report Writing
 
-
-=================================================================
+## References and Module Documentation
 
 - [기업 RAG](main/rag/company/docs/rag-usage.md)
 - [시장 PDF RAG](main/rag/market/docs/rag-usage.md)

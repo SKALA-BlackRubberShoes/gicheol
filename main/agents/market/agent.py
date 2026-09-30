@@ -13,7 +13,7 @@ from .schemas import (
     WebSearchResult,
 )
 from .scoring import CRITERION_ORDER, calculate_market_score, scores_from_results
-from .web_search import WebSearchBackend
+from .web_search import WebSearchBackend, WebSearchError
 
 
 class MarketEvaluationAgent:
@@ -129,7 +129,23 @@ class MarketEvaluationAgent:
 
         plan = self.evaluation_backend.create_research_plan(company)
         pdf_evidence = self._collect_pdf_evidence(plan.pdf_queries)
-        web_evidence = self._collect_web_evidence(plan.web_queries)
+        collection_risks: list[str] = []
+        try:
+            web_evidence = self._collect_web_evidence(plan.web_queries)
+        except WebSearchError:
+            # 웹 검색은 최신성 보강 수단입니다. 일시적인 timeout 때문에 기업
+            # 전체 평가를 중단하지 않고, 이미 확보한 기업 정보와 PDF 근거로
+            # 보수적인 평가를 계속합니다. 실제 예외 문자열은 API 내부 정보가
+            # 섞일 수 있어 최종 보고서에는 노출하지 않습니다.
+            web_evidence = []
+            collection_risks.append(
+                "웹 검색 근거 수집에 실패하여 기업정보와 PDF 근거만으로 평가했습니다."
+            )
+        else:
+            if getattr(self.web_search, "last_warnings", []):
+                collection_risks.append(
+                    "일부 웹 검색이 실패하여 수집에 성공한 근거만으로 평가했습니다."
+                )
         evidence = pdf_evidence + web_evidence
 
         draft = self.evaluation_backend.evaluate(
@@ -146,6 +162,12 @@ class MarketEvaluationAgent:
         by_name = {item.criterion: item for item in draft.criteria}
         ordered_criteria = [by_name[name] for name in CRITERION_ORDER]
 
+        # LLM이 찾은 시장 위험과 수집 단계의 데이터 한계를 함께 전달합니다.
+        # dict를 이용하면 순서를 유지하면서 같은 문장을 중복 제거할 수 있습니다.
+        market_risks = list(
+            dict.fromkeys([*draft.market_risks, *collection_risks])
+        )
+
         return MarketEvaluationResult(
             company_id=company.company_id,
             company_name=company.company_name,
@@ -154,5 +176,5 @@ class MarketEvaluationAgent:
             evidence=evidence,
             market_score_100=score_100,
             investment_score_25=score_25,
-            market_risks=draft.market_risks,
+            market_risks=market_risks,
         )

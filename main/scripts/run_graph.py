@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 from uuid import uuid4
 
+from dotenv import load_dotenv
 from langgraph.types import Command
 
 from main.agents.common.llm import resolve_chat_model
@@ -28,8 +29,10 @@ from main.graph import (
     make_report_node,
     make_start_node,
     make_technology_node,
+    new_request_state,
 )
 from main.graph.workflow import build_graph
+from main.paths import PROJECT_ROOT
 from main.rag.company import BaseRAG
 from main.rag.market import MarketRAG
 
@@ -76,48 +79,69 @@ def _write_json(output: Path, state: dict) -> None:
 
 
 def run_terminal(graph, rag: BaseRAG, *, output: Path | None = None) -> dict | None:
-    """interrupt에서 입력을 받아 같은 그래프 실행을 재개합니다."""
+    """interrupt에서 입력을 받고, 노드 오류 뒤에는 새 실행 ID와 State로 시작합니다."""
     config = {"configurable": {"thread_id": str(uuid4())}}
-    command: dict | Command = {}
+    command: dict | Command = new_request_state("")
+    pending_prompt: str | None = None
     while True:
         payload = None
-        for update in graph.stream(command, config, stream_mode="updates"):
-            if "__interrupt__" in update:
-                payload = update["__interrupt__"][0].value
-                continue
-            for node, result in update.items():
-                if node == "start" and result.get("company_id"):
-                    print(f"선택 회사: {_company_label(rag, result['company_id'])}")
-                elif node == "select_competitors" and result.get("competitor_ids"):
-                    if result.get("message"):
-                        print(result["message"])
-                    names = [
-                        _company_label(rag, item) for item in result["competitor_ids"]
-                    ]
-                    print(f"선정 비교 기업: {', '.join(names)}")
-                    print("시장·경쟁·기술 평가를 병렬 실행합니다.")
-                elif node in {"market", "competition", "technology"}:
-                    labels = {
-                        "market": "시장",
-                        "competition": "경쟁",
-                        "technology": "기술",
-                    }
-                    print(f"{labels[node]} 평가 완료")
-                elif node == "investment":
-                    print("투자 판단 완료")
-                    if result.get("decision") == "invest":
-                        print("PDF 보고서를 생성합니다.")
-                elif node == "report":
-                    print(f"PDF 보고서 생성 완료 · {result.get('report_page_count')}쪽")
-                    for key, label in (
-                        ("report_pdf_path", "PDF"),
-                        ("report_markdown_path", "Markdown"),
-                        ("report_json_path", "검증 기록"),
-                    ):
-                        if result.get(key):
-                            print(f"{label}: {result[key]}")
-                    for warning in result.get("report_warnings", []):
-                        print(f"보고서 경고: {warning}")
+        try:
+            for update in graph.stream(command, config, stream_mode="updates"):
+                if "__interrupt__" in update:
+                    payload = update["__interrupt__"][0].value
+                    continue
+                for node, result in update.items():
+                    if node == "start" and result.get("company_id"):
+                        print(f"선택 회사: {_company_label(rag, result['company_id'])}")
+                    elif node == "select_competitors" and result.get("competitor_ids"):
+                        if result.get("message"):
+                            print(result["message"])
+                        names = [
+                            _company_label(rag, item)
+                            for item in result["competitor_ids"]
+                        ]
+                        print(f"선정 비교 기업: {', '.join(names)}")
+                        print("시장·경쟁·기술 평가를 병렬 실행합니다.")
+                    elif node in {"market", "competition", "technology"}:
+                        labels = {
+                            "market": "시장",
+                            "competition": "경쟁",
+                            "technology": "기술",
+                        }
+                        print(f"{labels[node]} 평가 완료")
+                    elif node == "investment":
+                        print("투자 판단 완료")
+                        if result.get("decision") == "invest":
+                            print("PDF 보고서를 생성합니다.")
+                    elif node == "report":
+                        print(
+                            f"PDF 보고서 생성 완료 · {result.get('report_page_count')}쪽"
+                        )
+                        for key, label in (
+                            ("report_pdf_path", "PDF"),
+                            ("report_markdown_path", "Markdown"),
+                            ("report_json_path", "검증 기록"),
+                        ):
+                            if result.get(key):
+                                print(f"{label}: {result[key]}")
+                        for warning in result.get("report_warnings", []):
+                            print(f"보고서 경고: {warning}")
+
+        except (KeyboardInterrupt, EOFError):
+            raise
+        except Exception as exc:
+            print(f"분석 중 오류가 발생했습니다: {exc}")
+            # 새 입력 없이 실패한 노드를 자동으로 다시 실행하지 않습니다.
+            pending_prompt = _read_prompt(
+                {"message": "현재 분석을 중단했습니다. 조건을 다시 입력해주세요."}
+            )
+            if pending_prompt is None:
+                print("실행을 종료합니다.")
+                return None
+            # 실패한 체크포인트와 병렬 노드 결과를 버리고 공용 자원은 유지합니다.
+            config = {"configurable": {"thread_id": str(uuid4())}}
+            command = new_request_state("")
+            continue
 
         if payload is None:
             state = dict(graph.get_state(config).values)
@@ -126,7 +150,9 @@ def run_terminal(graph, rag: BaseRAG, *, output: Path | None = None) -> dict | N
                 _write_json(output, state)
             return state
 
-        prompt = _read_prompt(payload)
+        # 오류 뒤 먼저 받은 입력은 새 prompt 노드의 interrupt에 한 번만 전달합니다.
+        prompt = pending_prompt if pending_prompt is not None else _read_prompt(payload)
+        pending_prompt = None
         if prompt is None:
             print("실행을 종료합니다.")
             return None
@@ -135,6 +161,7 @@ def run_terminal(graph, rag: BaseRAG, *, output: Path | None = None) -> dict | N
 
 
 def main() -> int:
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
     parser = argparse.ArgumentParser(
         description="스타트업 투자 분석 전체 LangGraph 실행"
     )
@@ -219,7 +246,7 @@ def main() -> int:
         print("\n실행을 종료합니다.")
         return 0
     except Exception as exc:
-        # API·서버 오류를 투자 보류로 바꾸지 않고 실행 오류로 알립니다.
+        # 그래프 실행 전의 초기화 오류 등은 재입력 루프와 구분해 종료합니다.
         print(f"실행 실패: {exc}", file=sys.stderr)
         return 1
 
