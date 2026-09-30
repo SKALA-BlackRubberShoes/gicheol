@@ -142,9 +142,11 @@ flowchart TD
     A["대상 기업 company_id"] --> B["BaseRAG 기업정보 조회"]
     B --> C["LLM: 시장 정의와 PDF · 웹 검색 계획 생성"]
     C --> D["Market RAG: PDF 청크 검색"]
-    C --> E["OpenAI Web Search: 최신 시장 · 고객 근거 검색"]
+    C --> E["웹 검색어를 기본 2개씩 분할"]
+    E --> E2["OpenAI Web Search: 최신 시장 · 고객 근거 검색"]
     D --> F["PDF 근거 P001... 정규화"]
-    E --> G["웹 근거 W001... 정규화"]
+    E2 -->|성공 또는 부분 성공| G["웹 근거 W001... 정규화"]
+    E2 -->|전체 timeout| H
     F --> H["LLM: 5개 시장성 항목을 1~5점 평가"]
     G --> H
     H --> I["제공되지 않은 source_id 인용 차단"]
@@ -161,7 +163,7 @@ flowchart TD
 | 고객 도입 가능성 | ROI·통합·조달·인증 장벽을 넘을 수 있는가 | 20% |
 | 사업 확장성 | 표준화·반복매출·지역 및 업종 확장이 가능한가 | 10% |
 
-근거가 제한적이어도 기업 간 비교가 가능하도록 숫자 점수는 항상 반환하되, 확인되지 않은 내용은 보수적으로 평가하고 `reason`과 `market_risks`에 남깁니다. 가중합은 LLM이 아니라 Python이 계산합니다.
+근거가 제한적이어도 기업 간 비교가 가능하도록 숫자 점수는 항상 반환하되, 확인되지 않은 내용은 보수적으로 평가하고 `reason`과 `market_risks`에 남깁니다. 웹 검색은 기본 두 검색어씩 나눠 호출하므로 한 번의 긴 요청이 전체 조사를 막지 않습니다. 일부 묶음만 실패하면 성공한 웹 근거를 유지하고, 전부 timeout 또는 실패하면 기업 CSV와 PDF 근거만으로 평가를 계속하면서 해당 한계를 `market_risks`에 기록합니다. 가중합은 LLM이 아니라 Python이 계산합니다.
 
 - 입력: `company_id`, 기업 CSV, 시장 PDF, 웹 검색 결과
 - 출력: `market_evaluation`, `market_score_100`, 항목별 이유·`source_ids`, `market_risks`
@@ -523,11 +525,12 @@ python -m main.scripts.generate_report --input outputs/report_input_17.json
 ## Validation and Detailed Documentation
 
 ```bash
+python -m unittest discover -s main/agents/market/tests -v
 python -m unittest discover -s main/agents/investment/tests -v
 python -m unittest discover -s main/agents/report/tests -v
 ```
 
-투자 판단 테스트는 판단 규칙과 State 변환을, 보고서 테스트는 입력 변환·점수/출처 보존·한글 출력·PDF 분량 제한을 확인합니다. 실제 OpenAI·Qdrant를 통한 전체 실행 검증은 별도로 필요합니다. `examples/reports/company_17_vs_14.json`은 이전 실행 참고 결과이며 현재 코드의 검증 결과가 아닙니다. `report_sample_state.json`은 보고서 출력 검증용 가상 입력입니다.
+시장성 테스트는 탐색된 기업 ID 전달·근거 수집·가중점수·잘못된 출처 차단뿐 아니라 웹 검색 분할, 부분 실패 보존, 전체 timeout 시 PDF-only 점수 산출도 확인합니다. 투자 판단 테스트는 판단 규칙과 State 변환을, 보고서 테스트는 입력 변환·점수/출처 보존·한글 출력·PDF 분량 제한을 확인합니다. 실제 OpenAI·Qdrant를 통한 전체 실행 검증은 별도로 필요합니다. `examples/reports/company_17_vs_14.json`은 이전 실행 참고 결과이며 현재 코드의 검증 결과가 아닙니다. `report_sample_state.json`은 보고서 출력 검증용 가상 입력입니다.
 
 ## Contributors
 

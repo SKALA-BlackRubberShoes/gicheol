@@ -92,16 +92,49 @@ class OpenAIWebSearch:
         model_name: str | None = None,
         search_context_size: str = "medium",
         purpose: Literal["market", "team"] = "market",
+        timeout_seconds: float | None = None,
+        max_retries: int | None = None,
+        max_queries_per_request: int | None = None,
     ):
         if search_context_size not in {"low", "medium", "high"}:
             raise ValueError("search_context_size must be low, medium, or high")
         if purpose not in {"market", "team"}:
             raise ValueError("purpose must be market or team")
+        timeout_seconds = (
+            timeout_seconds
+            if timeout_seconds is not None
+            else float(os.getenv("OPENAI_WEB_SEARCH_TIMEOUT_SECONDS", "90"))
+        )
+        max_retries = (
+            max_retries
+            if max_retries is not None
+            else int(os.getenv("OPENAI_WEB_SEARCH_MAX_RETRIES", "0"))
+        )
+        max_queries_per_request = (
+            max_queries_per_request
+            if max_queries_per_request is not None
+            else int(os.getenv("OPENAI_WEB_SEARCH_BATCH_SIZE", "2"))
+        )
+        if timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be positive")
+        if type(max_retries) is not int or max_retries < 0:
+            raise ValueError("max_retries must be a nonnegative integer")
+        if (
+            type(max_queries_per_request) is not int
+            or max_queries_per_request < 1
+        ):
+            raise ValueError("max_queries_per_request must be a positive integer")
         self.model_name = model_name or os.getenv(
             "OPENAI_WEB_SEARCH_MODEL", "gpt-5-mini"
         )
         self.search_context_size = search_context_size
         self.purpose = purpose
+        self.timeout_seconds = timeout_seconds
+        self.max_retries = max_retries
+        self.max_queries_per_request = max_queries_per_request
+        # 일부 검색 묶음만 실패했을 때 호출자가 결과와 함께 상태를 전달할 수
+        # 있도록, 마지막 search() 호출의 경고를 별도로 보관합니다.
+        self.last_warnings: list[str] = []
         self._client = None
 
     def _get_client(self):
@@ -112,7 +145,13 @@ class OpenAIWebSearch:
         try:
             from openai import OpenAI
 
-            self._client = OpenAI(timeout=60.0, max_retries=2)
+            # SDK 재시도까지 켜 두면 timeout이 여러 번 반복되어 한 기업의
+            # 평가가 수분간 멈출 수 있습니다. 검색어 묶음별 실패 복구는 아래의
+            # search()가 담당하므로 기본 SDK 재시도는 0회로 제한합니다.
+            self._client = OpenAI(
+                timeout=self.timeout_seconds,
+                max_retries=self.max_retries,
+            )
         except Exception as exc:
             raise WebSearchError(
                 f"Cannot initialize OpenAI client ({type(exc).__name__})"
@@ -140,13 +179,51 @@ class OpenAIWebSearch:
         if type(max_results_per_query) is not int or max_results_per_query < 1:
             raise ValueError("max_results_per_query must be a positive integer")
 
-        client = self._get_client()
-
-        # 검색어마다 API를 한 번씩 호출하면 30개 기업 평가 비용과 시간이 크게
-        # 늘어납니다. 여러 주제를 한 요청에 넣고 web_search 도구가 필요한 검색을
-        # 수행하도록 해 기업당 웹 조사 호출을 한 번으로 제한합니다.
         cleaned_queries = [query.strip() for query in queries]
-        topics = "\n".join(f"- {query}" for query in cleaned_queries)
+        self.last_warnings = []
+
+        # 너무 많은 검색 주제를 한 요청에 넣으면 응답 생성 시간이 길어져 timeout
+        # 가능성이 커집니다. 기본 두 개씩 나누면 호출 횟수를 억제하면서도 실패한
+        # 묶음만 버리고 성공한 근거는 그대로 보존할 수 있습니다.
+        batches = [
+            cleaned_queries[index : index + self.max_queries_per_request]
+            for index in range(0, len(cleaned_queries), self.max_queries_per_request)
+        ]
+        results: list[WebSearchResult] = []
+        errors: list[WebSearchError] = []
+        for batch_number, batch in enumerate(batches, start=1):
+            try:
+                results.extend(
+                    self._search_batch(
+                        batch,
+                        max_results_per_query=max_results_per_query,
+                    )
+                )
+            except WebSearchError as exc:
+                errors.append(exc)
+                self.last_warnings.append(
+                    f"웹 검색 {batch_number}/{len(batches)} 묶음 실패"
+                )
+
+        # 일부 검색이 성공했다면 그 근거로 평가를 계속합니다. 모든 묶음이
+        # 실패한 경우에만 호출자에게 실패를 알려 PDF-only 평가로 전환합니다.
+        if errors and not results:
+            raise WebSearchError(
+                f"All {len(batches)} web search batches failed; "
+                f"last error: {errors[-1]}"
+            ) from errors[-1]
+        return results
+
+    def _search_batch(
+        self,
+        queries: list[str],
+        *,
+        max_results_per_query: int,
+    ) -> list[WebSearchResult]:
+        """검증된 소량의 검색어를 한 번의 Responses API 호출로 처리합니다."""
+
+        client = self._get_client()
+        topics = "\n".join(f"- {query}" for query in queries)
         market_prompt = f"""
 다음 검색 주제들을 모두 조사하여 시장성 평가에 필요한 최신 사실을 정리하라.
 
@@ -202,8 +279,8 @@ class OpenAIWebSearch:
             contexts = by_url[url][1]
             if context not in contexts:
                 contexts.append(context)
-        citation_limit = max_results_per_query * len(cleaned_queries)
-        query_label = " | ".join(cleaned_queries)
+        citation_limit = max_results_per_query * len(queries)
+        query_label = " | ".join(queries)
         results = [
             WebSearchResult(
                 query=query_label,
@@ -216,7 +293,10 @@ class OpenAIWebSearch:
             )
             for url, (title, contexts) in list(by_url.items())[:citation_limit]
         ]
-
+        if not results:
+            raise WebSearchError(
+                "OpenAI web search returned no usable URL citations"
+            )
         return results
 
     def close(self) -> None:
