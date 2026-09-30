@@ -8,6 +8,7 @@ from .agent import (
     route_after_investment,
 )
 from .adapter import make_rag_investment_judge_node, prepare_judge_state
+from .team_research import TeamWebResearcher
 
 __all__ = [
     "InvestmentJudgeState",
@@ -17,4 +18,5 @@ __all__ = [
     "route_after_investment",
     "make_rag_investment_judge_node",
     "prepare_judge_state",
+    "TeamWebResearcher",
 ]

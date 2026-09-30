@@ -1,8 +1,8 @@
 # 스타트업 투자 분석 RAG · 에이전트
 
-기업 CSV와 시장 보고서 PDF를 공용 RAG로 조회하고, 선택한 회사의 기술력·경쟁력·시장성을 평가한 뒤 투자 추천 여부를 계산합니다. 회사는 CSV의 문자열 `company_id`로 식별합니다.
+기업 CSV와 시장 보고서 PDF를 공용 RAG로 조회하고 기술력·경쟁력·시장성을 평가합니다. 전체 평가 실행은 CSV의 모든 회사를 행 순서대로 평가·저장하고 총점 1위 한 곳의 보고서만 생성합니다. 회사는 CSV의 문자열 `company_id`로 식별합니다.
 
-현재 회사 선택, 세 평가, 투자 판단, 보고서 작성을 위한 **개별 에이전트와 LangGraph 노드 함수**가 있습니다. 투자 판단 결과 JSON을 받아 한글 PDF·Markdown·검증 기록 JSON을 생성할 수 있습니다. 전체 노드를 순서대로 실행하는 그래프 조립 파일과 자동 경쟁사 선정은 아직 없습니다.
+회사 선택, 세 평가, 투자 판단, 보고서 작성을 위한 **개별 에이전트와 LangGraph 노드 함수**가 있습니다. `rank_csv_companies` 실행 파일은 이 노드들을 CSV 전 회사에 순차 적용하고 점수 순위를 매깁니다. 별도로 기존 회사 선택 및 단일 회사 실행도 사용할 수 있습니다.
 
 ## 폴더 구조
 
@@ -49,14 +49,16 @@ gicheol/
 │   │       └── tests/
 │   ├── graph/
 │   │   ├── state.py                   # 공통 InvestmentState·초기화
-│   │   └── nodes.py                   # 에이전트별 LangGraph 노드 함수
+│   │   ├── nodes.py                   # 에이전트별 LangGraph 노드 함수
+│   │   └── batch.py                   # CSV 순서 평가·순위·단일 보고서
 │   └── scripts/
 │       ├── build_company_index.py
 │       ├── build_market_index.py
 │       ├── run_agents.py              # 기술·경쟁 평가
 │       ├── evaluate_market_company.py # 시장 평가
 │       ├── judge_investment.py        # 투자 판단·handoff JSON
-│       └── generate_report.py         # 판단 JSON 또는 가상 데이터로 보고서 생성
+│       ├── generate_report.py         # 판단 JSON 또는 가상 데이터로 보고서 생성
+│       └── rank_csv_companies.py      # 전 회사 평가 후 1위 보고서 생성
 ├── docs/data/
 │   ├── base/raw/                       # 기업 CSV
 │   └── market/                         # 시장 PDF·sources.json
@@ -72,20 +74,20 @@ gicheol/
 
 ```mermaid
 flowchart LR
-    P["사용자 요청"] --> S["StartAgent: 회사 ID 선택"]
+    P["기업 CSV: 행 순서"] --> S["회사별 평가 반복"]
     S --> T["기술 평가"]
-    S --> C["지정 경쟁사 비교"]
+    S --> C["자동 경쟁사 비교"]
     S --> M["시장성 평가"]
     T --> J["투자 판단"]
     C --> J
     M --> J
-    J -->|invest| R["report_payload / 보고서 입력"]
-    J -->|hold| H["hold_payload / 보류 사유"]
-    R --> F["보고서 생성: PDF · Markdown · JSON"]
-    H --> F
+    J --> A["회사별 전체 결과 저장"]
+    A --> K["모든 회사 완료 후 총점 순위"]
+    K --> W["1위 회사의 전체 판단 자료"]
+    W --> F["보고서 1개: PDF · Markdown · JSON"]
 ```
 
-이 그림은 **노드 간 데이터 계약**입니다. 현재 제공된 실행 파일은 회사 선택부터 보고서 작성까지 한 번에 실행하지 않습니다. 보고서는 판단 결과 JSON으로 별도 실행하며 추천·보류 결과 모두 받을 수 있습니다. 경쟁 비교에는 선택 회사와 다른 `competitor_ids`를 호출자가 지정해야 합니다. `company_id`가 없는 경우 평가 노드를 호출하지 않도록 전체 그래프를 조립할 때 분기해야 합니다.
+전체 CSV 실행은 `StartAgent`의 단일 회사 선택을 거치지 않습니다. 경쟁사는 같은 세부 업종, 같은 업종, 나머지 회사 순으로 CSV에서 앞선 회사를 기본 2곳 선택합니다. 총점은 기존 90점+10점 계산을 그대로 쓰며, `추천/보류` 분기는 순위 선정에 사용하지 않습니다. 동점이면 CSV에서 앞선 회사가 1위입니다. 실패한 회사와 점수가 `null`인 회사는 전체 기록에 남고 순위에서 제외됩니다. 회사별 평가 실패 시 다음 CSV 행으로 계속 진행합니다. 최고 점수 회사가 보류여도 보고서에 실제 보류 판정과 사유를 그대로 싣습니다. 순위에 넣을 점수가 하나도 없으면 보고서를 생성하지 않습니다.
 
 공통 [InvestmentState](main/graph/state.py)는 회사 ID, 세 평가의 원본 출력, 투자 판단 입력과 결과를 담습니다. [노드 함수](main/graph/nodes.py)는 입력 State에서 선택 회사를 조회하고 자신이 갱신한 필드만 반환합니다. 회사 재선택 시 이전 평가와 판단 결과를 초기화합니다.
 
@@ -141,6 +143,16 @@ set +a
 
 ## 개별 실행
 
+전체 CSV를 평가하고 상위 1곳만 보고서로 만들려면 다음 명령을 사용합니다. OpenAI API 키와 Qdrant, 시장 PDF 색인이 필요합니다. `.env`에 키를 넣었다면 `--env-file .env`를 지정합니다.
+
+```bash
+python -m main.scripts.rank_csv_companies --env-file .env
+```
+
+실행 결과는 `outputs/rankings/<실행 ID>/ranking.json`에 회사별 **성공한 원본 평가 또는 실패 오류**, 점수 순위, 1위 ID와 보고서 경로가 저장됩니다. 매 회사 시도 후 저장되므로 진행 상황을 확인할 수 있습니다. `attempted_count`는 시도한 회사 수, `evaluated_count`는 평가에 성공한 회사 수, `failed_count`는 실패한 회사 수입니다. 1위의 원본 입력은 같은 폴더의 `selected_report_input.json`, PDF·Markdown·검증 기록은 `report/<실행 ID>/`에 있습니다. `--csv`로 CSV를 바꾸고, `--competitors`로 비교 기업 수를 조절할 수 있습니다. 기술·시장·경쟁 평가에 더해 팀 웹 검색과 원문 페이지 조회를 30개 회사에 순차 실행하므로 API 비용과 시간이 듭니다. 팀 근거를 찾지 못하면 10점을 임의로 채우지 않고 평가의 미확인 항목에 남깁니다.
+
+기존 단일 회사 실행:
+
 ```bash
 # CSV와 시장 PDF 색인. 원본 데이터 변경 시 --rebuild 추가
 python -m main.scripts.build_company_index
@@ -175,6 +187,7 @@ python -m main.scripts.judge_investment \
   --company-id 17 \
   --input outputs/judge_input.json \
   --team-model openai:gpt-4.1 \
+  --env-file .env \
   --recommend-min-score 80 \
   --output outputs/judgment_17.json \
   --handoff-output outputs/report_input_17.json
@@ -186,14 +199,14 @@ python -m main.scripts.judge_investment \
 # API 없이 가상 입력으로 보고서 출력 확인
 python -m main.scripts.generate_report --demo
 
-# 추천·보류 모두 전체 판단 결과를 입력하면 됨
+# 추천 판정의 전체 판단 결과를 입력
 python -m main.scripts.generate_report --input outputs/judgment_17.json
 
 # 추천 결과의 독립 report_payload도 직접 입력 가능
 python -m main.scripts.generate_report --input outputs/report_input_17.json
 ```
 
-보류 결과에는 `null`인 handoff 파일 대신 `judgment_17.json`을 사용합니다. 보고서는 `outputs/reports/<실행 ID>/`에 저장됩니다. 점수와 판정은 다시 계산하지 않으며, 근거 부족·출처 연결 누락은 경고로 표시합니다. PDF는 첫 챕터 `SUMMARY`, 마지막 챕터 `REFERENCE`, 전체 5쪽 제한을 검사합니다. 입력 형식과 Python·LangGraph 연결 방법은 [보고서 생성 문서](main/agents/report/docs/usage.md)에 있습니다.
+단일 보고서 명령에 보류 판정만 담긴 입력을 직접 전달하면 오류로 종료합니다. 전체 CSV 순위 실행에서는 1위 회사의 보류 판정도 그대로 표시하기 위해 명시적인 순위 보고서 경로를 사용합니다. 일반 추천 보고서는 `outputs/reports/<실행 ID>/`에 저장됩니다. 점수와 판정은 다시 계산하지 않으며, 근거 부족·출처 연결 누락은 경고로 표시합니다. PDF는 첫 챕터 `SUMMARY`, 마지막 챕터 `REFERENCE`, 전체 5쪽 제한을 검사합니다. 입력 형식과 Python·LangGraph 연결 방법은 [보고서 생성 문서](main/agents/report/docs/usage.md)에 있습니다.
 
 ## 검증과 세부 문서
 

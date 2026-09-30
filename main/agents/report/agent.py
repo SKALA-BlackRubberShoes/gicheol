@@ -118,7 +118,7 @@ def build_report_graph(*, output_dir: str | Path | None = None, use_llm: bool = 
                        model: Any = None, model_name: str | None = None,
                        font_path: str | None = None, filename: str | None = None,
                        campus: str | None = None, class_name: str | None = None,
-                       members: list[str] | None = None):
+                       members: list[str] | None = None, allow_hold: bool = False):
     """정규화 → SUMMARY 편집 → Markdown/PDF 저장. API 호출은 use_llm=True일 때만.
 
     각 실행은 고유 하위 디렉터리에 출력하여 병렬 실행 시 덮어쓰지 않는다.
@@ -136,6 +136,12 @@ def build_report_graph(*, output_dir: str | Path | None = None, use_llm: bool = 
     def prepare(state: ReportState):
         from .adapter import adapt_project_state
         inputs = normalize_state(adapt_project_state(dict(state)))
+        if not allow_hold and not any(
+            company.investment_result is not None
+            and company.investment_result.decision == "추천"
+            for company in inputs.results_by_company.values()
+        ):
+            raise ValueError("추천 판정 회사가 없어 보고서를 생성하지 않습니다.")
         doc, warnings, facts = build_document(inputs)
         return {"report_document": doc, "report_warnings": warnings, "report_facts": facts,
                 "report_source_payload": inputs.source_payload}
