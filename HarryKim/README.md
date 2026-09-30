@@ -4,13 +4,15 @@
 
 ## 포함 파일
 
-- `main/agents/tech_summary_agent.py`: 기술 요약과 근거 검증
-- `main/agents/competitor_comparison_agent.py`: 경쟁사 비교와 근거 검증
+- `main/agents/tech_summary_agent.py`: 기술 요약, 근거 검증, 기술 점수
+- `main/agents/competitor_comparison_agent.py`: 경쟁사 비교, 근거 검증, 경쟁 점수
 - `main/agents/evidence.py`, `main/agents/nodes.py`, `main/agents/__init__.py`: 팀 `BaseRAG`의 회사 ID를 두 에이전트에 연결
 - `main/agents/docs/usage.md`: 사용 예시
 - `run_agents.py`: 두 결과를 JSON으로 저장하는 실행 스크립트
 - `requirements-agents.txt`: 에이전트가 추가로 필요로 하는 패키지
-- `outputs/agent_results/company_17_vs_14.json`: 실제 실행 결과 예시
+- `outputs/agent_results/company_17_vs_14.json`: 점수 기능을 넣기 전에 생성한 정성 평가 예시
+
+각 노드는 보고서와 점수를 함께 반환합니다. `technical_score`와 `competitor_score`는 항목별 1~5점을 100점 만점으로 환산합니다. 근거가 부족한 항목은 `null`로 두며, 하나라도 미평가면 총점도 `null`입니다. 팀의 LangGraph State에는 이 두 점수 키를 추가해야 후속 투자 판단 노드로 전달됩니다.
 
 ## 팀 프로젝트에 적용
 
@@ -21,4 +23,6 @@ python -m pip install -r main/baseRAG/requirements-rag.txt -r requirements-agent
 python run_agents.py --company-id 17 --competitor-id 14 --output outputs/agent_results/company_17_vs_14.json
 ```
 
-실행에는 `OPENAI_API_KEY`와 기본 모델 `openai:gpt-4.1`의 접근 권한이 필요합니다. 예시 JSON은 `gicheol`의 CSV를 사용해 생성한 결과로, `locator`에는 실행 당시의 로컬 CSV 경로가 들어 있습니다. 새 실행에서는 해당 팀 프로젝트의 경로가 기록됩니다.
+현재 `gicheol` 체크아웃 안에서 `HarryKim` 폴더를 바로 실행할 때는 저장소 루트에서 `python -m HarryKim.run_agents`에 같은 인수를 붙입니다.
+
+실행에는 `OPENAI_API_KEY`와 기본 모델 `openai:gpt-4.1`의 접근 권한이 필요합니다. 기존 예시 JSON에는 새 점수 키가 없습니다. 코드를 다시 실행하면 두 점수 키가 함께 저장됩니다. 예시의 `locator`에는 실행 당시의 로컬 CSV 경로가 들어 있으며, 새 실행에서는 해당 팀 프로젝트의 경로가 기록됩니다.

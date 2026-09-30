@@ -6,7 +6,14 @@ import argparse
 import json
 from pathlib import Path
 
-from main.agents import make_comparison_node, make_technology_node
+try:
+    # The files have been copied into the team's main/ package.
+    from main.agents import make_comparison_node, make_technology_node
+except ModuleNotFoundError as exc:
+    if exc.name != "main.agents":
+        raise
+    # Run the handoff folder in this checkout with: python -m HarryKim.run_agents
+    from HarryKim.main.agents import make_comparison_node, make_technology_node
 from main.baseRAG import BaseRAG
 
 

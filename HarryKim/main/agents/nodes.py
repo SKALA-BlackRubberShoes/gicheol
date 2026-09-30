@@ -28,7 +28,7 @@ def _target(rag: BaseRAG, state: dict[str, Any]):
 def make_technology_node(
     rag: BaseRAG, model: str | Any = "openai:gpt-4.1"
 ) -> Callable[[dict[str, Any]], dict[str, Any]]:
-    """Return a node that adds only technology_summary to graph state."""
+    """Return a node that adds the technology report and its score to graph state."""
     if rag is None:
         raise ValueError("A BaseRAG instance is required")
 
@@ -39,7 +39,10 @@ def make_technology_node(
             {"company": record.company_name}, rag, model=model,
             search_company=lambda _name: evidence,
         )
-        return {"technology_summary": result["technology_summary"]}
+        return {
+            "technology_summary": result["technology_summary"],
+            "technical_score": result["technical_score"],
+        }
 
     return technology_node
 
@@ -67,6 +70,9 @@ def make_comparison_node(
             model=model,
             search_company=lambda name: evidence_by_name[name],
         )
-        return {"competitor_comparison": result["competitor_comparison"]}
+        return {
+            "competitor_comparison": result["competitor_comparison"],
+            "competitor_score": result["competitor_score"],
+        }
 
     return comparison_node

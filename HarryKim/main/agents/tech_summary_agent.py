@@ -80,6 +80,17 @@ class PerformanceValidation(BaseModel):
     caveat: str = Field(description="Limits on generalizing the result")
 
 
+class TechnicalCriterionScore(BaseModel):
+    criterion: Literal["problem_solution", "ai_role", "performance_validation", "maturity"]
+    rating: int | None = Field(
+        ge=1,
+        le=5,
+        description="Evidence-based rating from 1 to 5; null when evidence is insufficient",
+    )
+    rationale: str = Field(description="Why this rating or null was assigned")
+    evidence_ids: list[str] = Field(description="Company evidence IDs supporting the rating")
+
+
 class TechnologySummary(BaseModel):
     company: str
     technology_summary: str = Field(description="Two to four Korean sentences")
@@ -91,6 +102,7 @@ class TechnologySummary(BaseModel):
     maturity: Literal["demo", "pilot", "commercial", "unknown"]
     maturity_evidence_ids: list[str]
     key_unknowns: list[str]
+    criterion_scores: list[TechnicalCriterionScore] = Field(min_length=4, max_length=4)
 
 
 SYSTEM_PROMPT = """당신은 피지컬 AI 스타트업의 기술 요약 담당 에이전트다.
@@ -115,6 +127,18 @@ SLAM, 경로 계획, 센서 사용만으로 학습 기반 AI라고 단정하지 
 성능 수치는 시험 조건과 한계를 함께 적고, 조건이 없으면 '자료 없음'이라고 적는다.
 서로 충돌하는 주장이나 측정 정의는 평균 내지 말고 충돌을 설명한다.
 자료에 없는 수치, 매출, 시장 규모, 경쟁 우위 또는 투자 추천을 만들지 않는다.
+criterion_scores에는 problem_solution, ai_role, performance_validation, maturity를 각각 한 번씩 넣는다.
+각 항목의 rating은 근거 수준을 1~5로 평가하고, 미확인 항목은 null로 둔다.
+공통 기준: 1점은 직접 근거가 있으나 검증 범위가 좁음, 3점은 조건이 기록된 시험·고객 실증이
+일부 있음, 5점은 기준선이나 목표와 비교한 반복 검증 및 한계가 명확함. 2점과 4점은 사이 수준이다.
+고객 문제에 대한 직접 원문이 없거나 문제 해결 verdict가 supported가 아니면
+problem_solution은 null이다.
+AI의 모델·학습 데이터·추론 역할이 확인되지 않으면 ai_role은 null이다.
+시험 환경·조건이 명시된 성능 검증이 없으면 performance_validation은 null이다.
+개발 단계 자체를 확인할 수 없으면 maturity는 null이다. maturity 점수는 데모/파일럿/상용
+단계의 높낮이가 아니라 주장한 단계가 얼마나 확실히 확인됐는지를 뜻한다.
+각 rating에는 근거 ID와 구체적 이유를 적는다. null에는 확인되지 않은 내용을 적는다.
+points와 total은 만들지 않는다. 환산과 합산은 프로그램이 계산한다.
 결과는 한국어로 간결하게 작성한다.
 """
 
@@ -254,6 +278,12 @@ def _validate_citations(
         check(claim.evidence_ids, label, claim.status != "insufficient")
         if claim.status == "contested" and len(set(claim.evidence_ids)) < 2:
             raise ValueError(f"{label} needs at least two sources for a conflict")
+    for index, score in enumerate(summary.criterion_scores):
+        check(
+            score.evidence_ids,
+            f"criterion_scores[{index}]",
+            score.rating is not None,
+        )
 
     if summary.maturity != "unknown" and not any(
         by_id[evidence_id].stage == summary.maturity
@@ -285,6 +315,77 @@ def _validate_citations(
     else:
         data_label = "MIXED OR UNVERIFIED PROVENANCE / 혼합 또는 유형 미확인"
     return sources, data_label
+
+
+def _build_scorecard(summary: TechnologySummary) -> dict[str, Any]:
+    """Validate criterion provenance and derive points without LLM arithmetic."""
+    expected = (
+        "problem_solution",
+        "ai_role",
+        "performance_validation",
+        "maturity",
+    )
+    scores = {score.criterion: score for score in summary.criterion_scores}
+    if len(scores) != len(expected) or set(scores) != set(expected):
+        raise ValueError("criterion_scores must contain each technical criterion exactly once")
+
+    missing_conditions = {
+        "", "자료 없음", "없음", "미상", "불명", "확인되지 않음",
+        "unknown", "unspecified", "not provided", "n/a",
+    }
+    qualified_validations = [
+        validation
+        for validation in summary.performance_validations
+        if validation.metric.strip()
+        and validation.result.strip()
+        and validation.test_conditions.strip().casefold() not in missing_conditions
+    ]
+    section_ids = {
+        "problem_solution": set(summary.problem_solution.evidence_ids),
+        "ai_role": set(summary.ai_role.evidence_ids),
+        "performance_validation": {
+            evidence_id
+            for validation in summary.performance_validations
+            for evidence_id in validation.evidence_ids
+        },
+        "maturity": set(summary.maturity_evidence_ids),
+    }
+    unverified = {
+        "problem_solution": (
+            not summary.problem_solution.customer_problem_quote
+            or summary.problem_solution.verdict != "supported"
+        ),
+        "ai_role": summary.ai_role.status != "supported",
+        "performance_validation": not qualified_validations,
+        "maturity": summary.maturity == "unknown",
+    }
+    criteria: list[dict[str, Any]] = []
+    for criterion in expected:
+        score = scores[criterion]
+        if not score.rationale.strip():
+            raise ValueError(f"{criterion} needs a score rationale")
+        if not set(score.evidence_ids) <= section_ids[criterion]:
+            raise ValueError(f"{criterion} score cites evidence outside its assessment")
+        rating = None if unverified[criterion] else score.rating
+        rationale = score.rationale.strip()
+        if unverified[criterion] and score.rating is not None:
+            rationale += " 해당 항목의 필수 근거가 확인되지 않아 점수를 보류했다."
+        criteria.append(
+            {
+                "criterion": criterion,
+                "rating": rating,
+                "points": rating * 5 if rating is not None else None,
+                "rationale": rationale,
+                "evidence_ids": score.evidence_ids,
+            }
+        )
+    complete = all(item["points"] is not None for item in criteria)
+    return {
+        "criteria": criteria,
+        "total": sum(item["points"] for item in criteria) if complete else None,
+        "max": 100,
+        "status": "scored" if complete else "insufficient_evidence",
+    }
 
 
 def run_agent(
@@ -344,8 +445,10 @@ def run_agent(
     )
     summary = TechnologySummary.model_validate(response)
     sources, data_label = _validate_citations(summary, records, company)
+    scorecard = _build_scorecard(summary)
 
     result = summary.model_dump()
+    result["criterion_scores"] = scorecard["criteria"]
     result.update({"sources": sources, "data_label": data_label})
-    state.update({"technology_summary": result})
+    state.update({"technology_summary": result, "technical_score": scorecard})
     return state

@@ -69,11 +69,41 @@ class DefensibilityAssessment(BaseModel):
     caveat: str
 
 
+SCORE_CRITERIA = (
+    "differentiation",
+    "comparable_performance",
+    "defensibility",
+    "adoption_risk",
+)
+
+
+class CriterionScore(BaseModel):
+    """A rating is unavailable when the company evidence cannot support a score."""
+
+    model_config = ConfigDict(strict=True)
+
+    criterion: Literal[
+        "differentiation", "comparable_performance", "defensibility", "adoption_risk"
+    ]
+    rating: int | None = Field(ge=1, le=5)
+    rationale: str
+    evidence_ids: list[str]
+
+    @model_validator(mode="after")
+    def validate_score(self) -> "CriterionScore":
+        if not self.rationale.strip():
+            raise ValueError("A score needs a rationale, including when evidence is insufficient")
+        if self.rating is not None and not self.evidence_ids:
+            raise ValueError("A numeric rating needs supporting company evidence IDs")
+        return self
+
+
 class CompetitorComparison(BaseModel):
     company: str
     comparisons: list[CompetitorAssessment]
     risks: list[RiskAssessment]
     defensibility: DefensibilityAssessment
+    criterion_scores: list[CriterionScore]
     key_unknowns: list[str]
 
 
@@ -97,6 +127,17 @@ like_for_like=false, verdict=insufficient로 쓴다.
 기술·운영·법률 위험을 각각 하나 작성한다. 대상 기업 자료에 근거가 없으면 insufficient로
 표시하고 도입·확장 영향도 확인 불가로 적는다. 적용 국가·제품 용도·시점이 불명확하면
 법률 적용 여부를 단정하지 않는다. defensibility는 대상 기업 자료로만 판단한다.
+criterion_scores에는 differentiation, comparable_performance, defensibility, adoption_risk를
+각각 정확히 한 번 평가한다. 각 항목은 근거와 이유를 적고 1~5점을 준다. 5점이 투자 평가에
+가장 유리하며 1점은 불리하다. 2점과 4점은 중간 단계다. 차별성과 성능은 동등 조건에서
+비교 가능한 경쟁사 자료가 있을 때만 점수를 준다. 모두 비교 불가라면 rating=null로 둔다.
+차별성은 확인된 우위가 약함/부분적/뚜렷함을 각각 1/3/5점의 기준으로 삼는다.
+성능은 동등 조건의 결과가 열위/혼재/우위이면 각각 1/3/5점이다. 방어력은
+확인된 우위가 약함/부분적/지속 가능한 장벽이면 각각 1/3/5점이다. 도입 위험은
+높음/관리 가능/낮음 또는 충분히 완화됨이면 각각 1/3/5점이다.
+방어력 자료가 불충분하면 null, 기술·운영·법률 위험 중 하나라도 자료가 불충분하면
+도입 위험 점수도 null로 둔다. 미확인 상태를 1점으로 대체하지 않는다. 점수에는
+해당 상세 판단에 인용한 기업 근거 ID를 사용한다. 평가점 합계는 코드가 계산한다.
 모든 기업 사실 주장에는 입력된 해당 기업의 evidence ID를 사용한다. 다른 기업의 ID를
 대신 쓰지 않는다. 근거 없는 숫자나 투자 추천을 만들지 않는다. 한국어로 간결하게 쓴다.
 """
@@ -180,6 +221,9 @@ def _validate_requested_structure(
     categories = [risk.category for risk in report.risks]
     if len(categories) != 3 or set(categories) != {"technical", "operational", "legal"}:
         raise ValueError("Risks must contain technical, operational, legal exactly once")
+    scored = [score.criterion for score in report.criterion_scores]
+    if len(scored) != len(SCORE_CRITERIA) or set(scored) != set(SCORE_CRITERIA):
+        raise ValueError("Scores must contain each of the four criteria exactly once")
     dimensions = {"task", "metric", "protocol", "environment", "configuration", "stage"}
     for item in report.comparisons:
         checks = item.condition_checks
@@ -252,6 +296,48 @@ def validate_citations(
         "defensibility",
         report.defensibility.status == "supported",
     )
+    comparison_ids = {
+        evidence_id
+        for item in report.comparisons
+        for evidence_id in (*item.target_evidence_ids, *item.competitor_evidence_ids)
+    }
+    risk_ids = {evidence_id for risk in report.risks for evidence_id in risk.evidence_ids}
+    defense_ids = set(report.defensibility.evidence_ids)
+    scores = {score.criterion: score for score in report.criterion_scores}
+    for criterion in SCORE_CRITERIA:
+        score = scores[criterion]
+        score_ids = set(score.evidence_ids)
+        if criterion in {"defensibility", "adoption_risk"}:
+            check(score.evidence_ids, company, f"criterion_scores.{criterion}", False)
+        if criterion in {"differentiation", "comparable_performance"}:
+            if not score_ids.issubset(comparison_ids):
+                raise ValueError(f"{criterion} score must cite a comparison finding")
+            for evidence_id in score.evidence_ids:
+                if evidence_id not in by_id:
+                    raise ValueError(f"{criterion} score cites unknown ID: {evidence_id}")
+                cited[evidence_id] = by_id[evidence_id]
+            if len(score.evidence_ids) != len(score_ids):
+                raise ValueError(f"{criterion} score repeats an evidence ID")
+            qualified = [item for item in report.comparisons if item.verdict != "insufficient"]
+            if score.rating is not None and not any(
+                score_ids.intersection(item.target_evidence_ids)
+                and score_ids.intersection(item.competitor_evidence_ids)
+                for item in qualified
+            ):
+                raise ValueError(f"{criterion} rating needs both companies' comparable evidence")
+        elif criterion == "defensibility":
+            if not score_ids.issubset(defense_ids):
+                raise ValueError("Defensibility score must cite the defensibility finding")
+            if score.rating is not None and report.defensibility.status == "insufficient":
+                raise ValueError("Insufficient defensibility cannot receive a numeric rating")
+        else:
+            if not score_ids.issubset(risk_ids):
+                raise ValueError("Adoption risk score must cite risk findings")
+            if score.rating is not None:
+                if any(risk.status == "insufficient" for risk in report.risks):
+                    raise ValueError("An unknown risk category prevents an adoption risk rating")
+                if any(not score_ids.intersection(risk.evidence_ids) for risk in report.risks):
+                    raise ValueError("Adoption risk rating needs evidence from all risk categories")
     return [
         {
             "id": record.id,
@@ -279,6 +365,27 @@ def _data_label(sources: list[dict[str, Any]]) -> str:
     if flags == {None}:
         return "UNVERIFIED PROVENANCE / 자료 유형 미확인"
     return "MIXED OR UNVERIFIED PROVENANCE / 혼합 또는 유형 미확인"
+
+
+def _build_scorecard(report: CompetitorComparison) -> dict[str, Any]:
+    by_criterion = {score.criterion: score for score in report.criterion_scores}
+    criteria = []
+    for criterion in SCORE_CRITERIA:
+        score = by_criterion[criterion]
+        criteria.append({
+            "criterion": criterion,
+            "rating": score.rating,
+            "points": score.rating * 5 if score.rating is not None else None,
+            "rationale": score.rationale,
+            "evidence_ids": score.evidence_ids,
+        })
+    complete = all(item["points"] is not None for item in criteria)
+    return {
+        "criteria": criteria,
+        "total": sum(item["points"] for item in criteria) if complete else None,
+        "max": 100,
+        "status": "scored" if complete else "insufficient_evidence",
+    }
 
 
 def run_agent(
@@ -331,8 +438,10 @@ def run_agent(
     ])
     report = CompetitorComparison.model_validate(response)
     sources = validate_citations(report, records, company, names)
+    scorecard = _build_scorecard(report)
     result = report.model_dump(mode="json")
+    result["criterion_scores"] = scorecard["criteria"]
     result["sources"] = sources
     result["data_label"] = _data_label(sources)
-    state.update({"competitor_comparison": result})
+    state.update({"competitor_comparison": result, "competitor_score": scorecard})
     return state
