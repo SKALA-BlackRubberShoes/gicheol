@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 from langchain_core.runnables import RunnableConfig
 from main.rag.company import BaseRAG
 from main.agents.start import StartAgent
 from main.agents.technology import run_agent as run_technology
 from main.agents.competition import run_agent as run_comparison
 from main.agents.market import MarketEvaluationAgent
+from main.agents.investment import make_rag_investment_judge_node, route_after_investment
+from main.agents.investment.agent import TeamResearcher
 from main.agents.common.evidence import as_evidence, get_selected_company
 from main.agents.common.llm import resolve_chat_model
-from .state import InvestmentState
+from .state import InvestmentState, reset_judge_state
 
 
 def make_start_node(agent: StartAgent):
@@ -27,6 +29,7 @@ def make_start_node(agent: StartAgent):
             competitor_comparison=None,
             competitor_score=None,
             market_evaluation=None,
+            **reset_judge_state(),
         )
         # 다른 회사를 선택하면 이전 회사용으로 지정한 경쟁사도 다시 받아야 합니다.
         if (
@@ -100,3 +103,16 @@ def make_market_node(agent: MarketEvaluationAgent):
         return {"market_evaluation": agent.evaluate(company_id.strip()).model_dump()}
 
     return market_node
+
+
+def make_investment_node(
+    rag: BaseRAG,
+    model: Any = None,
+    *,
+    team_researcher: TeamResearcher | None = None,
+    research_mode: Literal["if_missing", "always", "off"] = "if_missing",
+):
+    """세 영역의 평가 결과와 검증된 추가 근거를 투자 판단에 연결합니다."""
+    return make_rag_investment_judge_node(
+        rag, model, team_researcher=team_researcher, research_mode=research_mode,
+    )
