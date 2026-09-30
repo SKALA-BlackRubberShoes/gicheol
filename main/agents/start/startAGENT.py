@@ -135,6 +135,18 @@ def _retry_selection(reason: str) -> dict:
     return {"company_id": None, "message": f"{reason} 조건을 다시 입력해주세요."}
 
 
+def _invoke_structured(chain, payload: dict, config: RunnableConfig | None):
+    """구조화 응답 누락만 파싱 실패로 바꾸고 다른 실행 오류는 전달합니다."""
+    try:
+        return chain.invoke(payload, config=config)
+    except ValueError as exc:
+        if not str(exc).startswith(
+            "Structured Output response does not have a 'parsed' field nor a 'refusal' field."
+        ):
+            raise
+        raise OutputParserException("구조화 응답에 해석 가능한 결과가 없습니다.") from exc
+
+
 class StartAgent:
     """프롬프트를 받아 회사 ID를 고릅니다. 선택 상태는 객체에 저장하지 않습니다."""
 
@@ -177,12 +189,13 @@ class StartAgent:
                 "funding_stage",
             )
         }
-        request = self._request_chain.invoke(
+        request = _invoke_structured(
+            self._request_chain,
             {
                 "prompt": prompt.strip(),
                 "categories": json.dumps(categories, ensure_ascii=False),
             },
-            config=config,
+            config,
         )
         if request.unsupported_reason:
             # 미지원 조건은 실행 오류 대신 기존 그래프의 재입력 분기로 전달합니다.
@@ -225,10 +238,14 @@ class StartAgent:
                 )
             candidates = [hit.company for hit in hits]
 
+        if request.mode == "recommend" and not semantic_query and len(candidates) == 1:
+            return {"company_id": candidates[0].company_id, "message": None}
+
         # 의미 검토와 일반 추천은 한 번의 선택 체인 호출로 끝냅니다.
         choice = None
         if semantic_query or request.mode == "recommend":
-            choice = self._selection_chain.invoke(
+            choice = _invoke_structured(
+                self._selection_chain,
                 {
                     "prompt": prompt.strip(),
                     "mode": request.mode,
@@ -246,7 +263,7 @@ class StartAgent:
                         ensure_ascii=False,
                     ),
                 },
-                config=config,
+                config,
             )
             eligible = set(choice.eligible_company_ids)
             candidate_ids = {c.company_id for c in candidates}
@@ -278,7 +295,8 @@ class StartAgent:
                 company_id = tied[0].company_id
             else:
                 # 요청 조건과 정렬값이 같은 후보 안에서만 투자 검토 우선순위를 판단합니다.
-                tie_choice = self._selection_chain.invoke(
+                tie_choice = _invoke_structured(
+                    self._selection_chain,
                     {
                         "prompt": (
                             f"{prompt.strip()}\n\n"
@@ -306,7 +324,7 @@ class StartAgent:
                             ensure_ascii=False,
                         ),
                     },
-                    config=config,
+                    config,
                 )
                 tied_ids = {c.company_id for c in tied}
                 if (

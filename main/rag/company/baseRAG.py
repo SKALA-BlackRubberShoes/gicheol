@@ -39,7 +39,8 @@ class BaseRAG:
     여러 에이전트가 공유하는 기업 정보 조회·검색 모듈입니다.
 
     생성 시 CSV만 읽고, build_index()에서 Qdrant 색인을 준비합니다.
-    기존 컬렉션은 차원만 확인해 재사용하며 CSV 변경 시 rebuild=True로 갱신합니다.
+    기존 컬렉션은 설정과 CSV 회사 ID의 존재를 확인해 재사용하며
+    CSV 내용 변경 시 rebuild=True로 갱신합니다.
     기본 CSV는 프로젝트의 docs/data/base/raw/에 있습니다.
     """
 
@@ -185,13 +186,15 @@ class BaseRAG:
 
     def build_index(self, *, rebuild: bool = False) -> int:
         """
-        컬렉션이 없으면 생성하고, 있으면 차원 확인 후 재사용합니다.
+        컬렉션이 없으면 생성하고, 있으면 차원·거리·회사 ID 확인 후 재사용합니다.
         rebuild=True이면 CSV를 다시 읽어 전체 색인을 교체합니다. 반환값은 서버 문서 수입니다.
         """
         with self._lock:
             self._ensure_open()
             if type(rebuild) is not bool:
                 raise ValueError("rebuild must be bool")
+            from qdrant_client import models
+
             exists = self._store_call(
                 "collection_exists", collection_name=COLLECTION_NAME
             )
@@ -204,6 +207,34 @@ class BaseRAG:
                     raise ValueError(
                         "Collection dimension differs; run build_index(rebuild=True)"
                     )
+                if getattr(vectors, "distance", None) != models.Distance.COSINE:
+                    raise ValueError(
+                        "Collection distance differs from COSINE; run build_index(rebuild=True)"
+                    )
+                required_points = {
+                    str(uuid5(NAMESPACE_URL, "basic-rag:" + company_id)): company_id
+                    for company_id in self._records
+                }
+                if required_points:
+                    points = self._store_call(
+                        "retrieve",
+                        collection_name=COLLECTION_NAME,
+                        ids=list(required_points),
+                        with_payload=True,
+                        with_vectors=False,
+                    )
+                    indexed = {
+                        str(point.id): (point.payload or {}).get("company_id")
+                        for point in points
+                    }
+                    if any(
+                        indexed.get(point_id) != company_id
+                        for point_id, company_id in required_points.items()
+                    ):
+                        raise RAGStoreError(
+                            "Collection is missing current CSV company IDs; "
+                            "run build_index(rebuild=True)"
+                        )
                 count = self._store_call(
                     "count", collection_name=COLLECTION_NAME, exact=True
                 ).count
@@ -214,7 +245,6 @@ class BaseRAG:
             records = _load_csv(self.csv_path) if rebuild else self._records
             ordered = [r for _, r in sorted(records.items())]
             vectors = self._embed([r.content for r in ordered])
-            from qdrant_client import models
 
             # 회사 ID에서 UUID를 만들므로 CSV 행 순서가 바뀌어도 point ID가 유지됩니다.
             points = [

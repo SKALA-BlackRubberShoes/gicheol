@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from itertools import chain
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
@@ -40,16 +41,16 @@ class CompetitorSelectionAgent:
         """동종 업종 후보를 검토하고, 없으면 업력이 가장 가까운 ID 하나를 반환합니다."""
         target = get_selected_company(self.rag, company_id)
         sector = target.values.get("sector")
-        if not sector:
-            raise ValueError(
-                f"company_id={target.company_id}: CSV에 업종 정보가 없습니다."
-            )
-        filters = [CompanyFilter(field="sector", op="eq", value=sector)]
-        peers = [
-            company
-            for company in self.rag.list_companies(filters=filters)
-            if company.company_id != target.company_id
-        ]
+        if sector:
+            filters = [CompanyFilter(field="sector", op="eq", value=sector)]
+            peers = [
+                company
+                for company in self.rag.list_companies(filters=filters)
+                if company.company_id != target.company_id
+            ]
+        else:
+            filters = None
+            peers = []
         if not peers:
             # 동종 업종이 없으면 업력 차이로 비교 대상을 정합니다. 모델 호출은 필요 없습니다.
             age = target.values.get("company_age_years")
@@ -70,10 +71,14 @@ class CompetitorSelectionAgent:
                     company.company_id,
                 ),
             )
+            reason = (
+                f"'{sector}' 업종의 다른 회사가 없어"
+                if sector else "CSV에 업종 정보가 없어"
+            )
             return {
                 "competitor_ids": [fallback.company_id],
                 "message": (
-                    f"'{sector}' 업종의 다른 회사가 없어 업력이 가장 가까운 "
+                    f"{reason} 업력이 가장 가까운 "
                     f"{fallback.company_name} ({fallback.values['company_age_years']}년차)를 "
                     f"비교 대상으로 선택했습니다. 대상 업력: {age}년차. "
                     "동종 업종 경쟁사를 의미하지는 않습니다."
@@ -87,9 +92,19 @@ class CompetitorSelectionAgent:
             exclude_company_id=target.company_id,
         )
         peer_ids = {company.company_id for company in peers}
-        candidates = [
-            hit.company for hit in hits if hit.company.company_id in peer_ids
-        ] or peers[:10]
+        # 검색 순서를 유지하고, 색인에서 빠진 CSV 후보도 한도 안에서 검토합니다.
+        candidates = []
+        seen_ids = set()
+        for company in chain(
+            (hit.company for hit in hits if hit.company.company_id in peer_ids),
+            peers,
+        ):
+            if company.company_id in seen_ids:
+                continue
+            seen_ids.add(company.company_id)
+            candidates.append(company)
+            if len(candidates) == 10:
+                break
         payload = {
             "target": {
                 "company_id": target.company_id,
