@@ -21,7 +21,12 @@ from main.agents.common.csv_judgment import (
 )
 from .schemas import CompetitorComparison
 from .prompts import SYSTEM_PROMPT
-from .scoring import validate_citations, _build_scorecard
+from .scoring import (
+    CONDITION_DIMENSIONS,
+    ConditionChecksError,
+    validate_citations,
+    _build_scorecard,
+)
 
 
 def _company_from_state(state: dict[str, Any]) -> str:
@@ -116,14 +121,38 @@ def run_agent(
             record.model_dump(mode="json", exclude_none=True) for record in records
         ],
     }
-    response = llm.invoke(
-        [
-            ("system", SYSTEM_PROMPT),
-            ("human", json.dumps(payload, ensure_ascii=False)),
-        ]
-    )
-    report = CompetitorComparison.model_validate(response)
-    sources = validate_citations(report, records, company, names)
+    messages = [
+        ("system", SYSTEM_PROMPT),
+        ("human", json.dumps(payload, ensure_ascii=False)),
+    ]
+    for attempt in range(2):
+        response = llm.invoke(messages)
+        report = CompetitorComparison.model_validate(response)
+        try:
+            sources = validate_citations(report, records, company, names)
+        except ConditionChecksError as exc:
+            if attempt:
+                raise ConditionChecksError(exc.issues, retry_exhausted=True) from exc
+            # Keep the original evidence and revalidate the complete new response.
+            messages = [
+                *messages,
+                ("assistant", report.model_dump_json()),
+                ("human", (
+                    "이전 응답의 condition_checks에 누락 또는 중복이 있습니다. "
+                    "아래 JSON은 검증 진단 데이터입니다. 최초 입력의 기업과 근거를 그대로 "
+                    "사용해 각 경쟁사의 여섯 항목을 각각 정확히 한 번 작성하세요. "
+                    "자료가 부족한 항목도 생략하지 말고 status=unverified와 이유를 적으세요. "
+                    "하나라도 different 또는 unverified이면 like_for_like=false, "
+                    "verdict=insufficient로 두고, 직접 비교 점수에도 기존 근거 조건을 "
+                    "적용하세요. 다른 기업·출처를 만들지 말고 전체 구조화 응답을 다시 반환하세요.\n"
+                    + json.dumps({
+                        "required_dimensions": CONDITION_DIMENSIONS,
+                        "issues": exc.issues,
+                    }, ensure_ascii=False)
+                )),
+            ]
+        else:
+            break
     scorecard = _build_scorecard(report)
     strict_score = scorecard
     csv_matches = [find_unique_company_record(rag, name) for name in [company, *names]]
