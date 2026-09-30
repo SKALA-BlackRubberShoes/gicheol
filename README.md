@@ -1,14 +1,19 @@
 # 스타트업 투자 분석 RAG · 에이전트
 
-기업 CSV와 시장 보고서 PDF를 공용 RAG로 조회하고 기술력·경쟁력·시장성을 평가합니다. 전체 평가 실행은 CSV의 모든 회사를 행 순서대로 평가·저장하고 총점 1위 한 곳의 보고서만 생성합니다. 회사는 CSV의 문자열 `company_id`로 식별합니다.
+기업 CSV와 시장 보고서 PDF를 공용 RAG로 조회하고 기술력·경쟁력·시장성을 평가한 뒤 투자 추천 여부를 계산합니다. 회사는 CSV의 문자열 `company_id`로 식별합니다.
 
-회사 선택, 세 평가, 투자 판단, 보고서 작성을 위한 **개별 에이전트와 LangGraph 노드 함수**가 있습니다. `rank_csv_companies` 실행 파일은 이 노드들을 CSV 전 회사에 순차 적용하고 점수 순위를 매깁니다. 별도로 기존 회사 선택 및 단일 회사 실행도 사용할 수 있습니다.
+터미널에서 조건을 입력하면 **회사 선택 → CSV 안에서 경쟁사 자동 선정 → 시장·경쟁·기술 병렬 평가 → 투자 판단 → PDF 보고서 생성**을 실행합니다. 추천이면 보고서를 생성한 뒤 종료하고, 보류하거나 조건에 맞는 회사를 찾지 못하면 새 프롬프트를 받습니다. PDF 경로를 포함한 결과를 전체 State JSON으로 저장할 수 있습니다.
+
+보고서 작성 모듈은 판단 결과 JSON으로 한글 PDF·Markdown·검증 기록 JSON을 별도로 생성할 수 있습니다.
+
+CSV 전체 평가에는 별도의 `rank_csv_companies` 명령을 사용합니다. 모든 회사를 평가·저장하고 총점 1위의 보고서 한 개를 생성합니다.
 
 ## 폴더 구조
 
 ```text
 gicheol/
 ├── README.md
+├── main.py                            # 전체 그래프 실행 진입점
 ├── main/
 │   ├── requirements.txt
 │   ├── paths.py
@@ -28,7 +33,10 @@ gicheol/
 │   │   ├── common/                    # 공통 근거·채팅 모델 처리
 │   │   ├── start/                     # 프롬프트에서 회사 하나 선택
 │   │   ├── technology/                # 기술 요약과 100점 평가
-│   │   ├── competition/               # 지정 경쟁사 비교와 100점 평가
+│   │   ├── competition/               # 선정된 기업 비교와 100점 평가
+│   │   ├── competitor_selection/
+│   │   │   ├── __init__.py
+│   │   │   └── agent.py               # 경쟁사·비교 대상 검색과 선정
 │   │   ├── market/                    # PDF·웹 조사와 100점 평가
 │   │   ├── investment/
 │   │   │   ├── agent.py               # 팀 평가 모델·자료 수집 조립
@@ -50,7 +58,8 @@ gicheol/
 │   ├── graph/
 │   │   ├── state.py                   # 공통 InvestmentState·초기화
 │   │   ├── nodes.py                   # 에이전트별 LangGraph 노드 함수
-│   │   └── batch.py                   # CSV 순서 평가·순위·단일 보고서
+│   │   ├── batch.py                   # CSV 순서 평가·순위·단일 보고서
+│   │   └── workflow.py                # 병렬 평가·추천 종료·재입력 분기
 │   └── scripts/
 │       ├── build_company_index.py
 │       ├── build_market_index.py
@@ -58,7 +67,8 @@ gicheol/
 │       ├── evaluate_market_company.py # 시장 평가
 │       ├── judge_investment.py        # 투자 판단·handoff JSON
 │       ├── generate_report.py         # 판단 JSON 또는 가상 데이터로 보고서 생성
-│       └── rank_csv_companies.py      # 전 회사 평가 후 1위 보고서 생성
+│       ├── rank_csv_companies.py      # 전 회사 평가 후 1위 보고서 생성
+│       └── run_graph.py               # 터미널 입력·전체 그래프 실행
 ├── docs/data/
 │   ├── base/raw/                       # 기업 CSV
 │   └── market/                         # 시장 PDF·sources.json
@@ -71,6 +81,29 @@ gicheol/
 각 에이전트 폴더에는 필요한 `__init__.py`와 의존성 파일도 있습니다. `main/`은 네임스페이스 패키지로 사용하며 아래 명령은 저장소 루트에서 실행합니다.
 
 ## 데이터 흐름
+
+### 터미널 프롬프트 실행
+
+```mermaid
+flowchart TD
+    START([START]) --> P["터미널에서 사용자 프롬프트 입력"]
+    P --> S["StartAgent: company_id 선택"]
+    S -->|회사 있음| K["CSV 경쟁사·비교 대상 선정: competitor_ids"]
+    S -->|조건에 맞는 회사 없음| P
+    K --> M["시장 평가"]
+    K --> C["경쟁 평가"]
+    K --> T["기술 평가"]
+    M --> J["세 평가 완료 후 투자 판단"]
+    C --> J
+    T --> J
+    J -->|invest: 추천| R["PDF·Markdown·검증 기록 생성"]
+    R --> E([END])
+    J -->|hold: 보류 사유 안내| P
+```
+
+[전체 그래프](main/graph/workflow.py)는 입력이 필요할 때 `interrupt`로 대기하고, [터미널 실행 파일](main/scripts/run_graph.py)이 `input()`으로 받은 프롬프트를 `Command(resume=...)`으로 전달합니다. 실행 중 State는 메모리에 보관하며 프로그램을 종료한 뒤 이어서 실행하는 저장 기능은 없습니다. `quit`, `exit`, `q`, `종료` 또는 Ctrl+C로 종료할 수 있습니다.
+
+### CSV 전체 평가 흐름
 
 ```mermaid
 flowchart LR
@@ -89,11 +122,22 @@ flowchart LR
 
 전체 CSV 실행은 `StartAgent`의 단일 회사 선택을 거치지 않습니다. 경쟁사는 같은 세부 업종, 같은 업종, 나머지 회사 순으로 CSV에서 앞선 회사를 기본 2곳 선택합니다. 총점은 기존 90점+10점 계산을 그대로 쓰며, `추천/보류` 분기는 순위 선정에 사용하지 않습니다. 동점이면 CSV에서 앞선 회사가 1위입니다. 실패한 회사와 점수가 `null`인 회사는 전체 기록에 남고 순위에서 제외됩니다. 회사별 평가 실패 시 다음 CSV 행으로 계속 진행합니다. 최고 점수 회사가 보류여도 보고서에 실제 보류 판정과 사유를 그대로 싣습니다. 순위에 넣을 점수가 하나도 없으면 보고서를 생성하지 않습니다.
 
-공통 [InvestmentState](main/graph/state.py)는 회사 ID, 세 평가의 원본 출력, 투자 판단 입력과 결과를 담습니다. [노드 함수](main/graph/nodes.py)는 입력 State에서 선택 회사를 조회하고 자신이 갱신한 필드만 반환합니다. 회사 재선택 시 이전 평가와 판단 결과를 초기화합니다.
+### 단일 회사 그래프의 State
+
+투자 추천 시 기존 보고서 노드가 판단 State를 받아 PDF·Markdown·검증 기록 JSON을 `outputs/reports/<실행 ID>/`에 저장합니다. 터미널에 출력 경로와 보고서 경고를 표시합니다. 기본 보고서 생성에는 추가 LLM 호출을 사용하지 않습니다. PDF 생성 실패는 실행 오류로 알립니다.
+
+[경쟁사 선정 에이전트](main/agents/competitor_selection/agent.py)는 대상 회사를 제외하고 같은 `sector`(CSV의 `분야`) 기업 중 유사 후보 최대 10개를 baseRAG로 검색합니다. LLM이 고객층·제품·해결하는 문제의 겹침을 검토해 최대 3개의 CSV `company_id`를 `competitor_ids`에 넣습니다. 검색 유사도 자체를 경쟁 관계나 투자 점수로 사용하지 않습니다. 직접 경쟁 관계가 불명확하면 검색 후보 중 첫 회사를 동종 업종의 비교 대상으로 선택해 평가를 계속합니다. 검색 결과가 비어도 CSV의 동종 업종 기업을 검토합니다.
+
+동종 업종의 다른 회사가 없으면 CSV 전체에서 **업력 차이가 가장 작은 다른 회사 1개**를 비교 대상으로 고릅니다. 업력 차이가 같으면 문자열 `company_id` 순으로 결정합니다. 업력이 없는 회사는 이 비교에서 제외합니다. 현재 `company_id=21` 리보디스(1.3년차)는 `company_id=29` 비저너리(1.3년차)를 선택합니다. 이는 동종 업종 경쟁사가 아니라 업력이 비슷한 비교 대상이며 선택 안내를 State의 `message`와 터미널에 표시합니다. 경쟁사 미발견 때문에 새 프롬프트를 받지는 않습니다. 웹에서 CSV 밖 기업을 추가하지 않습니다.
+
+시장·경쟁·기술 노드는 서로 다른 State 키에 결과 딕셔너리를 저장합니다. 대화 메시지를 누적하는 구조가 아니므로 `add_messages`는 필요하지 않습니다. 세 노드가 모두 완료한 뒤 투자 판단을 한 번 실행합니다. API·Qdrant 오류는 보류로 바꾸지 않고 실행 오류로 알립니다.
+
+공통 [InvestmentState](main/graph/state.py)는 회사 ID, 세 평가의 원본 출력, 투자 판단 입력과 결과를 담습니다. [노드 함수](main/graph/nodes.py)는 입력 State에서 선택 회사를 조회하거나 선정 에이전트에 회사 ID를 전달하고, 자신이 갱신한 필드만 반환합니다. 선정 에이전트는 그래프 State를 알지 못하며 `select(company_id)`로 독립 호출할 수 있습니다. `workflow.py`는 실행 순서·분기·병렬 합류만 구성합니다. 회사 재선택 시 이전 평가와 판단 결과를 초기화합니다.
 
 | 단계 | State에 저장되는 출력 |
 | --- | --- |
 | 회사 선택 | `company_id`, `message` |
+| 경쟁사 선정 | `competitor_ids`, `message` |
 | 기술 평가 | `technology_summary`, `technical_score` |
 | 경쟁 비교 | `competitor_comparison`, `competitor_score` |
 | 시장 평가 | `market_evaluation` |
@@ -141,6 +185,28 @@ set +a
 
 기업 CSV의 정확 조회, 자료 없는 투자 판단, 기본 보고서 생성에는 OpenAI·Qdrant가 필요하지 않습니다. 의미 검색과 실제 모델 평가에는 해당 서비스가 필요합니다.
 
+## 전체 그래프 실행
+
+설치와 API 키 설정, Qdrant 실행 후 저장소 루트에서 실행합니다.
+
+```bash
+python main.py --output outputs/investment_result.json
+```
+
+터미널에 `최근 투자액이 가장 큰 회사`, `AI 기반 서비스를 제공하는 회사 중 투자 검토할 후보를 골라줘` 같은 프롬프트를 입력합니다. 회사와 경쟁사 ID는 자동으로 선택합니다. 추천이면 PDF 보고서를 생성한 뒤 종료하며 지정한 파일에 원본 평가·판단·보고서 경로를 담은 전체 State를 저장합니다. 보류 또는 선택 조건에 맞는 회사 부재 시 사유를 표시하고 새 조건을 입력받습니다. 재입력 시 이전 회사의 평가와 판단은 초기화됩니다.
+
+기업 색인은 실행 준비 시 만들거나 재사용합니다. 시장 PDF 색인은 회사·경쟁사를 찾은 뒤 시장 평가 단계에서 준비합니다. 원본 데이터가 바뀌었다면 아래 색인 명령의 `--rebuild`로 먼저 갱신하세요.
+
+```bash
+python -m main.scripts.run_graph \
+  --model openai:gpt-4.1 \
+  --team-model openai:gpt-4.1 \
+  --recommend-min-score 80 \
+  --output outputs/investment_result.json
+```
+
+`--model`은 회사·경쟁사 선택과 기술·경쟁 평가에 사용합니다. `--start-model` 또는 환경변수 `START_AGENT_MODEL`로 회사 선택 모델만 바꿀 수 있습니다. `--team-model`을 생략하면 투자 판단의 팀 평가도 `--model`을 공유합니다. 시장 모델은 기존 `OPENAI_MARKET_MODEL`, `OPENAI_WEB_SEARCH_MODEL` 설정을 사용합니다. 추가 팀 조사 도구는 연결하지 않았으므로 팀 근거가 부족한 항목에는 기존 모듈의 점수 제한이 적용됩니다.
+
 ## 개별 실행
 
 전체 CSV를 평가하고 상위 1곳만 보고서로 만들려면 다음 명령을 사용합니다. OpenAI API 키와 Qdrant, 시장 PDF 색인이 필요합니다. `.env`에 키를 넣었다면 `--env-file .env`를 지정합니다.
@@ -167,7 +233,7 @@ python -m main.scripts.run_agents \
 python -m main.scripts.evaluate_market_company 17 > outputs/market_17.json
 ```
 
-현재 두 평가 실행 파일의 결과는 자동 병합되지 않습니다. 판단을 실행하려면 기술·경쟁 결과 JSON의 최상위 객체에 시장 결과를 `market_evaluation` 키로 넣습니다.
+개별 실행 파일을 이용할 때는 두 평가의 결과를 직접 병합해야 합니다. 전체 그래프 실행에서는 State로 자동 합류합니다. 개별 판단을 실행하려면 기술·경쟁 결과 JSON의 최상위 객체에 시장 결과를 `market_evaluation` 키로 넣습니다.
 
 ```python
 import json

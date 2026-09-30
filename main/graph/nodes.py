@@ -8,8 +8,12 @@ from main.rag.company import BaseRAG
 from main.agents.start import StartAgent
 from main.agents.technology import run_agent as run_technology
 from main.agents.competition import run_agent as run_comparison
+from main.agents.competitor_selection import CompetitorSelectionAgent
 from main.agents.market import MarketEvaluationAgent
-from main.agents.investment import make_rag_investment_judge_node, route_after_investment
+from main.agents.investment import (
+    make_rag_investment_judge_node,
+    route_after_investment as route_after_investment,
+)
 from main.agents.investment.agent import TeamResearcher
 from main.agents.common.evidence import as_evidence, get_selected_company
 from main.agents.common.llm import resolve_chat_model
@@ -41,6 +45,17 @@ def make_start_node(agent: StartAgent):
         return result
 
     return start_node
+
+
+def make_competitor_selection_node(agent: CompetitorSelectionAgent):
+    """회사 ID를 선정 에이전트에 전달하고 State 갱신값만 반환합니다."""
+
+    def selection_node(
+        state: InvestmentState, config: RunnableConfig | None = None
+    ) -> dict:
+        return agent.select(state.get("company_id"), config=config)
+
+    return selection_node
 
 
 def make_technology_node(rag: BaseRAG, model: str | Any = "openai:gpt-4.1"):
