@@ -217,6 +217,14 @@ python -m unittest discover -s main/agents/report/tests -v
 
 투자 판단 테스트는 판단 규칙과 State 변환을, 보고서 테스트는 입력 변환·점수/출처 보존·한글 출력·PDF 분량 제한을 확인합니다. 실제 OpenAI·Qdrant를 통한 전체 실행 검증은 별도로 필요합니다. `examples/reports/company_17_vs_14.json`은 이전 실행 참고 결과이며 현재 코드의 검증 결과가 아닙니다. `report_sample_state.json`은 보고서 출력 검증용 가상 입력입니다.
 
+## Contributors
+- 동욱 : Startup Discovery Agent, Competitor Selection Node, Data Preprocessing, LangGraph Construction & Assembly
+- 주현 : Technology Summary Agent, Competitor Comparison Agent
+- 웅희 : Workflow Orchestration, Agent Integration, State Management
+- 수현 : Market Evaluation Agent, PDF Crawling, Web Search Integration
+- 수영 : Investment Decision Agent, Decision Logic
+- 효진 : Report Generation Agent, Report Writing
+
 - [기업 RAG](main/rag/company/docs/rag-usage.md)
 - [시장 PDF RAG](main/rag/market/docs/rag-usage.md)
 - [회사 선택](main/agents/start/docs/start-agent-usage.md)
