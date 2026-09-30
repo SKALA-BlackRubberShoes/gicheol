@@ -56,6 +56,10 @@ def body(document: dict) -> str:
     return json.dumps(document, ensure_ascii=False)
 
 
+def comparison_section(document: dict) -> dict:
+    return next(item for item in document["sections"] if item["title"] == "기업별 평가점수 비교표")
+
+
 def references(document: dict) -> list[str]:
     return document["sections"][-1]["paragraphs"]
 
@@ -80,7 +84,7 @@ class ContentTests(unittest.TestCase):
         self.assertIn("추천 0개, 보류 1개", document["summary"])
         self.assertIn("추천 기업이 없습니다", document["summary"])
         self.assertIn("검증 기업: 보류, 총점 60", facts["company-1"])
-        comparison = document["sections"][0]["tables"][0]["rows"][0]
+        comparison = comparison_section(document)["tables"][0]["rows"][0]
         self.assertEqual(comparison[2:4], ["보류", "60"])
 
     def test_missing_results_and_missing_fields_are_visible(self) -> None:
@@ -96,7 +100,7 @@ class ContentTests(unittest.TestCase):
             self.assertIn(expected, text)
         self.assertTrue(any("투자 판단 결과 미제공" in item for item in warnings))
         self.assertTrue(any("시장성 분석 결과 미제공" in item for item in warnings))
-        self.assertEqual(document["sections"][0]["tables"][0]["rows"][0][2], "미확인")
+        self.assertEqual(comparison_section(document)["tables"][0]["rows"][0][2], "미확인")
 
     def test_only_referenced_catalog_entries_appear_in_reference(self) -> None:
         raw = state(evidence=[evidence(), evidence("unused", title="미사용 출처 제목")])
@@ -105,7 +109,7 @@ class ContentTests(unittest.TestCase):
         self.assertEqual(len(refs), 1)
         self.assertIn("근거 ID: source-1", refs[0])
         self.assertNotIn("미사용 출처 제목", body(document))
-        self.assertIn("[1]", document["sections"][0]["tables"][0]["rows"][0][-1])
+        self.assertIn("[1]", comparison_section(document)["tables"][0]["rows"][0][-1])
 
     def test_equal_duplicate_sources_are_deduplicated(self) -> None:
         raw = state()
@@ -144,17 +148,17 @@ class ContentTests(unittest.TestCase):
         self.assertIn("최근 투자금 (원): 0", text)
         self.assertIn("매출: 미확인; 영업이익: 0", text)
         self.assertNotIn("핵심 제품: NULL", text)
-        self.assertEqual(document["sections"][0]["tables"][0]["rows"][0][3], "0")
+        self.assertEqual(comparison_section(document)["tables"][0]["rows"][0][3], "0")
 
     def test_scores_are_not_recomputed_and_mismatch_is_reported(self) -> None:
         document, warnings, _ = build(state(company(investment_result={
             "status": "completed", "decision": "추천", "final_score": 70,
             "weighted_scores": {"technical": 30, "market": 30},
         })))
-        self.assertEqual(document["sections"][0]["tables"][0]["rows"][0][2:4], ["추천", "70"])
+        self.assertEqual(comparison_section(document)["tables"][0]["rows"][0][2:4], ["추천", "70"])
         self.assertTrue(any("분야별 반영점수 합계와 총점 불일치 (전달값 유지)" in item for item in warnings))
-        final_section = next(item for item in document["sections"] if item["title"] == "종합 평가 및 투자 판단")
-        self.assertEqual([row[2] for row in final_section["tables"][0]["rows"]], ["30", "30"])
+        final_section = comparison_section(document)
+        self.assertEqual([row[2] for row in final_section["tables"][1]["rows"]], ["30", "30"])
 
     def test_score_precision_is_preserved(self) -> None:
         document, _, facts = build(state(company(
@@ -169,7 +173,7 @@ class ContentTests(unittest.TestCase):
             eligibility={"status": "ineligible", "reason": "필수 자격 불충족"},
             investment_result={"status": "insufficient", "decision": "추천", "final_score": None},
         )))
-        self.assertEqual(document["sections"][0]["tables"][0]["rows"][0][2], "추천")
+        self.assertEqual(comparison_section(document)["tables"][0]["rows"][0][2], "추천")
         self.assertTrue(any("추천 판정과 적격성/완료 상태/총점이 일치하지 않음" in item for item in warnings))
 
     def test_mock_inputs_are_conspicuously_labeled(self) -> None:
@@ -239,7 +243,7 @@ class ContentTests(unittest.TestCase):
         self.assertIn("추가 검토 필요", serialized)
         self.assertIn("전달된 신뢰도: 낮음", serialized)
         self.assertNotIn(issue, facts["company-1"])
-        self.assertIn("종합 평가·한계 항목 참조", document["sections"][0]["tables"][0]["rows"][0][-1])
+        self.assertIn("종합 평가·한계 항목 참조", comparison_section(document)["tables"][0]["rows"][0][-1])
 
     def test_shared_reference_notes_keep_each_citation_and_locator(self) -> None:
         note = "상위 에이전트 제공 자료이며 원문 진위 재검증 안 함"
@@ -262,7 +266,7 @@ class ContentTests(unittest.TestCase):
         reference_text = "\n".join(references(document))
         self.assertIn("P002", reference_text)
         self.assertNotIn("unused", reference_text)
-        risk_section = next(item for item in document["sections"] if item["title"].startswith("사업 리스크"))
+        risk_section = next(item for item in document["sections"] if item["title"] == "주요 위험과 대응 수준")
         explicit = next(item for item in risk_section["paragraphs"] if "가격 위험" in item)
         general = next(item for item in risk_section["paragraphs"] if "출처 지정이 없는" in item)
         self.assertIn("[3]", explicit)

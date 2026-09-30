@@ -19,8 +19,9 @@ def score(value: float | None) -> str:
     return text[:-2] if text.endswith(".0") else text
 
 
-def section(title: str, *, paragraphs=None, bullets=None, tables=None) -> dict:
-    return {"title": title, "paragraphs": paragraphs or [], "bullets": bullets or [], "tables": tables or []}
+def section(title: str, *, paragraphs=None, bullets=None, tables=None, level=2) -> dict:
+    return {"title": title, "level": level, "paragraphs": paragraphs or [],
+            "bullets": bullets or [], "tables": tables or []}
 
 
 def source_text(e: Evidence) -> str:
@@ -128,8 +129,9 @@ def _reference_paragraphs(refs: "Citations") -> list[str]:
         paragraphs.append(f"[{number}] {source_text(item)}")
     for note, count in shared.items():
         if count > 1:
-            ids = [f"[{refs.used[eid]}] {eid}" for eid in refs.used if refs.catalog[eid].provenance_note == note]
-            paragraphs.append("공통 출처 설명 (" + ", ".join(ids) + "): " + note)
+            ids = [eid for eid in refs.used if refs.catalog[eid].provenance_note == note]
+            numbers = ", ".join(str(refs.used[eid]) for eid in ids)
+            paragraphs.append(f"공통 출처 설명 ([{numbers}]; 근거 ID: " + ", ".join(ids) + "): " + note)
     return paragraphs
 
 
@@ -153,15 +155,16 @@ class Citations:
         self.catalog[e.evidence_id] = e
 
     def use(self, ids: list[str]) -> str:
-        refs = []
+        refs, missing = [], []
         for eid in dict.fromkeys(ids):
             if eid not in self.catalog:
                 self.warnings.append(f"출처를 찾을 수 없음: {eid}")
-                refs.append(f"[근거 미확인: {eid}]")
+                missing.append(f"[근거 미확인: {eid}]")
             else:
                 self.used.setdefault(eid, len(self.used) + 1)
-                refs.append(f"[{self.used[eid]}]")
-        return " ".join(refs)
+                refs.append(str(self.used[eid]))
+        grouped = ["[" + ", ".join(refs) + "]"] if refs else []
+        return " ".join(grouped + missing)
 
     def result(self, result) -> str:
         return self.use([e.evidence_id for e in result.evidence] + result.evidence_ids)
@@ -174,8 +177,29 @@ def build_document(inputs: ReportInput) -> tuple[dict, list[str], dict[str, str]
     companies = list(inputs.results_by_company.values())
     mock = inputs.config.is_mock or any(c.is_mock for c in companies)
     sections, facts, compare_rows = [], {}, []
+    # 설계서의 목차 순서와 계층을 PDF·Markdown에 동일하게 적용한다.
+    outline = [
+        (2, "사업 아이디어"), (3, "사업 아이템"),
+        (4, "핵심 제품, 고객, 해결 문제"), (4, "기술적 강점"),
+        (3, "사업 현황 & 투자현황"),
+        (2, "사업 리스크"), (3, "시장 규모"),
+        (4, "시장 평가(시장 정의와 규모)"), (4, "시장 경쟁 현황(경쟁사 비교)"),
+        (3, "시장에서의 위치"), (2, "팀 구성"),
+        (3, "핵심 창업자"), (3, "기술 역량(팀의 기술 역량)"),
+        (2, "한계점"), (2, "종합 평가 및 투자 판단"),
+        (3, "기업별 평가점수 비교표"), (3, "추천, 보류 사유"),
+        (3, "주요 위험과 대응 수준"), (2, "분석 한계 및 추가 확인사항"),
+        (3, "미확인 정보와 상충 자료"), (3, "자료의 시점, 범위 한계"),
+    ]
+    parts = {title: section(title, level=level) for level, title in outline}
+    sections.extend(parts.values())
 
-    def analysis(name: str, label: str, result: AnalysisResult | None) -> list[str]:
+    def add(title: str, name: str, lines: list[str]) -> None:
+        parts[title]["paragraphs"].extend(
+            f"{name}: {line}" if len(companies) > 1 else line for line in lines)
+
+    def analysis(name: str, label: str, result: AnalysisResult | None,
+                 *, omit_details=(), include_strengths=True) -> list[str]:
         if result is None:
             warnings.append(f"{name}: {label} 분석 결과 미제공")
             return [f"{label}: 미확인 - 분석 결과가 전달되지 않았습니다."]
@@ -184,8 +208,8 @@ def build_document(inputs: ReportInput) -> tuple[dict, list[str], dict[str, str]
             warnings.append(f"{name}: {label} 요약의 출처 미제공")
         lines = [f"{label} ({STATUS[result.status]}): {result.summary or '요약 미제공'} {citation}".strip()]
         lines.extend(f"{title}: {text} {refs.use(result.detail_evidence_ids.get(title, []))}".strip()
-                     for title, text in result.details.items())
-        for label2, values in (("강점", result.strengths), ("위험", result.risks)):
+                     for title, text in result.details.items() if title not in omit_details)
+        for label2, values in (("강점", result.strengths if include_strengths else []),):
             for value in dict.fromkeys(values):
                 # 서술에 명시된 근거 ID는 개별 연결한다. 절 전체의 긴 인용 목록을
                 # 모든 위험 문장 뒤에 되풀이하지 않는다.
@@ -234,17 +258,19 @@ def build_document(inputs: ReportInput) -> tuple[dict, list[str], dict[str, str]
         if inv is None:
             warnings.append(f"{name}: 투자 판단 결과 미제공")
 
-        paragraphs = [f"적격성: {ELIGIBILITY[c.eligibility.status]}. {c.eligibility.reason} {eligibility_refs}".strip()]
+        business = [f"적격성: {ELIGIBILITY[c.eligibility.status]}. {c.eligibility.reason} {eligibility_refs}".strip()]
         record = c.company_record or {}
         raw, values = record.get("raw") or {}, record.get("values") or {}
-        snapshot = []
-        for label, value in (("핵심 제품", raw.get("대표제품")), ("제품/서비스", raw.get("서비스")),
-                             ("최근 투자 단계", values.get("funding_stage")), ("최근 투자일", values.get("funding_latest_date")),
+        product, snapshot = [], []
+        for label, value in (("핵심 제품", raw.get("대표제품")), ("제품/서비스", raw.get("서비스"))):
+            if value is not None and value != "" and value != "NULL":
+                product.append(f"{label}: {value}")
+        for label, value in (("최근 투자 단계", values.get("funding_stage")), ("최근 투자일", values.get("funding_latest_date")),
                              ("최근 투자금 (원)", values.get("funding_latest_won")), ("누적 투자금 (원)", values.get("funding_total_won"))):
             if value is not None and value != "" and value != "NULL":
                 shown = f"{value:,}" if isinstance(value, (int, float)) else str(value)
                 snapshot.append(f"{label}: {shown}")
-        if snapshot:
+        if product or snapshot:
             provenance = record.get("source") or {}
             snap_ref = ""
             if provenance.get("csv_path") and provenance.get("record_number"):
@@ -261,31 +287,46 @@ def build_document(inputs: ReportInput) -> tuple[dict, list[str], dict[str, str]
                 snap_ref = refs.use([eid])
             else:
                 warnings.append(f"{name}: 기업 기본정보의 CSV 출처 미제공")
-            paragraphs.append("사업 및 투자 현황: " + "; ".join(snapshot) + " " + snap_ref)
+            if product:
+                add("핵심 제품, 고객, 해결 문제", name, ["; ".join(product) + " " + snap_ref])
+            if snapshot:
+                business.append("사업 및 투자 현황: " + "; ".join(snapshot) + " " + snap_ref)
         else:
-            paragraphs.append("사업 및 투자 현황: 기업 기본정보 미제공. 매출/투자액을 추정하지 않았습니다.")
+            business.append("사업 및 투자 현황: 기업 기본정보 미제공. 매출/투자액을 추정하지 않았습니다.")
         # 별도로 받은 조회 결과도 보존하되 임의로 출처를 붙이지 않는다.
         for label, data in (("기술 조회 정보", c.technology_data), ("재무 조회 정보", c.finance_data)):
             if data:
-                paragraphs.append(label + ": " + "; ".join(f"{k}: {'미확인' if v is None else v}" for k, v in data.items()))
+                target = "핵심 제품, 고객, 해결 문제" if label == "기술 조회 정보" else "사업 현황 & 투자현황"
+                add(target, name, [label + ": " + "; ".join(f"{k}: {'미확인' if v is None else v}" for k, v in data.items())])
                 warnings.append(f"{name}: {label}의 별도 출처 연결 확인 필요")
-        paragraphs += analysis(name, "제품·기술", c.technical_result)
-        sections.append(section(f"사업 아이디어 - {name}", paragraphs=paragraphs))
-        sections.append(section(f"사업 리스크·시장 규모·경쟁 현황 - {name}", paragraphs=(
-            analysis(name, "시장성", c.market_result) + analysis(name, "경쟁 및 시장에서의 위치", c.competition_result))))
-        sections.append(section(f"팀 구성·기술 역량 - {name}", paragraphs=analysis(name, "창업자·팀", c.team_result)))
+        add("사업 현황 & 투자현황", name, business)
+        add("핵심 제품, 고객, 해결 문제", name, analysis(name, "제품·기술", c.technical_result, include_strengths=False))
+        strengths = c.technical_result.strengths if c.technical_result else []
+        add("기술적 강점", name, [f"{text} {refs.result(c.technical_result)}".strip() for text in strengths]
+            or ["별도로 검증된 기술적 강점은 전달되지 않았습니다. 제품·기술 설명만으로 우위를 확정하지 않습니다."])
+        add("시장 평가(시장 정의와 규모)", name, analysis(name, "시장성", c.market_result))
+        add("시장 경쟁 현황(경쟁사 비교)", name, analysis(name, "경쟁", c.competition_result,
+            omit_details=("시장에서의 위치",)))
+        position = c.competition_result.details.get("시장에서의 위치") if c.competition_result else None
+        add("시장에서의 위치", name, [position + " " + refs.use(c.competition_result.detail_evidence_ids.get("시장에서의 위치", []))]
+            if position else ["시장 내 위치·점유율에 관한 별도 평가 미제공. 위 경쟁사 비교의 조건과 한계를 함께 확인해야 합니다."])
+        founders = c.team_result.details.get("핵심 창업자") if c.team_result else None
+        add("핵심 창업자", name, [founders + " " + refs.use(c.team_result.detail_evidence_ids.get("핵심 창업자", []))]
+            if founders else ["핵심 창업자의 이름·역할·경력이 별도 항목으로 전달되지 않았습니다."])
+        add("기술 역량(팀의 기술 역량)", name, analysis(name, "창업자·팀", c.team_result,
+            omit_details=("핵심 창업자",)))
 
     if compare_rows:
-        sections.insert(0, section("기업별 평가 비교", paragraphs=["총점은 투자 판단 에이전트가 전달한 100점 척도입니다. N/A는 미확인이며 0점과 다릅니다. 표의 순서는 입력 순서입니다."],
-                                  tables=[{"headers": ["기업", "적격성", "판정", "총점", "판단 사유"], "rows": compare_rows,
-                                           "column_weights": [2, 1, 1, 1, 5]}]))
+        comparison = parts["기업별 평가점수 비교표"]
+        comparison["paragraphs"] = ["총점은 투자 판단 에이전트가 전달한 100점 척도입니다. N/A는 미확인이며 0점과 다릅니다. 표의 순서는 입력 순서입니다."]
+        comparison["tables"] = [{"headers": ["기업", "적격성", "판정", "총점", "판단 사유"],
+                                 "rows": compare_rows, "column_weights": [2, 1, 1, 1, 5]}]
 
     decisions, rows = [], []
     for c in companies:
         inv = c.investment_result
         if inv:
             decisions.append(f"{c.company_name}: {inv.decision} ({STATUS[inv.status]}). " + _decision_reasons(inv) + " " + refs.result(inv))
-            decisions.extend(f"{c.company_name} 주요 위험: {risk}" for risk in inv.risks)
             for key, value in inv.weighted_scores.items():
                 ids = inv.score_evidence_ids.get(key, [])
                 rows.append([c.company_name, DIMENSIONS.get(key, key), score(value), refs.use(ids) or "근거 연결 미제공"])
@@ -301,12 +342,24 @@ def build_document(inputs: ReportInput) -> tuple[dict, list[str], dict[str, str]
                     warnings.append(f"{c.company_name}: 분야별 반영점수 합계와 총점 불일치 (전달값 유지)")
             elif inv.final_score is not None and any(v is None for v in scores):
                 warnings.append(f"{c.company_name}: 미확인 반영점수와 확정 총점이 함께 전달됨")
-    sections.append(section("종합 평가 및 투자 판단", paragraphs=decisions or [inputs.no_candidates_reason or "투자 판단 결과 미제공"],
-                            tables=[{"headers": ["기업", "영역", "반영점수", "근거"], "rows": rows,
-                                     "column_weights": [2.5, 1, 1.5, 3]}] if rows else []))
+    parts["추천, 보류 사유"]["paragraphs"] = decisions or [inputs.no_candidates_reason or "투자 판단 결과 미제공"]
+    if rows:
+        parts["기업별 평가점수 비교표"]["tables"].append(
+            {"headers": ["기업", "영역", "반영점수", "근거"], "rows": rows, "column_weights": [2.5, 1, 1.5, 3]})
+    for c in companies:
+        risks = list(dict.fromkeys(risk for result in (c.technical_result, c.market_result,
+            c.competition_result, c.team_result, c.investment_result) if result for risk in result.risks))
+        risk_lines = []
+        for risk in risks:
+            explicit = [eid for eid in refs.catalog if re.search(r"(?<![\w-])" + re.escape(eid) + r"(?![\w-])", risk)]
+            risk_lines.append(f"{risk} {refs.use(explicit)}".strip())
+        add("주요 위험과 대응 수준", c.company_name, risk_lines or ["주요 위험과 대응 수준 미제공"])
+    parts["주요 위험과 대응 수준"]["paragraphs"].append(
+        "대응 수준은 전달된 위험 설명에 포함된 범위만 표시하며, 별도의 대응책·효과 검증 결과는 추가 확인이 필요합니다.")
 
-    limits = ["점수·판정·위험은 이전 에이전트의 전달값이며 보고서 단계에서 새로 평가하거나 외부 검색하지 않았습니다.",
+    scope_limits = ["점수·판정·위험은 이전 에이전트의 전달값이며 보고서 단계에서 새로 평가하거나 외부 검색하지 않았습니다.",
               "인용 번호는 전달된 근거와의 연결을 나타냅니다. 원문 진위, 수치 검산 및 비교 조건 검증은 앞선 분석 단계의 책임입니다."]
+    limits = []
     for c in companies:
         issues: dict[tuple[str, str], list[str]] = {}
         statuses: dict[str, list[str]] = {}
@@ -325,11 +378,13 @@ def build_document(inputs: ReportInput) -> tuple[dict, list[str], dict[str, str]
             groups.setdefault((kind, tuple(labels)), []).append(value)
         for (kind, labels), values in groups.items():
             limits.append(f"{c.company_name}/{'·'.join(labels)} {kind}: " + "; ".join(_compact_messages(values)))
-        limits.extend(f"{c.company_name}/{'·'.join(labels)}: {status}" for status, labels in statuses.items())
+        add("한계점", c.company_name, [f"{'·'.join(labels)}: {status}. 해당 영역의 제품·사업 역량을 확정하기 어렵습니다."
+                                     for status, labels in statuses.items()]
+            or ["별도의 제품·사업 한계는 전달되지 않았습니다. 주요 위험과 미확인 정보는 아래 항목에 정리했습니다."])
     mock = mock or any(refs.catalog[eid].is_mock for eid in refs.used)
     if mock:
         overview = "[가상 자료 포함 / 제출용 실제 분석 아님] " + overview
-        limits.insert(0, "가상 자료를 포함한 실행 예시입니다. 실제 기업에 대한 투자 판단으로 사용할 수 없습니다.")
+        scope_limits.insert(0, "가상 자료를 포함한 실행 예시입니다. 실제 기업에 대한 투자 판단으로 사용할 수 없습니다.")
     for eid in refs.used:
         e = refs.catalog[eid]
         if not e.published_at or (e.kind != "csv" and not e.url):
@@ -345,8 +400,10 @@ def build_document(inputs: ReportInput) -> tuple[dict, list[str], dict[str, str]
     warnings = list(dict.fromkeys(warnings))
     # 경고 원본 목록은 API/JSON에 모두 남긴다. 본문은 같은 설명의 주체를 모아
     # 줄바꿈과 중복 문구를 줄이며 어떤 경고나 근거 ID도 생략하지 않는다.
-    sections.append(section("분석 한계 및 추가 확인사항", paragraphs=list(dict.fromkeys(limits)) +
-                            (["출력 확인: " + "; ".join(_compact_messages(warnings))] if warnings else [])))
+    parts["미확인 정보와 상충 자료"]["paragraphs"] = list(dict.fromkeys(limits)) or ["추가 미확인 정보·상충 자료가 전달되지 않았습니다."]
+    scope_limits.append(f"평가 기준일: {inputs.config.as_of}. 자료별 발행일·기준연도·제공 페이지는 REFERENCE에 표시하며 미제공 값은 추정하지 않습니다.")
+    parts["자료의 시점, 범위 한계"]["paragraphs"] = scope_limits + (
+        ["출력 확인: " + "; ".join(_compact_messages(warnings))] if warnings else [])
     reference = section("REFERENCE", paragraphs=_reference_paragraphs(refs)
                         or ["실제로 사용한 근거 자료가 전달되지 않았습니다. 출처를 임의로 생성하지 않았습니다."])
     # 과제의 서체 지정: 보고서·웹은 제목, 논문은 학술지명을 기울여 표시한다.

@@ -46,6 +46,36 @@ PDF는 macOS의 AppleMyungjo, Windows의 맑은 고딕, Linux의 Nanum TTF를 �
 
 ## 입력과 보존 규칙
 
+보고서의 제목·순서·하위 항목은 [팀 설계서의 투자 보고서 목차](https://app.notion.com/p/RAG-Design-afa3977146e2831da60a018e9cd1d0fc)에 맞춘다. SUMMARY와 REFERENCE의 대문자 표기는 과제 형식을 유지한다.
+
+```text
+SUMMARY
+사업 아이디어
+  사업 아이템
+    핵심 제품, 고객, 해결 문제
+    기술적 강점
+  사업 현황 & 투자현황
+사업 리스크
+  시장 규모
+    시장 평가(시장 정의와 규모)
+    시장 경쟁 현황(경쟁사 비교)
+  시장에서의 위치
+팀 구성
+  핵심 창업자
+  기술 역량(팀의 기술 역량)
+한계점
+종합 평가 및 투자 판단
+  기업별 평가점수 비교표
+  추천, 보류 사유
+  주요 위험과 대응 수준
+분석 한계 및 추가 확인사항
+  미확인 정보와 상충 자료
+  자료의 시점, 범위 한계
+REFERENCE
+```
+
+`content.py`가 각 항목에 앞단의 분석 결과를 배치하고, `renderers.py`가 `level` 2~4의 제목 계층을 PDF와 Markdown에 반영한다. 여러 기업이면 각 항목 안에 기업명을 붙인다. 비교표는 종합 평가 아래에 두며, 위험 설명은 주요 위험과 대응 수준에 모아 중복을 줄인다. 별도로 전달되지 않은 창업자·기술적 강점·시장 위치 정보는 미제공으로 표시한다.
+
 `adapter.py`가 공통 `InvestmentState` 또는 투자 판단의 독립 payload를 보고서 입력으로 변환한다. payload의 `company`, `company_data`, `evaluation`, `source_outputs`, `evidence_registry`를 읽고 변환 전 입력은 검증 기록 JSON의 `source_payload`에 보존한다.
 
 기존 `results_by_company` 누적 입력과 정규화된 단일 기업 입력도 지원한다. 전체 필드는 [schemas.py](../schemas.py), 누적 입력 예시는 [가상 예제](../../../../examples/reports/report_sample_state.json)를 참고한다.
