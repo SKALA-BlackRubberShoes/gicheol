@@ -18,6 +18,12 @@ macOS, Python 3.11.15의 별도 가상환경에서 검사했다. 전체 의존�
 
 CI는 V2 테스트 전체와 기존 테스트를 실행하되, 변경 전부터 실패하는 아래 2개만 명시적으로 제외한다. 로컬 통과는 GitHub Actions 실행 성공을 뜻하지 않는다.
 
+## CI 환경 보완
+
+최초 PR 검사 [38349799316](https://github.com/SKALA-BlackRubberShoes/gicheol/actions/runs/38349799316)에서 V2 324개는 통과했으나, Ubuntu runner에 한글 TTF가 없어 기존 보고서 검사가 `Korean PDF font unavailable`로 실패했다. 로컬에는 폰트가 설치돼 있어 드러나지 않은 CI 의존성 누락이었다.
+
+워크플로에 `fonts-nanum` 설치와 파일 존재 확인을 추가하고, 기존 테스트 단계에 `REPORT_FONT_PATH=/usr/share/fonts/truetype/nanum/NanumGothic.ttf`를 명시한다. 폰트 누락 오류를 무시하거나 추가 테스트를 제외하지 않는다. V2 설정 테스트에 영향을 주지 않도록 해당 환경변수는 기존 테스트 단계에만 적용한다. 수정 이후 원격 검사 결과는 PR #19의 Checks를 기준으로 확인한다.
+
 ## 변경 전부터 존재하는 실패
 
 부모 커밋 `2fb927d`를 별도 디렉터리에 추출해 같은 가상환경으로 아래 두 테스트를 실행했고, 두 실패가 동일하게 재현됐다. 다른 담당의 기존 보고서 코드는 이번 범위에서 수정하지 않았다.
