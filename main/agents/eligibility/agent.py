@@ -22,13 +22,63 @@ PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "eligibility" / 
 _DATE = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
 _STAGE = re.compile(r"\bseries\s+([a-z])\b|시리즈\s*([a-z])", re.I)
 _CURRENT = re.compile(r"\bas\s+of\b|\bcurrently\b|\bcurrent\b|\blatest\b|기준|현재|최근", re.I)
+_COORDINATING = re.compile(r"(?:,\s*)?\s+(?:and|but|while|whereas|however)\s+|\s*(?:하지만|그러나|이지만)\s*", re.I)
+_STAGE_TOKEN = r"pre[- ]seed|seed|series\s+[a-z]|프리\s*시드|시드|시리즈\s*[a-z]"
 
 
 class EligibilityModelError(RuntimeError):
     """The structured model response violates this worker's evidence boundary."""
 
 
-def _criterion_signals(quote: str, *, current: bool, company_name: str) -> dict[str, set[bool]]:
+def _assertion_head(quote: str) -> str:
+    """Keep the status assertion separate from a coordinated product/date fact."""
+    return _COORDINATING.split(quote, maxsplit=1)[0]
+
+
+def _current_snapshot(assertion: str, *, as_of_date: date, published_at: date) -> bool:
+    dates = set(_dates(assertion))
+    # A sentence containing two different dates is insufficient to bind the
+    # target status to either. Publication cannot override a historic snapshot.
+    return (not dates and published_at == as_of_date) or (
+        dates == {as_of_date} and bool(_CURRENT.search(assertion)))
+
+
+def _funding_condition(text: str, *, current: bool, as_of_date: date, published_at: date,
+                       company_name: str) -> bool | None:
+    stage = re.match(r"(?:'s\s+)?(?:current|latest)\s+(?:funding\s+)?(?:stage|round)\s*(?:is|was|:|=)?\s*(" + _STAGE_TOKEN + r")\b|(?:는|은|이|가|의)?\s*(?:현재|최근|최신)\s*(?:투자\s*)?(?:단계|라운드)(?:는|가|:)?\s*(" + _STAGE_TOKEN + r")", text)
+    if stage is None:
+        return None
+    token = (stage.group(1) or stage.group(2)).strip()
+    tail = text[stage.end():]
+    # An explicit current update supersedes the first status, including an old
+    # round. Do not mistake a known current D for the preceding permitted C.
+    name = re.escape(re.sub(r"\s+", " ", company_name.strip()).casefold())
+    update = re.search(r"\b(?:but|and|however)\s+(?:(?:" + name + r"|it)\s+)?(?:is\s+(?:now|currently)\s+(?:at\s+)?(?:the\s+)?|(?:its\s+)?(?:current|latest)\s+(?:funding\s+)?(?:stage|round)\s+is\s+(?:now\s+)?)(" + _STAGE_TOKEN + r")\b|(?:하지만|그러나|이지만)\s*(?:현재(?:는)?|지금(?:은)?)\s*(?:투자\s*)?(?:단계(?:는)?\s*)?(" + _STAGE_TOKEN + r")", tail)
+    if update:
+        token = update.group(1) or update.group(2)
+        selected = tail[update.start():]
+        if not _current_snapshot(selected, as_of_date=as_of_date, published_at=published_at):
+            return None
+        tail = tail[update.end():]
+        current = True
+    if not current:
+        return None
+    # C/D, C or D, C以上, and C..D do not prove one admissible current stage.
+    # A clearly marked historical comparison can accompany a definite current
+    # stage without making that past stage the present condition.
+    historic = (bool(re.search(r"\b(?:previously|formerly|used to|in the past)\b|과거|이전", tail)) and
+                not re.search(r"\b(?:current|currently|latest|now)\b|현재|지금|최근", tail) and
+                len(_STAGE.findall(tail)) <= 1)
+    if re.search(r"\bor\b|또는|아니라|아닌|이상|이하|부터|까지|[/～~]|\b(?:or higher|and above|at least)\b", tail):
+        return None
+    if not historic and (_STAGE.search(tail) or re.search(r"^\s*[-–—]\s*[a-z]\b", tail)):
+        return None
+    letter = _STAGE.search(token)
+    return (letter.group(1) or letter.group(2)) in {"a", "b", "c"} if letter else not bool(re.search(r"pre|프리", token))
+
+
+def _criterion_signals(quote: str, *, current: bool, company_name: str,
+                       as_of_date: date, published_at: date) -> dict[str, set[bool]]:
     """Recognize explicit status statements; silence is never negative proof.
 
     This deliberately accepts a narrower set than arbitrary model prose. The
@@ -51,16 +101,12 @@ def _criterion_signals(quote: str, *, current: bool, company_name: str) -> dict[
             values["unlisted"].add(True)
         if re.match(r"(?:is|remains)\s+(?:currently\s+)?(?:an?\s+)?(?:publicly (?:listed|traded)|listed on|not unlisted)\b|(?:는|은|이|가)?\s*(?:현재\s*)?상장\s*(?:기업|회사)|(?:는|은|이|가)?\s*상장(?:을|이)?\s*완료", text):
             values["unlisted"].add(False)
-        # A funding stage must describe the current/latest stage, not a round
-        # that the company once raised or intends to raise in the future.
-        stage = re.match(r"(?:'s\s+)?(?:current|latest)\s+(?:funding\s+)?(?:stage|round)\s*(?:is|was|:|=)?\s*(pre[- ]seed|seed|series\s+[a-z])\b|(?:는|은|이|가|의)?\s*(?:현재|최근|최신)\s*(?:투자\s*)?(?:단계|라운드)(?:는|가|:)?\s*(프리\s*시드|시드|시리즈\s*[a-z])", text)
-        if stage:
-            token = (stage.group(1) or stage.group(2)).strip()
-            letter = _STAGE.search(token)
-            if not re.search(r"\bor\b|또는|아니라|아닌", text[stage.end():]):
-                values["funding_stage"].add((letter.group(1) or letter.group(2)) in {"a", "b", "c"} if letter else not bool(re.search(r"pre|프리", token)))
         if re.match(r"(?:has|have|had) not (?:yet )?(?:completed|undergone) (?:an? )?exit\b(?!\s+(?:announcement|news|report|plan))|(?:has|had) no completed exit\b(?!\s+(?:announcement|news|report|plan))|(?:는|은|이|가)?\s*(?:exit|엑시트)(?:이|가|을|는)?\s*(?:아직\s*)?(?:완료되지|미완료)", text):
             values["exit_status"].add(True)
+    stage_condition = _funding_condition(text, current=current, as_of_date=as_of_date,
+                                         published_at=published_at, company_name=company_name)
+    if stage_condition is not None:
+        values["funding_stage"].add(stage_condition)
     # Negation, proposed transactions, and closing conditions must not be read
     # as a completed exit. Dates and company identity are checked separately.
     completed = re.match(r"(?:has|had) been acquired\b|(?:was|is) acquired\b|(?:completed|closed) (?:its |the |an? )?(?:merger|exit|m&a)\b|(?:'s\s+)?(?:merger|exit|m&a) (?:has |was |is )?(?:closed|completed)\b|(?:'s\s+)?acquisition by .{1,100}\b(?:closed|completed)\b|(?:는|은|이|가)?\s*.{0,40}인수되었|(?:는|은|이|가)?\s*(?:인수합병|엑시트|exit|m&a)(?:이|가|을|는)?\s*완료(?:되었|됐다|됨|하였다|했다|\s|$)", text)
@@ -78,10 +124,18 @@ def _company_in_quote(name: str, quote: str) -> bool:
     return re.search(r"(?<!\w)" + re.escape(normalized) + boundary, text) is not None
 
 
-def _quotes(text: str) -> list[str]:
+def _quote_spans(text: str) -> list[tuple[int, int, str]]:
     # A clause must name the target itself; another company's status elsewhere
     # in the same paragraph must not be attributed to this company.
-    return list(dict.fromkeys(part.strip() for part in re.split(r"(?<=[.!?;])\s+|\r?\n", text) if part.strip()))
+    spans, start = [], 0
+    boundaries = [(match.start(), match.end()) for match in re.finditer(r"(?<=[.!?;])\s+|\r?\n", text)]
+    for stop, next_start in boundaries + [(len(text), len(text))]:
+        part = text[start:stop]
+        left, right = len(part) - len(part.lstrip()), len(part.rstrip())
+        if left < right:
+            spans.append((start + left, start + right, text[start + left:start + right]))
+        start = next_start
+    return spans
 
 
 def _dates(quote: str) -> list[date]:
@@ -116,13 +170,21 @@ class EligibilityAgent:
     """
 
     def __init__(self, *, tools: c.ResearchTools, llm: c.LLMClient, domain: c.Domain,
-                 model: str, store: c.ArtifactStore | None = None, timeout_seconds: float = 30):
+                 model: str, store: c.ArtifactStore | None = None, resolver: Any | None = None,
+                 timeout_seconds: float = 30):
         if not isinstance(model, str) or not model.strip():
             raise ValueError("model must be an explicit non-empty model identifier")
         if isinstance(timeout_seconds, bool) or not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be finite and positive")
         self.tools, self.llm, self.domain = tools, llm, c.Domain(domain)
         self.model, self.store, self.timeout_seconds = model, store, timeout_seconds
+        self.resolver = resolver
+        if resolver is not None and (not callable(getattr(resolver, "record", None)) or
+                                    not isinstance(getattr(resolver, "source_refs", None), dict) or
+                                    not isinstance(getattr(resolver, "evidence_refs", None), dict)):
+            raise ValueError("resolver must record evidence and expose source_refs/evidence_refs registries")
+        self.source_refs = resolver.source_refs if resolver is not None else {}
+        self.evidence_refs = resolver.evidence_refs if resolver is not None else {}
         self.system_prompt = PROMPT_PATH.read_text(encoding="utf-8")
 
     async def __call__(self, request: c.EligibilityRequest) -> c.EligibilityResult:
@@ -176,7 +238,7 @@ class EligibilityAgent:
                 continue
             item = c.FetchedContent.model_validate(raw.model_dump(mode="json") if isinstance(raw, c.FetchedContent) else raw)
             source = item.source
-            if source.source_id != hit.source_id or source.canonical_url != hit.url:
+            if source.source_id != hit.source_id:
                 context["notes"].append("Fetched source identity did not match the search hit")
                 continue
             if source.published_at is None or source.published_at > request.as_of_date:
@@ -193,11 +255,30 @@ class EligibilityAgent:
                 context["notes"].append("An artifact store is required to persist verifiable eligibility evidence for EvidenceResolver")
                 continue
             await self.store.verify(source.content_ref)
+            body_text = item.text
+            if source.content_ref.media_type == "application/json":
+                acquired = await self.store.load(source.content_ref)
+                body_companies = acquired.get("company_ids")
+                if (acquired.get("body_verified") is not True or not isinstance(body_companies, list) or
+                        not all(isinstance(value, str) for value in body_companies) or request.company_id not in body_companies or
+                        acquired.get("domain") != self.domain.value):
+                    raise ValueError("Fetched JSON artifact lacks verified company/domain body provenance")
+                body_text = acquired.get("text", "")
+                if not isinstance(body_text, str) or not body_text.startswith(item.text):
+                    raise ValueError("Fetched excerpt does not match the original acquired body")
+                if acquired.get("pages"):
+                    context["notes"].append("PDF evidence requires a page-preserving retrieval adapter; unpaged fetch body is not eligibility proof")
+                    continue
+                if source.canonical_url != hit.url and acquired.get("url") != str(source.canonical_url):
+                    raise ValueError("Redirected canonical source URL is not attested by its acquired artifact")
+            elif source.canonical_url != hit.url:
+                context["notes"].append("Fetched source canonical URL did not match the search hit")
+                continue
             safe_id = "eligibility-source-" + c.semantic_hash(source)[:32]
             source = c.Source.model_validate({**source.model_dump(mode="json"), "source_id": safe_id})
             evidence_for_source = []
             proofs_for_source = []
-            for index, quote in enumerate(_quotes(item.text)):
+            for start, end, quote in _quote_spans(body_text):
                 if not _company_in_quote(request.company_name, quote):
                     continue
                 dates = _dates(quote)
@@ -205,26 +286,37 @@ class EligibilityAgent:
                     continue
                 # An explicit historical status date overrides a newer source
                 # publication date (for example a current retrospective).
-                current = (not dates and source.published_at == request.as_of_date) or (
-                    request.as_of_date in dates and bool(_CURRENT.search(quote)))
-                signals = _criterion_signals(quote, current=current, company_name=request.company_name)
+                current = _current_snapshot(_assertion_head(quote), as_of_date=request.as_of_date,
+                                            published_at=source.published_at)
+                signals = _criterion_signals(quote, current=current, company_name=request.company_name,
+                    as_of_date=request.as_of_date, published_at=source.published_at)
                 if not any(signals.values()):
                     continue
-                event_date = max(dates) if dates else source.published_at
+                if len(quote) > 19500:
+                    context["notes"].append("Original status assertion exceeds the bounded quote/claim size")
+                    continue
+                mutable_proof = bool(signals["unlisted"] or signals["funding_stage"] or True in signals["exit_status"])
+                status_dates = _dates(_assertion_head(quote))
+                event_date = request.as_of_date if mutable_proof else max(status_dates) if status_dates else source.published_at
                 evidence_id = "eligibility-evidence-" + c.canonical_hash({"source_id": safe_id,
-                    "company_id": request.company_id, "quote": quote, "event_date": event_date})[:32]
+                    "company_id": request.company_id, "quote": quote, "event_date": event_date,
+                    "start": start, "end": end})[:32]
                 evidence = c.Evidence(evidence_id=evidence_id, source_id=safe_id,
-                    company_id=request.company_id, chunk_id=f"paragraph-{index + 1}", quote=quote, event_date=event_date)
+                    company_id=request.company_id, chunk_id=f"{safe_id}:{start}-{end}", quote=quote, event_date=event_date)
                 evidence_for_source.append(evidence)
                 for criterion, values in signals.items():
                     proofs_for_source.extend((criterion, value, evidence_id) for value in sorted(values))
             if not evidence_for_source:
                 continue
             # Evidence is exposed only after its source and quotes are persisted.
-            if self.store is not None:
-                await self.store.save(source.model_dump(mode="json"), key=f"sources/{safe_id}.json")
+            if self.resolver is not None:
+                await self.resolver.record([source], evidence_for_source)
+                if safe_id not in self.source_refs or any(item.evidence_id not in self.evidence_refs for item in evidence_for_source):
+                    raise ValueError("Resolver did not register the acquired eligibility evidence")
+            else:
+                self.source_refs[safe_id] = await self.store.save(source.model_dump(mode="json"), key=f"sources/{safe_id}.json")
                 for evidence in evidence_for_source:
-                    await self.store.save(evidence.model_dump(mode="json"), key=f"evidence/{evidence.evidence_id}.json")
+                    self.evidence_refs[evidence.evidence_id] = await self.store.save(evidence.model_dump(mode="json"), key=f"evidence/{evidence.evidence_id}.json")
             context["sources"][safe_id] = source
             context["evidence"].update({item.evidence_id: item for item in evidence_for_source})
             for criterion, value, evidence_id in proofs_for_source:

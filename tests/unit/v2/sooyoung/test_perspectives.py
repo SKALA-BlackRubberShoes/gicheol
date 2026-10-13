@@ -9,6 +9,8 @@ from main.agents.perspectives.domain import DomainAgent
 from main.agents.perspectives.market import MarketAgent, PerspectiveModelOutputError, _key
 from main.agents.perspectives.stakeholders import StakeholdersAgent
 from main.agents.supervisor import contracts as c
+from main.rag.neutral.search import SourceInaccessibleError
+from main.rag.neutral.tools import StoredEvidenceResolver
 
 
 NOW = datetime(2026, 1, 2, tzinfo=timezone.utc)
@@ -166,6 +168,15 @@ def setup(agent=MarketAgent, *, mode="normal", records=2, web=False, **kw):
     return worker, tools, llm, store
 
 
+def acquired_source(store, sid, text, **overrides):
+    src = source(store, sid, text)
+    payload = {"text": text, "pages": None, "body_verified": True,
+               "company_ids": ["acme"], "domain": DOMAIN.value,
+               "url": str(src.canonical_url), "acquisition": "http_body", **overrides}
+    ref = run(store.save(payload, key=f"content/{sid}.json"))
+    return src.model_copy(update={"content_ref": ref, "sha256": ref.sha256})
+
+
 @pytest.mark.parametrize("agent,p", [(MarketAgent, c.Perspective.MARKET),
     (StakeholdersAgent, c.Perspective.STAKEHOLDERS), (DomainAgent, c.Perspective.DOMAIN_APPLICATION)])
 def test_three_workers_bind_questions_receipts_and_leave_support_to_assessor(agent, p):
@@ -196,6 +207,136 @@ def test_real_web_bodies_are_exact_quotes_persisted_and_snippets_are_never_cited
         assert item.quote_hash == c.sha256_text(item.quote)
         assert "million" not in item.quote
     assert all('"Acme"' in query and "https://acme.example" in query for _, query, _ in tools.calls)
+
+
+@pytest.mark.parametrize("agent,p", [(MarketAgent, c.Perspective.MARKET),
+    (StakeholdersAgent, c.Perspective.STAKEHOLDERS), (DomainAgent, c.Perspective.DOMAIN_APPLICATION)])
+def test_actual_web_character_offsets_include_unicode_and_stripping(agent, p):
+    worker, tools, llm, store = setup(agent, web=True, company_name="Acme")
+    body = "\u2002 \nAcme는 로봇 pilot을 운영했습니다. Acme deployed robots.\n\t "
+    tools.web = [(source(store, f"span-{n}", body), body) for n in range(2)]
+    result = run(worker(request(p)))
+    assert len(result.evidence_ids) == 2
+    for raw in llm.payloads[0]["evidence"]:
+        item = c.Evidence.model_validate(raw)
+        prefix, span = item.chunk_id.rsplit(":", 1)
+        start, end = map(int, span.split("-"))
+        assert prefix == item.source_id
+        assert start == 3 and body[start:end] == body.strip() == item.quote
+        assert end == len(body.rstrip())
+        assert worker.evidence_refs[item.evidence_id].relative_path == f"evidence/{item.evidence_id}.json"
+        assert worker.source_refs[item.source_id].relative_path == f"sources/{item.source_id}.json"
+
+
+def test_full_verified_json_body_beyond_fetch_prefix_is_registered_before_model():
+    worker, tools, llm, store = setup(web=True, company_name="Acme")
+    body = "다른 현장의 배경 자료. " * 1800 + "\u2002 \nAcme deployed robots at a customer site.\n\t"
+    assert body.index("Acme") > 20000
+    tools.web = [(acquired_source(store, f"full-{n}", body), body[:20000]) for n in range(2)]
+    resolver = StoredEvidenceResolver(store=store, company_id="acme", domain=DOMAIN)
+    worker = MarketAgent(tools=tools, llm=llm, domain=DOMAIN, model="fixture-model", store=store,
+                         resolver=resolver, company_name="Acme")
+    real_generate = llm.generate
+
+    async def check_registered(**kwargs):
+        ids = [e["evidence_id"] for e in kwargs["payload"]["evidence"]]
+        assert ids and set(ids) <= resolver.evidence_refs.keys()
+        bundle = await resolver.resolve(ids)
+        assert all("Acme" in e.quote for e in bundle.evidence)
+        return await real_generate(**kwargs)
+
+    llm.generate = check_registered
+    result = run(worker(request()))
+    bundle = run(resolver.resolve(result.evidence_ids))
+    assert worker.source_refs is resolver.source_refs and worker.evidence_refs is resolver.evidence_refs
+    for item in bundle.evidence:
+        start, end = map(int, item.chunk_id.rsplit(":", 1)[1].split("-"))
+        assert start > 20000 and body[start:end] == item.quote
+    restored = StoredEvidenceResolver(store=store, company_id="acme", domain=DOMAIN,
+                                      source_refs=dict(worker.source_refs), evidence_refs=dict(worker.evidence_refs))
+    assert run(restored.resolve(result.evidence_ids)) == bundle
+
+
+def test_actual_save_refs_are_retained_without_assuming_requested_paths():
+    worker, tools, _, store = setup(web=True, company_name="Acme")
+    real_save = store.save
+
+    async def redirected_save(payload, *, key, media_type="application/json"):
+        return await real_save(payload, key=f"actual-registry/{key}", media_type=media_type)
+
+    store.save = redirected_save
+    result = run(worker(request()))
+    assert set(result.evidence_ids) == worker.evidence_refs.keys()
+    assert all(ref.relative_path.startswith("actual-registry/") for ref in [*worker.source_refs.values(), *worker.evidence_refs.values()])
+    for eid, ref in worker.evidence_refs.items():
+        assert run(store.load(ref))["evidence_id"] == eid
+
+
+@pytest.mark.parametrize("bad", [{"company_ids": ["other"]}, {"company_ids": "acme-other"},
+    {"domain": "Energy"}, {"body_verified": False}, {"url": "https://different.example/article"}])
+def test_acquired_json_scope_or_url_tampering_never_exposes_evidence(bad):
+    worker, tools, llm, store = setup(web=True, company_name="Acme")
+    body = "Acme deployed robots at a customer site."
+    tools.web = [(acquired_source(store, "corrupt-body", body, **bad), body)]
+    with pytest.raises(ValueError, match="acquired body"):
+        run(worker(request()))
+    assert not llm.payloads and not worker.evidence_refs
+
+
+def test_fabricated_fetch_prefix_cannot_override_verified_acquired_body():
+    worker, tools, llm, store = setup(web=True)
+    tools.web = [(acquired_source(store, "body-prefix", "Acme deployed robots."), "Acme sold a million robots.")]
+    with pytest.raises(ValueError, match="prefix"):
+        run(worker(request()))
+    assert not llm.payloads and not worker.evidence_refs
+
+
+def test_acquired_http_redirect_is_allowed_only_with_matching_body_provenance():
+    worker, tools, _, store = setup(web=True, company_name="Acme")
+    body = "Acme deployed robots."
+    tools.web = [(acquired_source(store, f"redirect-{n}", body,
+                                 url=f"https://resolved-{n}.example/article"), body) for n in range(2)]
+    real_fetch = tools.fetch
+
+    async def redirected_fetch(hit):
+        fetched = await real_fetch(hit)
+        index = hit.source_id.rsplit("-", 1)[1]
+        return c.FetchedContent(source=fetched.source.model_copy(update={
+            "canonical_url": c.HttpUrl(f"https://resolved-{index}.example/article")}), text=fetched.text)
+
+    tools.fetch = redirected_fetch
+    result = run(worker(request()))
+    assert len(result.evidence_ids) == 2
+
+
+def test_resolver_refuses_rehashed_fabricated_quote_and_wrong_actual_span():
+    worker, tools, llm, store = setup(web=True, company_name="Acme")
+    body = "\n Acme deployed robots at a customer site. \t"
+    tools.web = [(acquired_source(store, f"verified-{n}", body), body) for n in range(2)]
+    resolver = StoredEvidenceResolver(store=store, company_id="acme", domain=DOMAIN)
+    worker = MarketAgent(tools=tools, llm=llm, domain=DOMAIN, model="fixture-model", store=store,
+                         resolver=resolver, company_name="Acme")
+    result = run(worker(request()))
+    eid = result.evidence_ids[0]
+    original = c.Evidence.model_validate(run(store.load(worker.evidence_refs[eid])))
+    for update in [{"quote": "Acme fabricated the observation.", "quote_hash": None},
+                   {"chunk_id": f"{original.source_id}:0-{len(original.quote)}"}]:
+        altered = c.Evidence.model_validate({**original.model_dump(mode="json"), **update})
+        resolver.evidence_refs[eid] = run(store.save(altered.model_dump(mode="json"), key=f"tampered/{eid}.json"))
+        with pytest.raises(ValueError, match="WEB_LOCATION_MISMATCH"):
+            run(resolver.resolve([eid]))
+
+
+def test_actual_source_inaccessible_error_preserves_access_outcome_without_model():
+    worker, tools, llm, _ = setup(web=True)
+
+    async def inaccessible(hit):
+        raise SourceInaccessibleError("SOURCE_INACCESSIBLE")
+
+    tools.fetch = inaccessible
+    result = run(worker(request()))
+    assert not result.evidence_ids and not llm.payloads
+    assert any(r.provider == "web-body" and r.outcome == "source_inaccessible" for r in result.retrieval_receipts)
 
 
 @pytest.mark.parametrize("mode", ["fabricated", "wrong-task", "wrong-attempt", "wrong-perspective", "wrong-hash", "malformed", "recommendation", "inference-without-limit"])

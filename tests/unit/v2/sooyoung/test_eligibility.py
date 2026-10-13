@@ -298,3 +298,127 @@ def test_prefix_conditions_questions_specific_acquisitions_and_ambiguous_stage_a
     req = request(company_name="아크미") if body.startswith("아크미") else request()
     result, _, _ = run_agent([content(body, store)], store=store, req=req)
     assert result.verdict == "unknown" and all(getattr(result, key) == "unknown" for key in ("unlisted", "funding_stage", "exit_status"))
+
+
+def model_approves_all(payload):
+    return c.EligibilityResult(task_id=payload["task_id"], unlisted=True, funding_stage=True,
+                               exit_status=True, verdict="eligible", claims=[], gaps=[])
+
+
+def test_pr23_product_date_cannot_promote_historical_unlisted_status():
+    store = MemoryStore()
+    result, _, _ = run_agent([content(FIXTURES["unlisted_unrelated_product_date"], store)],
+                            store=store, model=Model(model_approves_all))
+    assert result.unlisted == "unknown" and result.verdict == "unknown"
+    assert result.funding_stage is result.exit_status is True
+    assert any("eligibility.unlisted=unknown" in claim.text for claim in result.claims)
+
+
+@pytest.mark.parametrize("fixture, expected", [("funding_slash_range", "unknown"),
+    ("funding_korean_lower_bound", "unknown"), ("funding_current_d_update", "ineligible"),
+    ("funding_past_d_current_c", "eligible")])
+def test_pr24_whole_funding_assertion_overrides_model_approval(fixture, expected):
+    store = MemoryStore()
+    body = FIXTURES[fixture]
+    req = request(company_name="아크미") if body.startswith("아크미") else request()
+    result, _, _ = run_agent([content(body, store)], store=store, req=req, model=Model(model_approves_all))
+    assert result.verdict == expected
+    assert result.funding_stage == {"eligible": True, "ineligible": False, "unknown": "unknown"}[expected]
+
+
+@pytest.mark.parametrize("stage, expected", [
+    ("Series C / Series D", "unknown"), ("Series C to Series D", "unknown"),
+    ("Series C-D", "unknown"), ("Series C, but was previously Series D", True),
+    ("Series D, but was previously Series C", False), ("Series D", False), ("pre-seed", False),
+    ("Series C, but is now Series D as of 2025-01-01", "unknown")])
+def test_funding_range_and_historical_current_distinction(stage, expected):
+    store = MemoryStore()
+    result, _, _ = run_agent([content(f"Acme current funding stage is {stage}.", store)],
+                            store=store, model=Model(model_approves_all))
+    assert result.funding_stage == expected
+
+
+def test_web_quote_spans_retain_exact_offsets_after_whitespace_and_unicode():
+    store = MemoryStore()
+    body = "  unrelated Unicode 가나다.\n\n  " + FIXTURES["eligible"] + "  \n"
+    result, _, _ = run_agent([content(body, store)], store=store)
+    assert result.verdict == "eligible"
+    for claim in result.claims:
+        for evidence_id in claim.evidence_ids:
+            evidence = c.Evidence.model_validate(store.payloads[f"evidence/{evidence_id}.json"])
+            prefix, span = evidence.chunk_id.rsplit(":", 1)
+            start, end = map(int, span.split("-"))
+            assert prefix == evidence.source_id and body[start:end] == evidence.quote
+            assert start > body.index("가나다")
+
+
+def test_no_resolver_exposes_returned_artifact_refs_instead_of_reconstructing_paths():
+    class ReturnedRefStore(MemoryStore):
+        async def save(self, payload, *, key, media_type="application/json"):
+            return await super().save(payload, key="actual/" + key, media_type=media_type)
+    async def scenario():
+        store = ReturnedRefStore()
+        worker = EligibilityAgent(tools=Tools([content(FIXTURES["eligible"], store)]), llm=Model(),
+            domain=c.Domain.PHYSICAL_AI_ROBOTICS, model="fixture-model", store=store)
+        result = await worker(request())
+        assert result.verdict == "eligible"
+        assert all(ref.relative_path.startswith("actual/") for ref in [*worker.source_refs.values(), *worker.evidence_refs.values()])
+        assert len(worker.source_refs) == 1 and len(worker.evidence_refs) == 3
+        for ref in [*worker.source_refs.values(), *worker.evidence_refs.values()]:
+            assert ref.sha256 == c.canonical_hash(store.payloads[ref.relative_path])
+    asyncio.run(scenario())
+
+
+def test_real_stored_resolver_accepts_json_full_body_spans_and_reconstructed_registry(tmp_path):
+    from main.rag.neutral.tools import StoredEvidenceResolver
+    from tests.fixtures.v2.suhyeon.store import VerifiedJsonStore
+    async def scenario():
+        store = VerifiedJsonStore(tmp_path)
+        body = "가나다 background.\n" * 1500 + "  " + FIXTURES["eligible"] + "  \n"
+        payload = {"text": body, "pages": None, "body_verified": True, "company_ids": ["acme"],
+                   "domain": c.Domain.PHYSICAL_AI_ROBOTICS.value, "url": "https://registry.example/acme"}
+        ref = await store.save(payload, key="acquired/source.json")
+        source = c.Source(source_id="acquired-source", canonical_url=payload["url"], title="Real body fixture",
+            publisher="Registry", publisher_group="Registry", source_type="institution", published_at="2026-10-13",
+            retrieved_at=NOW, corporate_controlled=False, sha256=ref.sha256, content_ref=ref)
+        item = c.FetchedContent(source=source, text=body[:20000])
+        resolver = StoredEvidenceResolver(store=store, company_id="acme", domain=c.Domain.PHYSICAL_AI_ROBOTICS)
+        worker = EligibilityAgent(tools=Tools([item]), llm=Model(), domain=c.Domain.PHYSICAL_AI_ROBOTICS,
+            model="fixture-model", store=store, resolver=resolver)
+        result = await worker(request())
+        assert result.verdict == "eligible" and "Acme" not in item.text
+        assert worker.source_refs is resolver.source_refs and worker.evidence_refs is resolver.evidence_refs
+        evidence_ids = [evidence_id for claim in result.claims for evidence_id in claim.evidence_ids]
+        rebuilt = StoredEvidenceResolver(store=VerifiedJsonStore(tmp_path), company_id="acme", domain=c.Domain.PHYSICAL_AI_ROBOTICS,
+                                         source_refs=dict(worker.source_refs), evidence_refs=dict(worker.evidence_refs))
+        bundle = await rebuilt.resolve(evidence_ids)
+        assert len(bundle.evidence) == 3 and len(bundle.sources) == 1
+        for evidence in bundle.evidence:
+            start, end = map(int, evidence.chunk_id.rsplit(":", 1)[1].split("-"))
+            assert start > 20000 and body[start:end] == evidence.quote
+    asyncio.run(scenario())
+
+
+def test_resolver_validation_failure_prevents_returning_eligible_proof():
+    class RejectingResolver:
+        source_refs, evidence_refs = {}, {}
+        async def record(self, sources, evidence):
+            raise ValueError("WEB_LOCATION_MISMATCH")
+    store = MemoryStore()
+    worker = EligibilityAgent(tools=Tools([content(FIXTURES["eligible"], store)]), llm=Model(),
+        domain=c.Domain.PHYSICAL_AI_ROBOTICS, model="fixture-model", store=store, resolver=RejectingResolver())
+    with pytest.raises(ValueError, match="WEB_LOCATION_MISMATCH"):
+        asyncio.run(worker(request()))
+
+
+@pytest.mark.parametrize("body, expected", [
+    ("Acme current funding stage is Series C, but its current funding stage is now Series D.", False),
+    ("Acme current funding stage is Series C, but Acme is now Series D.", False),
+    ("아크미의 현재 투자 단계는 시리즈 C이지만 현재는 시리즈 D이다.", False),
+    ("아크미의 현재 투자 단계는 시리즈 C, 하지만 현재는 시리즈 D이다.", False),
+    ("Acme current funding stage is Series C, but was previously Series A and the current stage is Series D.", "unknown")])
+def test_known_current_stage_updates_cannot_hide_behind_permitted_or_historical_stage(body, expected):
+    store = MemoryStore()
+    req = request(company_name="아크미") if body.startswith("아크미") else request()
+    result, _, _ = run_agent([content(body, store)], store=store, req=req, model=Model(model_approves_all))
+    assert result.funding_stage == expected

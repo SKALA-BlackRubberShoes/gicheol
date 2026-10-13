@@ -3,7 +3,8 @@
 The common implementation is here so the three perspective modules can share
 boundary checks without introducing another worker or changing common modules.
 The injected retrieval adapter owns PDF quote extraction. New web evidence is
-usable only with an ArtifactStore; snippets never become evidence.
+usable only with an ArtifactStore; snippets never become evidence. A shared
+resolver records and verifies acquired evidence before any result is exposed.
 """
 from __future__ import annotations
 
@@ -18,11 +19,12 @@ from urllib.parse import urlsplit
 from pydantic import ValidationError
 
 from main.agents.supervisor.contracts import (
-    ArtifactStore, Domain, ErrorSummary, Evidence, FetchedContent, Gap, GapKind, LLMClient,
+    ArtifactRef, ArtifactStore, Domain, ErrorSummary, Evidence, FetchedContent, Gap, GapKind, LLMClient,
     Perspective, PerspectiveResult, RankedHit, REQUIRED_QUESTIONS,
     ResearchRequest, ResearchTools, RetrievalReceipt, RetrievalResult,
     SearchResult, Severity, Source, canonical_hash, semantic_hash, sha256_text,
 )
+from main.rag.neutral.search import SourceInaccessibleError
 
 
 class PerspectiveModelOutputError(RuntimeError):
@@ -72,14 +74,23 @@ class _NeutralResearchAgent:
     def __init__(self, *, tools: ResearchTools, llm: LLMClient, domain: Domain,
                  model: str, store: ArtifactStore | None = None,
                  timeout_seconds: float = 30.0, company_name: str | None = None,
-                 official_url: str | None = None, company_id: str | None = None):
+                 official_url: str | None = None, company_id: str | None = None,
+                 resolver: Any | None = None):
         if not isinstance(domain, Domain):
             raise ValueError("domain must be an allowed Domain")
         if not isinstance(model, str) or not model.strip():
             raise ValueError("model must be an explicit model identifier")
         if isinstance(timeout_seconds, bool) or not isinstance(timeout_seconds, (int, float)) or not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be finite and positive")
-        self.tools, self.llm, self.store = tools, llm, store
+        self.tools, self.llm = tools, llm
+        self.resolver = resolver
+        self.store = store if store is not None else getattr(resolver, "store", None)
+        if resolver is not None and (not callable(getattr(resolver, "record", None))
+                or not isinstance(getattr(resolver, "source_refs", None), dict)
+                or not isinstance(getattr(resolver, "evidence_refs", None), dict)):
+            raise ValueError("resolver must record evidence and expose its persistent reference maps")
+        self.source_refs: dict[str, ArtifactRef] = resolver.source_refs if resolver is not None else {}
+        self.evidence_refs: dict[str, ArtifactRef] = resolver.evidence_refs if resolver is not None else {}
         self.domain, self.model = domain, model
         self.timeout_seconds = timeout_seconds
         if company_name is not None and (not isinstance(company_name, str) or not company_name.strip() or len(company_name) > 2000):
@@ -131,10 +142,64 @@ class _NeutralResearchAgent:
                    evidence_ids=evidence_ids or [], query_hints=[question[:1900]])
 
     async def _persist(self, source: Source, evidence: Evidence) -> None:
-        if self.store is not None:
-            await self._call(self.store.verify(source.content_ref))
-            await self._call(self.store.save(source.model_dump(mode="json"), key=_key("sources", source.source_id)))
-            await self._call(self.store.save(evidence.model_dump(mode="json"), key=_key("evidence", evidence.evidence_id)))
+        if self.resolver is not None:
+            await self._call(self.resolver.record([source], [evidence]))
+            if source.source_id not in self.source_refs or evidence.evidence_id not in self.evidence_refs:
+                raise ValueError("resolver did not retain the recorded artifact references")
+            return
+        if self.store is None:
+            return
+        await self._call(self.store.verify(source.content_ref))
+        source_ref = self.source_refs.get(source.source_id)
+        if source_ref is not None:
+            old = Source.model_validate(await self._call(self.store.load(source_ref)))
+            if semantic_hash(old) != semantic_hash(source):
+                raise ValueError("persisted source ID has conflicting content or metadata")
+        else:
+            self.source_refs[source.source_id] = await self._call(self.store.save(
+                source.model_dump(mode="json"), key=_key("sources", source.source_id)))
+        evidence_ref = self.evidence_refs.get(evidence.evidence_id)
+        if evidence_ref is not None:
+            old = Evidence.model_validate(await self._call(self.store.load(evidence_ref)))
+            if old != evidence:
+                raise ValueError("persisted evidence ID has conflicting quote or location")
+        else:
+            self.evidence_refs[evidence.evidence_id] = await self._call(self.store.save(
+                evidence.model_dump(mode="json"), key=_key("evidence", evidence.evidence_id)))
+
+    async def _body(self, request: ResearchRequest, fetched: FetchedContent,
+                    hit_url: Any) -> str:
+        """Read the full acquired body; the fetch DTO may contain only its prefix."""
+        source = fetched.source
+        if source.content_ref.media_type != "application/json":
+            if source.canonical_url != hit_url:
+                raise ValueError("fetched source identity differs from search hit")
+            if source.content_ref.media_type == "text/plain" and sha256_text(fetched.text) != source.sha256:
+                raise ValueError("fetched text does not match the original body hash")
+            return fetched.text
+        if self.store is None:
+            raise ValueError("acquired JSON body requires an ArtifactStore")
+        await self._call(self.store.verify(source.content_ref))
+        body = await self._call(self.store.load(source.content_ref))
+        if not isinstance(body, dict):
+            raise ValueError("acquired body must be a JSON object")
+        company_ids = body.get("company_ids")
+        if (body.get("body_verified") is not True or not isinstance(company_ids, list)
+                or request.company_id not in company_ids
+                or body.get("domain") != self.domain.value):
+            raise ValueError("acquired body has wrong company, domain or verification status")
+        if body.get("pages"):
+            raise ValueError("PDF body requires page-preserving retrieval")
+        text = body.get("text")
+        if not isinstance(text, str) or not text.strip() or not text.startswith(fetched.text):
+            raise ValueError("fetched text does not match the acquired body prefix")
+        canonical_url = body.get("url")
+        if canonical_url is not None and str(source.canonical_url) != str(canonical_url):
+            raise ValueError("acquired body URL differs from source identity")
+        if source.canonical_url != hit_url and (body.get("acquisition") != "http_body"
+                or canonical_url is None):
+            raise ValueError("fetched source redirect lacks acquired URL provenance")
+        return text
 
     def _accept(self, request: ResearchRequest, source: Source, item: Evidence,
                 sources: dict[str, Source], evidence: dict[str, Evidence],
@@ -225,7 +290,7 @@ class _NeutralResearchAgent:
             try:
                 content = await self._call(self.tools.fetch(hit))
             except Exception as exc:
-                if isinstance(exc, (PermissionError, FileNotFoundError)) or _http_status(exc) == 403:
+                if isinstance(exc, (SourceInaccessibleError, PermissionError, FileNotFoundError)) or _http_status(exc) == 403:
                     inaccessible = True
                     limitations.append(f"The body of source {hit.source_id} was inaccessible; its snippet was not used.")
                     continue
@@ -234,31 +299,35 @@ class _NeutralResearchAgent:
                 raise
             fetched = FetchedContent.model_validate(content.model_dump(mode="json") if isinstance(content, FetchedContent) else content)
             source = fetched.source
-            if source.source_id != hit.source_id or source.canonical_url != hit.url:
+            if source.source_id != hit.source_id:
                 raise ValueError("fetched source identity differs from search hit")
-            if source.content_ref.media_type == "text/plain" and sha256_text(fetched.text) != source.sha256:
-                raise ValueError("fetched text does not match the original body hash")
-            company_match = _company_match(self.company_name, fetched.text) if self.company_name else None
-            if self.company_name and company_match is None:
-                limitations.append(f"Source {source.source_id} does not identify the bound company {self.company_name}; its body was not attributed to that company.")
-                continue
             if _is_pdf(source):
                 limitations.append(f"PDF source {source.source_id} needs page-preserving retrieval; web extraction was not used.")
                 continue
             if self.store is None:
                 limitations.append("New web evidence requires an injected ArtifactStore; fetched bodies were not cited without persistent evidence records.")
                 continue
+            body = await self._body(request, fetched, hit.url)
+            company_match = _company_match(self.company_name, body) if self.company_name else None
+            if self.company_name and company_match is None:
+                limitations.append(f"Source {source.source_id} does not identify the bound company {self.company_name}; its body was not attributed to that company.")
+                continue
             # The quotation is a contiguous excerpt of the real body. The model
             # receives only these pre-existing evidence IDs and cannot add one.
-            start = max(0, company_match.start() - 300) if company_match else 0
-            quote = fetched.text[start:start + 2000].strip()
-            if not quote or quote not in fetched.text:
+            excerpt_start = max(0, company_match.start() - 300) if company_match else 0
+            excerpt = body[excerpt_start:excerpt_start + 2000]
+            start = excerpt_start + len(excerpt) - len(excerpt.lstrip())
+            end = excerpt_start + len(excerpt.rstrip())
+            quote = body[start:end]
+            if not quote or quote != excerpt.strip():
                 raise ValueError("web evidence quote is not an exact body excerpt")
             if self.company_name and _company_match(self.company_name, quote) is None:
                 limitations.append(f"Source {source.source_id} did not yield an exact company-identifying excerpt; it was not cited.")
                 continue
-            chunk = f"web-{sha256_text(quote)[:24]}"
-            eid = "web-" + canonical_hash({"source": source.source_id, "company": request.company_id, "quote": quote})[:24]
+            prefix = source.source_id if len(source.source_id) <= 200 else "web-" + canonical_hash(source.source_id)[:32]
+            chunk = f"{prefix}:{start}-{end}"
+            eid = "web-" + canonical_hash({"source": source.source_id, "company": request.company_id,
+                                        "chunk": chunk, "quote": quote})[:24]
             item = Evidence(evidence_id=eid, source_id=source.source_id,
                             company_id=request.company_id, chunk_id=chunk,
                             quote=quote, event_date=source.published_at)
