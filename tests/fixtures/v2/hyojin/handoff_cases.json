@@ -1,0 +1,1045 @@
+{
+  "fixture_only": true,
+  "contract_commit": "2fb927db25d02e1bda5bdade02a9e25977a3b289",
+  "scope": "Quality-boundary DTOs; no Supervisor, live Judge, RAG or publish run",
+  "sufficiency_request": {
+    "eligibility": {
+      "task_id": "eligibility-1",
+      "unlisted": true,
+      "funding_stage": true,
+      "exit_status": true,
+      "verdict": "eligible",
+      "claims": [
+        {
+          "claim_id": "C-eligibility",
+          "perspective": "market",
+          "text": "Alpha was unlisted, at Seed stage and had not exited as of September 2026.",
+          "kind": "fact",
+          "evidence_ids": [
+            "E-eligibility"
+          ],
+          "limitations": [
+            "Eligibility is bound to the cutoff date."
+          ]
+        }
+      ],
+      "gaps": [],
+      "result_hash": "044c70b6fa5d280a4314a586110eede88050277d38a530d721232327899f9e34"
+    },
+    "perspective_results": {
+      "technology_maturity": {
+        "task_id": "task-technology_maturity-1",
+        "perspective": "technology_maturity",
+        "attempt": 1,
+        "claims": [
+          {
+            "claim_id": "C-technology_maturity-0",
+            "perspective": "technology_maturity",
+            "text": "Alpha uses a learned perception model to detect objects.",
+            "kind": "fact",
+            "evidence_ids": [
+              "E-technology_maturity-0"
+            ],
+            "limitations": [
+              "Only the documented pilot/lab scope is verified."
+            ]
+          },
+          {
+            "claim_id": "C-technology_maturity-1",
+            "perspective": "technology_maturity",
+            "text": "Alpha achieved 90 percent detection accuracy in a 2026 lab test.",
+            "kind": "fact",
+            "evidence_ids": [
+              "E-technology_maturity-1"
+            ],
+            "limitations": [
+              "Only the documented pilot/lab scope is verified."
+            ]
+          }
+        ],
+        "evidence_ids": [
+          "E-technology_maturity-0",
+          "E-technology_maturity-1"
+        ],
+        "answered_questions": {
+          "tech.principle": [
+            "C-technology_maturity-0"
+          ],
+          "tech.validation": [
+            "C-technology_maturity-1"
+          ]
+        },
+        "gaps": [],
+        "limitations": [
+          "No conflicting evidence found within the supplied search scope; wider deployment is unverified."
+        ],
+        "retrieval_receipts": [
+          {
+            "query_id": "query-tech",
+            "query_text": "Alpha lab validation",
+            "queries_hash": "19272fa969431f63fa6786461e7fd3541cdc9dbcd0882939222cad94d05c8d1f",
+            "provider": "qdrant",
+            "corpus_version": "corpus-1",
+            "index_version": "index-1",
+            "filters": {
+              "company_id": "alpha",
+              "domain": "Physical AI / Robotics"
+            },
+            "ranked_hits": [
+              {
+                "source_id": "S-paper",
+                "chunk_id": "chunk-E-technology_maturity-1",
+                "rank": 1,
+                "score": 0.9
+              }
+            ],
+            "outcome": "success",
+            "ts": "2026-10-13T01:00:00+00:00"
+          }
+        ],
+        "result_hash": "b0652bb4b9ed8d5cb5874121cf86642280c007639b855d68992e6a28d7f1cd51"
+      },
+      "market": {
+        "task_id": "task-market-1",
+        "perspective": "market",
+        "attempt": 1,
+        "claims": [
+          {
+            "claim_id": "C-market-0",
+            "perspective": "market",
+            "text": "Alpha's paying customers are warehouse operators.",
+            "kind": "fact",
+            "evidence_ids": [
+              "E-market-0"
+            ],
+            "limitations": [
+              "Only the documented pilot/lab scope is verified."
+            ]
+          },
+          {
+            "claim_id": "C-market-1",
+            "perspective": "market",
+            "text": "Alpha charges customers a monthly software subscription.",
+            "kind": "fact",
+            "evidence_ids": [
+              "E-market-1"
+            ],
+            "limitations": [
+              "Only the documented pilot/lab scope is verified."
+            ]
+          }
+        ],
+        "evidence_ids": [
+          "E-market-0",
+          "E-market-1"
+        ],
+        "answered_questions": {
+          "market.demand": [
+            "C-market-0"
+          ],
+          "market.economics": [
+            "C-market-1"
+          ]
+        },
+        "gaps": [],
+        "limitations": [
+          "No conflicting evidence found within the supplied search scope; wider deployment is unverified."
+        ],
+        "retrieval_receipts": [],
+        "result_hash": "8dc995529c3c8e554f847d7909d7a9432a45decbe9b30f19204740a0f75e90bd"
+      },
+      "stakeholders": {
+        "task_id": "task-stakeholders-1",
+        "perspective": "stakeholders",
+        "attempt": 1,
+        "claims": [
+          {
+            "claim_id": "C-stakeholders-0",
+            "perspective": "stakeholders",
+            "text": "Alpha's operators and maintenance partners share deployment tasks.",
+            "kind": "fact",
+            "evidence_ids": [
+              "E-stakeholders-0"
+            ],
+            "limitations": [
+              "Only the documented pilot/lab scope is verified."
+            ]
+          },
+          {
+            "claim_id": "C-stakeholders-1",
+            "perspective": "stakeholders",
+            "text": "Alpha's users need two days of safety training before deployment.",
+            "kind": "fact",
+            "evidence_ids": [
+              "E-stakeholders-1"
+            ],
+            "limitations": [
+              "Only the documented pilot/lab scope is verified."
+            ]
+          }
+        ],
+        "evidence_ids": [
+          "E-stakeholders-0",
+          "E-stakeholders-1"
+        ],
+        "answered_questions": {
+          "stakeholders.actors": [
+            "C-stakeholders-0"
+          ],
+          "stakeholders.burdens": [
+            "C-stakeholders-1"
+          ]
+        },
+        "gaps": [],
+        "limitations": [
+          "No conflicting evidence found within the supplied search scope; wider deployment is unverified."
+        ],
+        "retrieval_receipts": [],
+        "result_hash": "a88602b9bbc59ead5fa5cb7ff55ba703caaba9169182f27e06ab7907e40c1bee"
+      },
+      "domain_application": {
+        "task_id": "task-domain_application-1",
+        "perspective": "domain_application",
+        "attempt": 1,
+        "claims": [
+          {
+            "claim_id": "C-domain_application-0",
+            "perspective": "domain_application",
+            "text": "Alpha ran a warehouse robot pilot at Site A in 2026.",
+            "kind": "fact",
+            "evidence_ids": [
+              "E-domain_application-0"
+            ],
+            "limitations": [
+              "Only the documented pilot/lab scope is verified."
+            ]
+          },
+          {
+            "claim_id": "C-domain_application-1",
+            "perspective": "domain_application",
+            "text": "Alpha's pilot required indoor maps and supervised operation.",
+            "kind": "fact",
+            "evidence_ids": [
+              "E-domain_application-1"
+            ],
+            "limitations": [
+              "Only the documented pilot/lab scope is verified."
+            ]
+          }
+        ],
+        "evidence_ids": [
+          "E-domain_application-0",
+          "E-domain_application-1"
+        ],
+        "answered_questions": {
+          "domain.cases": [
+            "C-domain_application-0"
+          ],
+          "domain.conditions": [
+            "C-domain_application-1"
+          ]
+        },
+        "gaps": [],
+        "limitations": [
+          "No conflicting evidence found within the supplied search scope; wider deployment is unverified."
+        ],
+        "retrieval_receipts": [],
+        "result_hash": "2ea2f5e9e2055702e4bca3bc9b693cfd4e034f5e83bad47a37d525b8602a308b"
+      }
+    },
+    "sources": [
+      {
+        "source_id": "S-company",
+        "canonical_url": "https://example.org/S-company",
+        "original_file_id": null,
+        "title": "Alpha 2026 alpha study",
+        "publisher": "alpha",
+        "publisher_group": "alpha",
+        "source_type": "company",
+        "published_at": "2026-09-01",
+        "retrieved_at": "2026-10-13T01:00:00+00:00",
+        "corporate_controlled": true,
+        "sha256": "2286182704933d062f172b0abc82a2655108aa90005446474b519c68a85e2a27",
+        "content_ref": {
+          "relative_path": "sources/S-company.txt",
+          "sha256": "2286182704933d062f172b0abc82a2655108aa90005446474b519c68a85e2a27",
+          "media_type": "text/plain",
+          "schema_version": "1.0"
+        }
+      },
+      {
+        "source_id": "S-institution",
+        "canonical_url": "https://example.org/S-institution",
+        "original_file_id": null,
+        "title": "Alpha 2026 institute study",
+        "publisher": "institute",
+        "publisher_group": "institute",
+        "source_type": "institution",
+        "published_at": "2026-09-01",
+        "retrieved_at": "2026-10-13T01:00:00+00:00",
+        "corporate_controlled": false,
+        "sha256": "55d3f99c689ac7dadc13e8d71b1d351d293660606a3d63402371c92a47bdceb6",
+        "content_ref": {
+          "relative_path": "sources/S-institution.txt",
+          "sha256": "55d3f99c689ac7dadc13e8d71b1d351d293660606a3d63402371c92a47bdceb6",
+          "media_type": "text/plain",
+          "schema_version": "1.0"
+        }
+      },
+      {
+        "source_id": "S-paper",
+        "canonical_url": "https://example.org/S-paper",
+        "original_file_id": "study.pdf",
+        "title": "Alpha 2026 university study",
+        "publisher": "university",
+        "publisher_group": "university",
+        "source_type": "paper",
+        "published_at": "2026-09-01",
+        "retrieved_at": "2026-10-13T01:00:00+00:00",
+        "corporate_controlled": false,
+        "sha256": "c824dda20175e0468e8f9d8bbc1c42c582f38422d2730d567ffd720b6677ef1e",
+        "content_ref": {
+          "relative_path": "sources/S-paper.txt",
+          "sha256": "c824dda20175e0468e8f9d8bbc1c42c582f38422d2730d567ffd720b6677ef1e",
+          "media_type": "application/pdf",
+          "schema_version": "1.0"
+        }
+      }
+    ],
+    "evidence": [
+      {
+        "evidence_id": "E-technology_maturity-0",
+        "source_id": "S-company",
+        "company_id": "alpha",
+        "chunk_id": "chunk-E-technology_maturity-0",
+        "page_number": null,
+        "quote": "Alpha uses a learned perception model to detect objects.",
+        "quote_hash": "9250ad72bf7ae20a27357e0cbbecbe0485ee1435dfc44ac170e44e41a847ed7c",
+        "event_date": "2026-09-01"
+      },
+      {
+        "evidence_id": "E-technology_maturity-1",
+        "source_id": "S-paper",
+        "company_id": "alpha",
+        "chunk_id": "chunk-E-technology_maturity-1",
+        "page_number": 1,
+        "quote": "Alpha achieved 90 percent detection accuracy in a 2026 lab test.",
+        "quote_hash": "49f7863c3feb9c0391dcdcaa667cd2f411e4d720bebbf2800a57b22842babe60",
+        "event_date": "2026-09-01"
+      },
+      {
+        "evidence_id": "E-market-0",
+        "source_id": "S-company",
+        "company_id": "alpha",
+        "chunk_id": "chunk-E-market-0",
+        "page_number": null,
+        "quote": "Alpha's paying customers are warehouse operators.",
+        "quote_hash": "17aa143325584fe36a68b7f5e370411b55ec31e30d806223c20fdeec29f9da65",
+        "event_date": "2026-09-01"
+      },
+      {
+        "evidence_id": "E-market-1",
+        "source_id": "S-institution",
+        "company_id": "alpha",
+        "chunk_id": "chunk-E-market-1",
+        "page_number": null,
+        "quote": "Alpha charges customers a monthly software subscription.",
+        "quote_hash": "0d35b87e783fe19f82eea79da2303b9782d388709b4764a7cae941f45ea80855",
+        "event_date": "2026-09-01"
+      },
+      {
+        "evidence_id": "E-stakeholders-0",
+        "source_id": "S-company",
+        "company_id": "alpha",
+        "chunk_id": "chunk-E-stakeholders-0",
+        "page_number": null,
+        "quote": "Alpha's operators and maintenance partners share deployment tasks.",
+        "quote_hash": "5f2c7d68d561fabe7da1186e3b3ef540d22d21cdb1f50443c0707f585627e1f9",
+        "event_date": "2026-09-01"
+      },
+      {
+        "evidence_id": "E-stakeholders-1",
+        "source_id": "S-institution",
+        "company_id": "alpha",
+        "chunk_id": "chunk-E-stakeholders-1",
+        "page_number": null,
+        "quote": "Alpha's users need two days of safety training before deployment.",
+        "quote_hash": "9e95e760e23cb6b192c88df7ca24c2cbad0dc7c9ad40f4bdbbec7682f35b2513",
+        "event_date": "2026-09-01"
+      },
+      {
+        "evidence_id": "E-domain_application-0",
+        "source_id": "S-company",
+        "company_id": "alpha",
+        "chunk_id": "chunk-E-domain_application-0",
+        "page_number": null,
+        "quote": "Alpha ran a warehouse robot pilot at Site A in 2026.",
+        "quote_hash": "6def5d3705bbf2c2f343112f301f101f31a51089b41f1d5c719f6609c4f33614",
+        "event_date": "2026-09-01"
+      },
+      {
+        "evidence_id": "E-domain_application-1",
+        "source_id": "S-paper",
+        "company_id": "alpha",
+        "chunk_id": "chunk-E-domain_application-1",
+        "page_number": 1,
+        "quote": "Alpha's pilot required indoor maps and supervised operation.",
+        "quote_hash": "805eb487a0956bec5e9fc3cc2cf7a55120e1436b62af3f37b11b3c16b3904527",
+        "event_date": "2026-09-01"
+      },
+      {
+        "evidence_id": "E-eligibility",
+        "source_id": "S-institution",
+        "company_id": "alpha",
+        "chunk_id": "chunk-target",
+        "page_number": null,
+        "quote": "Alpha was unlisted, at Seed stage and had not exited as of September 2026.",
+        "quote_hash": "dfb8ba32fcceeb659a45bd01e09538aba7661a656d62b62c99dc1d34de9303fa",
+        "event_date": "2026-09-01"
+      }
+    ],
+    "claim_supports": [],
+    "as_of_date": "2026-10-13",
+    "evidence_epoch": 4
+  },
+  "claim_supports": {
+    "claim-supports/63a4e717e52275b5d85cfcec8ee5d1cbe7a1bc59fbefec0be7cdcf8f57271d5d.json": {
+      "claim_id": "C-technology_maturity-0",
+      "claim_hash": "bae75e65f76b60d5dfae401fe77fced964dc312f1be02812585b78383e2f7d9e",
+      "evidence_hashes": {
+        "E-technology_maturity-0": "6c6ac18a5c7fd79cfc29647680d44e3190695e1225a2739fb20cb5076208ff61"
+      },
+      "support_status": "supported",
+      "reason": "Synthetic fixture entailment verdict",
+      "verifier_version": "claim-support-1.0"
+    },
+    "claim-supports/d2dc701ca3c6c2cf3139fc78d1e34155ea323c39c7b0b0ef1c8cdd983f793be5.json": {
+      "claim_id": "C-technology_maturity-1",
+      "claim_hash": "cd202487bd7516e2d020b3136a2e1f9a24028fd57344009126ffdadfec6a14d8",
+      "evidence_hashes": {
+        "E-technology_maturity-1": "0b2ede8721ab466e4087138c46099eedf519526f59e3ee0866b367042db10719"
+      },
+      "support_status": "supported",
+      "reason": "Synthetic fixture entailment verdict",
+      "verifier_version": "claim-support-1.0"
+    },
+    "claim-supports/2fd87951666795b860ccbfee6bb7be346427b885d7775cccb6af62c9545dacc7.json": {
+      "claim_id": "C-market-0",
+      "claim_hash": "57e54bdbf367ba3da057c5029a38f5beb7796af539fd85ec675d29dc4fd7169c",
+      "evidence_hashes": {
+        "E-market-0": "f726f16dd8268b070776fbb20cc433f5f261f3df41b95dda08cbf39d62d943e5"
+      },
+      "support_status": "supported",
+      "reason": "Synthetic fixture entailment verdict",
+      "verifier_version": "claim-support-1.0"
+    },
+    "claim-supports/281d9990373578e0203cd6529a9b7ede81b768917b6eb820319e3ff826e266a2.json": {
+      "claim_id": "C-market-1",
+      "claim_hash": "bd20a750e03543311375914287fe72e1e1443383e92854dea4742457110265d3",
+      "evidence_hashes": {
+        "E-market-1": "8ae24fde09baac24e4158a910246a3b65475518d6fc8af65021c9b8527b93dfc"
+      },
+      "support_status": "supported",
+      "reason": "Synthetic fixture entailment verdict",
+      "verifier_version": "claim-support-1.0"
+    },
+    "claim-supports/4ce2ea81df7a5779b84b6aadc4b95c88fb8768f411f9db8a7b858fe6c77fb562.json": {
+      "claim_id": "C-stakeholders-0",
+      "claim_hash": "85db17499cf4c32051ecd0292186e83b7c469bf8d42b1cfb15a589b01e3b6469",
+      "evidence_hashes": {
+        "E-stakeholders-0": "ca24745b13a9125456ab58c30cf04005affca15846c0aa50e3c51dc6ae00283c"
+      },
+      "support_status": "supported",
+      "reason": "Synthetic fixture entailment verdict",
+      "verifier_version": "claim-support-1.0"
+    },
+    "claim-supports/a1d42e8f00395e77a7e28ff9aa5a1295648ab0f0fe0d2065d6d1b876bf13f563.json": {
+      "claim_id": "C-stakeholders-1",
+      "claim_hash": "c95228634a0968a028666983301b9b19cb64a9497ea92cb8ec9d0fe4a8a12bb4",
+      "evidence_hashes": {
+        "E-stakeholders-1": "57fddc1a447a77d459a1a1a594a61184cfd1e0770b754987f6d052ef05a25c68"
+      },
+      "support_status": "supported",
+      "reason": "Synthetic fixture entailment verdict",
+      "verifier_version": "claim-support-1.0"
+    },
+    "claim-supports/de684f0a292bc0dfd0e651146c295006de33dfbb63b693dd0669b35a89a6f6b2.json": {
+      "claim_id": "C-domain_application-0",
+      "claim_hash": "c5d1cddf6885279f493c474f7252946f56c2234c422e5219265c4dc66e873498",
+      "evidence_hashes": {
+        "E-domain_application-0": "ce544f9ff9c4a91aa6c8308ad7162fa0d23567ba4b00e8f9cb61ffad5bf6428a"
+      },
+      "support_status": "supported",
+      "reason": "Synthetic fixture entailment verdict",
+      "verifier_version": "claim-support-1.0"
+    },
+    "claim-supports/d5cc93e0d9d65faa31c0ab5a2420c4a9fd93467787a1b0f69c5ecb9226114103.json": {
+      "claim_id": "C-domain_application-1",
+      "claim_hash": "6434e56cf0e8ac965ae48e84352f929bb5c9208489428ea9e37c3127291bec93",
+      "evidence_hashes": {
+        "E-domain_application-1": "e5f3ceac44e556eef94d1996d64213f28ebc3cd4c9861a50b479af9e7ded44d0"
+      },
+      "support_status": "supported",
+      "reason": "Synthetic fixture entailment verdict",
+      "verifier_version": "claim-support-1.0"
+    }
+  },
+  "sufficiency_verdicts": [
+    {
+      "perspective": "technology_maturity",
+      "structural_pass": true,
+      "semantic_pass": true,
+      "gaps": [],
+      "evidence_ids": [
+        "E-technology_maturity-0",
+        "E-technology_maturity-1"
+      ],
+      "claim_support_refs": [
+        {
+          "relative_path": "claim-supports/63a4e717e52275b5d85cfcec8ee5d1cbe7a1bc59fbefec0be7cdcf8f57271d5d.json",
+          "sha256": "63a4e717e52275b5d85cfcec8ee5d1cbe7a1bc59fbefec0be7cdcf8f57271d5d",
+          "media_type": "application/json",
+          "schema_version": "1.0"
+        },
+        {
+          "relative_path": "claim-supports/d2dc701ca3c6c2cf3139fc78d1e34155ea323c39c7b0b0ef1c8cdd983f793be5.json",
+          "sha256": "d2dc701ca3c6c2cf3139fc78d1e34155ea323c39c7b0b0ef1c8cdd983f793be5",
+          "media_type": "application/json",
+          "schema_version": "1.0"
+        }
+      ],
+      "reason": "Both fixture questions are answered within their limited scope",
+      "result_hash": "f89c6a4af1d7f6240ce0cf0380d635e1ec91338074bbfb6af1a17106bdfbff56",
+      "rubric_version": "neutral-quality-1.0"
+    },
+    {
+      "perspective": "market",
+      "structural_pass": true,
+      "semantic_pass": true,
+      "gaps": [],
+      "evidence_ids": [
+        "E-market-0",
+        "E-market-1"
+      ],
+      "claim_support_refs": [
+        {
+          "relative_path": "claim-supports/2fd87951666795b860ccbfee6bb7be346427b885d7775cccb6af62c9545dacc7.json",
+          "sha256": "2fd87951666795b860ccbfee6bb7be346427b885d7775cccb6af62c9545dacc7",
+          "media_type": "application/json",
+          "schema_version": "1.0"
+        },
+        {
+          "relative_path": "claim-supports/281d9990373578e0203cd6529a9b7ede81b768917b6eb820319e3ff826e266a2.json",
+          "sha256": "281d9990373578e0203cd6529a9b7ede81b768917b6eb820319e3ff826e266a2",
+          "media_type": "application/json",
+          "schema_version": "1.0"
+        }
+      ],
+      "reason": "Both fixture questions are answered within their limited scope",
+      "result_hash": "966b6687e62da497a2058fa90e51e96632b3cea4d57ec64a3f1f581e12946c31",
+      "rubric_version": "neutral-quality-1.0"
+    },
+    {
+      "perspective": "stakeholders",
+      "structural_pass": true,
+      "semantic_pass": true,
+      "gaps": [],
+      "evidence_ids": [
+        "E-stakeholders-0",
+        "E-stakeholders-1"
+      ],
+      "claim_support_refs": [
+        {
+          "relative_path": "claim-supports/4ce2ea81df7a5779b84b6aadc4b95c88fb8768f411f9db8a7b858fe6c77fb562.json",
+          "sha256": "4ce2ea81df7a5779b84b6aadc4b95c88fb8768f411f9db8a7b858fe6c77fb562",
+          "media_type": "application/json",
+          "schema_version": "1.0"
+        },
+        {
+          "relative_path": "claim-supports/a1d42e8f00395e77a7e28ff9aa5a1295648ab0f0fe0d2065d6d1b876bf13f563.json",
+          "sha256": "a1d42e8f00395e77a7e28ff9aa5a1295648ab0f0fe0d2065d6d1b876bf13f563",
+          "media_type": "application/json",
+          "schema_version": "1.0"
+        }
+      ],
+      "reason": "Both fixture questions are answered within their limited scope",
+      "result_hash": "ed0fd32d56a56afe60136830e3fc40689f3a170910f2c8e376f633bfb9f8ce63",
+      "rubric_version": "neutral-quality-1.0"
+    },
+    {
+      "perspective": "domain_application",
+      "structural_pass": true,
+      "semantic_pass": true,
+      "gaps": [],
+      "evidence_ids": [
+        "E-domain_application-0",
+        "E-domain_application-1"
+      ],
+      "claim_support_refs": [
+        {
+          "relative_path": "claim-supports/de684f0a292bc0dfd0e651146c295006de33dfbb63b693dd0669b35a89a6f6b2.json",
+          "sha256": "de684f0a292bc0dfd0e651146c295006de33dfbb63b693dd0669b35a89a6f6b2",
+          "media_type": "application/json",
+          "schema_version": "1.0"
+        },
+        {
+          "relative_path": "claim-supports/d5cc93e0d9d65faa31c0ab5a2420c4a9fd93467787a1b0f69c5ecb9226114103.json",
+          "sha256": "d5cc93e0d9d65faa31c0ab5a2420c4a9fd93467787a1b0f69c5ecb9226114103",
+          "media_type": "application/json",
+          "schema_version": "1.0"
+        }
+      ],
+      "reason": "Both fixture questions are answered within their limited scope",
+      "result_hash": "8acd65f336087e1b047df9a1ad1be23303e79f2896cfcf05c26a4abc4b77d45d",
+      "rubric_version": "neutral-quality-1.0"
+    }
+  ],
+  "passing_evaluation": {
+    "report_revision": 3,
+    "report_hash": "5256c8ba257d21c616e781fe3e3b031e1cc7df7c4e59a22bfe9268e27b6f177b",
+    "evidence_epoch": 4,
+    "structural_checks": {
+      "report_integrity": true,
+      "section_order": true,
+      "groundedness": true,
+      "neutrality": true,
+      "bias_control": true,
+      "perspective_coverage": true,
+      "reference_integrity": true,
+      "reference_format": true,
+      "judge_response": true
+    },
+    "criterion_scores": {
+      "groundedness": 3,
+      "neutrality": 3,
+      "bias_control": 3,
+      "perspective_coverage": 3
+    },
+    "findings": [],
+    "overall_pass": true,
+    "repair_kind": "none",
+    "rubric_version": "neutral-quality-1.0",
+    "judge_model": "fixture-judge",
+    "prompt_hash": "bcd7c2f19e41852a72734c8acd88cefc05adb691109fa44f6b3b884a0d7fd1bb"
+  },
+  "multiple_research_and_rewrite_findings": {
+    "report_revision": 3,
+    "report_hash": "5256c8ba257d21c616e781fe3e3b031e1cc7df7c4e59a22bfe9268e27b6f177b",
+    "evidence_epoch": 4,
+    "structural_checks": {
+      "report_integrity": true,
+      "section_order": true,
+      "groundedness": true,
+      "neutrality": true,
+      "bias_control": true,
+      "perspective_coverage": true,
+      "reference_integrity": true,
+      "reference_format": true,
+      "judge_response": true
+    },
+    "criterion_scores": {
+      "groundedness": 3,
+      "neutrality": 3,
+      "bias_control": 3,
+      "perspective_coverage": 3
+    },
+    "findings": [
+      {
+        "criterion": "groundedness",
+        "severity": "critical",
+        "section_id": "market",
+        "claim_id": null,
+        "evidence_ids": [],
+        "reason": "Verify additional market scope",
+        "repair_kind": "research",
+        "target_perspective": "market"
+      },
+      {
+        "criterion": "groundedness",
+        "severity": "critical",
+        "section_id": "domain_application",
+        "claim_id": null,
+        "evidence_ids": [],
+        "reason": "Verify additional domain_application scope",
+        "repair_kind": "research",
+        "target_perspective": "domain_application"
+      },
+      {
+        "criterion": "neutrality",
+        "severity": "critical",
+        "section_id": "SUMMARY",
+        "claim_id": null,
+        "evidence_ids": [],
+        "reason": "Remove persuasive expression",
+        "repair_kind": "rewrite",
+        "target_perspective": null
+      }
+    ],
+    "overall_pass": false,
+    "repair_kind": "research",
+    "rubric_version": "neutral-quality-1.0",
+    "judge_model": "fixture-judge",
+    "prompt_hash": "bcd7c2f19e41852a72734c8acd88cefc05adb691109fa44f6b3b884a0d7fd1bb"
+  },
+  "rewrite_only_evaluation": {
+    "report_revision": 3,
+    "report_hash": "d45575cfc1c76ed6b206bec4e9312bcb9e270fdc091f14cd1677039dac292606",
+    "evidence_epoch": 4,
+    "structural_checks": {
+      "report_integrity": true,
+      "section_order": true,
+      "groundedness": true,
+      "neutrality": false,
+      "bias_control": true,
+      "perspective_coverage": true,
+      "reference_integrity": true,
+      "reference_format": true,
+      "judge_response": true
+    },
+    "criterion_scores": {
+      "groundedness": 3,
+      "neutrality": 3,
+      "bias_control": 3,
+      "perspective_coverage": 3
+    },
+    "findings": [
+      {
+        "criterion": "neutrality",
+        "severity": "critical",
+        "section_id": "SUMMARY",
+        "claim_id": null,
+        "evidence_ids": [],
+        "reason": "Recommendation, ranking, investment score or superiority wording",
+        "repair_kind": "rewrite",
+        "target_perspective": null
+      }
+    ],
+    "overall_pass": false,
+    "repair_kind": "rewrite",
+    "rubric_version": "neutral-quality-1.0",
+    "judge_model": "fixture-judge",
+    "prompt_hash": "bcd7c2f19e41852a72734c8acd88cefc05adb691109fa44f6b3b884a0d7fd1bb"
+  },
+  "report_binding_change": {
+    "old_report_hash": "5256c8ba257d21c616e781fe3e3b031e1cc7df7c4e59a22bfe9268e27b6f177b",
+    "old_evaluation": {
+      "report_revision": 3,
+      "report_hash": "5256c8ba257d21c616e781fe3e3b031e1cc7df7c4e59a22bfe9268e27b6f177b",
+      "evidence_epoch": 4,
+      "structural_checks": {
+        "report_integrity": true,
+        "section_order": true,
+        "groundedness": true,
+        "neutrality": true,
+        "bias_control": true,
+        "perspective_coverage": true,
+        "reference_integrity": true,
+        "reference_format": true,
+        "judge_response": true
+      },
+      "criterion_scores": {
+        "groundedness": 3,
+        "neutrality": 3,
+        "bias_control": 3,
+        "perspective_coverage": 3
+      },
+      "findings": [],
+      "overall_pass": true,
+      "repair_kind": "none",
+      "rubric_version": "neutral-quality-1.0",
+      "judge_model": "fixture-judge",
+      "prompt_hash": "bcd7c2f19e41852a72734c8acd88cefc05adb691109fa44f6b3b884a0d7fd1bb"
+    },
+    "new_report": {
+      "revision": 4,
+      "evidence_epoch": 5,
+      "sections": [
+        {
+          "section_id": "SUMMARY",
+          "title": "SUMMARY",
+          "paragraphs": [
+            {
+              "paragraph_id": "P-SUMMARY-0",
+              "text": "Alpha achieved 90 percent detection accuracy in a 2026 lab test.",
+              "kind": "fact",
+              "claim_ids": [
+                "C-technology_maturity-1"
+              ],
+              "evidence_ids": [
+                "E-technology_maturity-1"
+              ]
+            }
+          ]
+        },
+        {
+          "section_id": "company_scope",
+          "title": "company scope",
+          "paragraphs": [
+            {
+              "paragraph_id": "P-company_scope-0",
+              "text": "Alpha was unlisted, at Seed stage and had not exited as of September 2026.",
+              "kind": "fact",
+              "claim_ids": [
+                "C-eligibility"
+              ],
+              "evidence_ids": [
+                "E-eligibility"
+              ]
+            }
+          ]
+        },
+        {
+          "section_id": "technology_maturity",
+          "title": "technology maturity",
+          "paragraphs": [
+            {
+              "paragraph_id": "P-technology_maturity-0",
+              "text": "Alpha uses a learned perception model to detect objects.",
+              "kind": "fact",
+              "claim_ids": [
+                "C-technology_maturity-0"
+              ],
+              "evidence_ids": [
+                "E-technology_maturity-0"
+              ]
+            },
+            {
+              "paragraph_id": "P-technology_maturity-1",
+              "text": "Alpha achieved 90 percent detection accuracy in a 2026 lab test.",
+              "kind": "fact",
+              "claim_ids": [
+                "C-technology_maturity-1"
+              ],
+              "evidence_ids": [
+                "E-technology_maturity-1"
+              ]
+            }
+          ]
+        },
+        {
+          "section_id": "market",
+          "title": "market",
+          "paragraphs": [
+            {
+              "paragraph_id": "P-market-0",
+              "text": "Alpha's paying customers are warehouse operators.",
+              "kind": "fact",
+              "claim_ids": [
+                "C-market-0"
+              ],
+              "evidence_ids": [
+                "E-market-0"
+              ]
+            },
+            {
+              "paragraph_id": "P-market-1",
+              "text": "Alpha charges customers a monthly software subscription.",
+              "kind": "fact",
+              "claim_ids": [
+                "C-market-1"
+              ],
+              "evidence_ids": [
+                "E-market-1"
+              ]
+            }
+          ]
+        },
+        {
+          "section_id": "stakeholders",
+          "title": "stakeholders",
+          "paragraphs": [
+            {
+              "paragraph_id": "P-stakeholders-0",
+              "text": "Alpha's operators and maintenance partners share deployment tasks.",
+              "kind": "fact",
+              "claim_ids": [
+                "C-stakeholders-0"
+              ],
+              "evidence_ids": [
+                "E-stakeholders-0"
+              ]
+            },
+            {
+              "paragraph_id": "P-stakeholders-1",
+              "text": "Alpha's users need two days of safety training before deployment.",
+              "kind": "fact",
+              "claim_ids": [
+                "C-stakeholders-1"
+              ],
+              "evidence_ids": [
+                "E-stakeholders-1"
+              ]
+            }
+          ]
+        },
+        {
+          "section_id": "domain_application",
+          "title": "domain application",
+          "paragraphs": [
+            {
+              "paragraph_id": "P-domain_application-0",
+              "text": "Alpha ran a warehouse robot pilot at Site A in 2026.",
+              "kind": "fact",
+              "claim_ids": [
+                "C-domain_application-0"
+              ],
+              "evidence_ids": [
+                "E-domain_application-0"
+              ]
+            },
+            {
+              "paragraph_id": "P-domain_application-1",
+              "text": "Alpha's pilot required indoor maps and supervised operation.",
+              "kind": "fact",
+              "claim_ids": [
+                "C-domain_application-1"
+              ],
+              "evidence_ids": [
+                "E-domain_application-1"
+              ]
+            }
+          ]
+        },
+        {
+          "section_id": "limitations",
+          "title": "limitations",
+          "paragraphs": [
+            {
+              "paragraph_id": "P-limitations",
+              "text": "Deployment scale remains unverified; no conflict was found within the documented search scope. Scale beyond the pilot remains unknown.",
+              "kind": "unknown",
+              "claim_ids": [],
+              "evidence_ids": []
+            }
+          ]
+        },
+        {
+          "section_id": "REFERENCE",
+          "title": "REFERENCE",
+          "paragraphs": [
+            {
+              "paragraph_id": "P-ref-S-company",
+              "text": "alpha (2026). Alpha 2026 alpha study. https://example.org/S-company",
+              "kind": "unknown",
+              "claim_ids": [],
+              "evidence_ids": [
+                "E-technology_maturity-0"
+              ]
+            },
+            {
+              "paragraph_id": "P-ref-S-institution",
+              "text": "institute (2026). Alpha 2026 institute study. https://example.org/S-institution",
+              "kind": "unknown",
+              "claim_ids": [],
+              "evidence_ids": [
+                "E-market-1"
+              ]
+            },
+            {
+              "paragraph_id": "P-ref-S-paper",
+              "text": "university (2026). Alpha 2026 university study. https://example.org/S-paper",
+              "kind": "unknown",
+              "claim_ids": [],
+              "evidence_ids": [
+                "E-technology_maturity-1"
+              ]
+            }
+          ]
+        }
+      ],
+      "claim_ids": [
+        "C-technology_maturity-1",
+        "C-eligibility",
+        "C-technology_maturity-0",
+        "C-market-0",
+        "C-market-1",
+        "C-stakeholders-0",
+        "C-stakeholders-1",
+        "C-domain_application-0",
+        "C-domain_application-1"
+      ],
+      "citations": [
+        {
+          "source_id": "S-paper",
+          "evidence_id": "E-technology_maturity-1",
+          "paragraph_id": "P-SUMMARY-0"
+        },
+        {
+          "source_id": "S-institution",
+          "evidence_id": "E-eligibility",
+          "paragraph_id": "P-company_scope-0"
+        },
+        {
+          "source_id": "S-company",
+          "evidence_id": "E-technology_maturity-0",
+          "paragraph_id": "P-technology_maturity-0"
+        },
+        {
+          "source_id": "S-paper",
+          "evidence_id": "E-technology_maturity-1",
+          "paragraph_id": "P-technology_maturity-1"
+        },
+        {
+          "source_id": "S-company",
+          "evidence_id": "E-market-0",
+          "paragraph_id": "P-market-0"
+        },
+        {
+          "source_id": "S-institution",
+          "evidence_id": "E-market-1",
+          "paragraph_id": "P-market-1"
+        },
+        {
+          "source_id": "S-company",
+          "evidence_id": "E-stakeholders-0",
+          "paragraph_id": "P-stakeholders-0"
+        },
+        {
+          "source_id": "S-institution",
+          "evidence_id": "E-stakeholders-1",
+          "paragraph_id": "P-stakeholders-1"
+        },
+        {
+          "source_id": "S-company",
+          "evidence_id": "E-domain_application-0",
+          "paragraph_id": "P-domain_application-0"
+        },
+        {
+          "source_id": "S-paper",
+          "evidence_id": "E-domain_application-1",
+          "paragraph_id": "P-domain_application-1"
+        }
+      ],
+      "document_ref": null,
+      "content_hash": "470c71eb64a31a8f37692283f4aa593a313f7460dcda26b6e3dcc3edf3fe284f"
+    },
+    "new_evaluation": {
+      "report_revision": 4,
+      "report_hash": "470c71eb64a31a8f37692283f4aa593a313f7460dcda26b6e3dcc3edf3fe284f",
+      "evidence_epoch": 5,
+      "structural_checks": {
+        "report_integrity": true,
+        "section_order": true,
+        "groundedness": true,
+        "neutrality": true,
+        "bias_control": true,
+        "perspective_coverage": true,
+        "reference_integrity": true,
+        "reference_format": true,
+        "judge_response": true
+      },
+      "criterion_scores": {
+        "groundedness": 3,
+        "neutrality": 3,
+        "bias_control": 3,
+        "perspective_coverage": 3
+      },
+      "findings": [],
+      "overall_pass": true,
+      "repair_kind": "none",
+      "rubric_version": "neutral-quality-1.0",
+      "judge_model": "fixture-judge",
+      "prompt_hash": "bcd7c2f19e41852a72734c8acd88cefc05adb691109fa44f6b3b884a0d7fd1bb"
+    }
+  }
+}
