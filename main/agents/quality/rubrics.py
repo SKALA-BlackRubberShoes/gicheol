@@ -1,7 +1,7 @@
 """Quality policy and service adapters; shared DTOs belong to supervisor.contracts.
 
-Factories and hashing are required injections. ``canonical_hash`` is a fixture
-implementation of the proposed JSON convention, not a second DTO definition.
+Business DTOs and hashing use the shared contract module. Only external services
+are injected; Judge responses have explicit strict Pydantic models.
 """
 
 from __future__ import annotations
@@ -10,12 +10,14 @@ import asyncio
 from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from datetime import date, datetime
-from hashlib import sha256
 import inspect
-import json
 from pathlib import Path
 import re
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
+
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, ValidationError
+from main.agents.supervisor import contracts as c
+from main.agents.supervisor.contracts import canonical_hash, semantic_hash, sha256_text
 
 RUBRIC_VERSION = "neutral-quality-1.0"
 VERIFIER_VERSION = "claim-support-1.0"
@@ -75,26 +77,6 @@ def index(values: Sequence[dict[str, Any]], key: str) -> dict[str, dict[str, Any
     return result
 
 
-def canonical_hash(value: Any) -> str:
-    """Fixture hash: UTF-8, sorted object keys, compact JSON, no NaN."""
-    return sha256(json.dumps(value, sort_keys=True, ensure_ascii=False,
-                             separators=(",", ":"), allow_nan=False).encode()).hexdigest()
-
-
-def semantic_hash(value: Any) -> str:
-    """Fixture counterpart to the shared recursive semantic hash convention."""
-    def semantic(item):
-        if isinstance(item, dict):
-            return {key: semantic(val) for key, val in item.items()
-                    if key not in {"result_hash", "content_hash", "ts", "retrieved_at",
-                                   "created_at", "dispatched_at"}
-                    and not key.endswith(("_ref", "_refs"))}
-        if isinstance(item, list):
-            return [semantic(val) for val in item]
-        return item
-    return canonical_hash(semantic(value))
-
-
 def digest(value: Mapping[str, Any], fields: Sequence[str], hash_fn: Callable) -> str:
     if any(field not in value for field in fields):
         raise QualityInputError("Missing hash input fields")
@@ -102,7 +84,7 @@ def digest(value: Mapping[str, Any], fields: Sequence[str], hash_fn: Callable) -
 
 
 def quote_hash(text: str) -> str:
-    return sha256(text.encode("utf-8")).hexdigest()
+    return sha256_text(text)
 
 
 def parse_date(value: Any) -> date:
@@ -141,130 +123,108 @@ async def call_async(callback: Callable, *args, timeout_seconds: float, **kwargs
     return await asyncio.wait_for(callback(*args, **kwargs), timeout=timeout_seconds)
 
 
-def validate_response(value: Any, schema: Mapping[str, Any]) -> Any:
-    """Validate the small JSON-schema subset used by injected structured Judges."""
-    if callable(getattr(value, "model_dump", None)):
-        value = value.model_dump(mode="json")
-    kind = schema.get("type")
-    if isinstance(kind, list) and value is None and "null" in kind:
-        return None
-    if isinstance(kind, list):
-        kind = next(item for item in kind if item != "null")
-    valid = {
-        "object": isinstance(value, Mapping), "array": isinstance(value, list),
-        "string": isinstance(value, str), "boolean": type(value) is bool,
-        "integer": type(value) is int,
-    }
-    if kind and not valid.get(kind, False):
-        raise QualityInputError(f"Judge response expected {kind}")
-    if "enum" in schema and value not in schema["enum"]:
-        raise QualityInputError("Judge response has an invalid enum")
-    if kind == "object":
-        properties = schema.get("properties", {})
-        if set(schema.get("required", ())) - value.keys():
-            raise QualityInputError("Judge response is missing fields")
-        if schema.get("additionalProperties") is False and value.keys() - properties.keys():
-            raise QualityInputError("Judge response contains unknown fields")
-        for key, item in value.items():
-            if key in properties:
-                validate_response(item, properties[key])
-    if kind == "array":
-        if len(value) < schema.get("minItems", 0):
-            raise QualityInputError("Judge response has too few items")
-        for item in value:
-            validate_response(item, schema["items"])
-        if schema.get("uniqueItems") and len({canonical_hash(item) for item in value}) != len(value):
-            raise QualityInputError("Judge response repeats items")
-    if kind == "string" and len(value.strip()) < schema.get("minLength", 0):
-        raise QualityInputError("Judge response has empty text")
-    if kind == "string" and len(value) > schema.get("maxLength", len(value)):
-        raise QualityInputError("Judge response text exceeds the common DTO limit")
-    if kind == "integer" and not schema.get("minimum", value) <= value <= schema.get("maximum", value):
-        raise QualityInputError("Judge score outside rubric range")
-    return deepcopy(value)
+def _not_blank(value: str) -> str:
+    if not value.strip():
+        raise ValueError("Judge text cannot be blank")
+    return value
 
 
-def object_schema(properties: dict[str, Any]) -> dict[str, Any]:
-    return {"type": "object", "properties": properties, "required": list(properties),
-            "additionalProperties": False}
+def _unique_ids(values: list[str]) -> list[str]:
+    if len(values) != len(set(values)):
+        raise ValueError("Judge evidence IDs must be unique")
+    return values
+
+
+Text = Annotated[StrictStr, Field(min_length=1, max_length=2000), AfterValidator(_not_blank)]
+EvidenceId = Annotated[StrictStr, Field(min_length=1, max_length=256), AfterValidator(_not_blank)]
+EvidenceIds = Annotated[list[EvidenceId], AfterValidator(_unique_ids), Field(json_schema_extra={"uniqueItems": True})]
+PerspectiveName = Literal["technology_maturity", "market", "stakeholders", "domain_application"]
+
+
+class JudgeResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ClaimJudgement(JudgeResponse):
+    support_status: Literal["supported", "partial", "unsupported"]
+    reason: Text
+    supported_evidence_ids: EvidenceIds
+
+
+class GapJudgement(JudgeResponse):
+    kind: Literal[*GAP_KINDS]
+    question: Text
+    severity: Literal["critical", "warning"]
+    evidence_ids: EvidenceIds
+    query_hints: list[Text]
+
+
+class SufficiencyJudgement(JudgeResponse):
+    semantic_pass: StrictBool
+    reason: Text
+    gaps: list[GapJudgement]
+
+
+class FindingJudgement(JudgeResponse):
+    criterion: Literal[*CRITERIA]
+    severity: Literal["critical", "warning"]
+    section_id: Text
+    claim_id: Text | None
+    evidence_ids: EvidenceIds
+    reason: Text
+    repair_kind: Literal["rewrite", "research", "none"]
+    target_perspective: PerspectiveName | None
+
+
+Score = Annotated[StrictInt, Field(ge=0, le=4)]
+
+
+class CriterionScores(JudgeResponse):
+    groundedness: Score
+    neutrality: Score
+    bias_control: Score
+    perspective_coverage: Score
+
+
+class ReportJudgement(JudgeResponse):
+    criterion_scores: CriterionScores
+    findings: list[FindingJudgement]
+
+
+CLAIM_JUDGE_SCHEMA = ClaimJudgement.model_json_schema()
+SUFFICIENCY_JUDGE_SCHEMA = SufficiencyJudgement.model_json_schema()
+REPORT_JUDGE_SCHEMA = ReportJudgement.model_json_schema()
+_RESPONSE_MODELS = {
+    canonical_hash(model.model_json_schema()): model
+    for model in (ClaimJudgement, SufficiencyJudgement, ReportJudgement)
+}
+
+
+def _response_model(schema):
+    try:
+        return _RESPONSE_MODELS[canonical_hash(schema)]
+    except KeyError:
+        raise QualityInputError("Unknown quality Judge response schema") from None
+
+
+def validate_response(value: Any, schema: Mapping[str, Any]) -> dict:
+    try:
+        return _response_model(schema).model_validate(record(value)).model_dump(mode="json")
+    except ValidationError as exc:
+        raise QualityInputError("Judge response violates the required quality contract") from exc
 
 
 class LLMClientJudge:
-    """Bridge a configured common LLMClient to the quality Judge callbacks.
-
-    Only Judge-response models are created here. Common domain DTOs remain in
-    supervisor.contracts. Pydantic is loaded lazily for the configured live adapter.
-    """
-
+    """Use one of the three fixed response models with the common LLM client."""
     def __init__(self, *, client: Any, model: str):
         if not isinstance(model, str) or not model.strip():
             raise QualityInputError("A configured Judge model ID is required")
-        self.client = client
-        self.model = model
-        self._response_models = {}
+        self.client, self.model = client, model
 
     async def __call__(self, *, prompt: str, payload: dict, schema: dict):
-        key = canonical_hash(schema)
-        if key not in self._response_models:
-            self._response_models[key] = _judge_response_model(schema)
         response = await self.client.generate(model=self.model, system_prompt=prompt,
-                                              payload=payload, response_model=self._response_models[key])
+                                              payload=payload, response_model=_response_model(schema))
         return validate_response(response, schema)
-
-
-def _judge_response_model(schema: Mapping, name="QualityJudgement"):
-    from pydantic import ConfigDict, Field, StrictBool, StrictInt, StrictStr, create_model
-
-    def annotation(item, field_name):
-        kind = item["type"]
-        if "enum" in item:
-            return Literal[tuple(item["enum"])]
-        if isinstance(kind, list):
-            inner = annotation({**item, "type": next(k for k in kind if k != "null")}, field_name)
-            return inner | None
-        if kind == "object":
-            return _judge_response_model(item, f"{name}_{field_name}")
-        if kind == "array":
-            return list[annotation(item["items"], field_name)]
-        return {"string": StrictStr, "integer": StrictInt, "boolean": StrictBool}[kind]
-
-    fields = {}
-    for key, item in schema["properties"].items():
-        limits = {pydantic_name: item[json_name] for json_name, pydantic_name in (
-            ("minLength", "min_length"), ("maxLength", "max_length"),
-            ("minItems", "min_length"), ("minimum", "ge"), ("maximum", "le")) if json_name in item}
-        fields[key] = (annotation(item, key), Field(..., **limits))
-    return create_model(name, __config__=ConfigDict(extra="forbid"), **fields)
-
-
-TEXT = {"type": "string", "minLength": 1, "maxLength": 2000}
-IDS = {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 256}, "uniqueItems": True}
-CLAIM_JUDGE_SCHEMA = object_schema({
-    "support_status": {"type": "string", "enum": ["supported", "partial", "unsupported"]},
-    "reason": TEXT, "supported_evidence_ids": IDS,
-})
-GAP_SCHEMA = object_schema({
-    "kind": {"type": "string", "enum": list(GAP_KINDS)}, "question": TEXT,
-    "severity": {"type": "string", "enum": ["critical", "warning"]},
-    "evidence_ids": IDS, "query_hints": {"type": "array", "items": TEXT},
-})
-SUFFICIENCY_JUDGE_SCHEMA = object_schema({
-    "semantic_pass": {"type": "boolean"}, "reason": TEXT,
-    "gaps": {"type": "array", "items": GAP_SCHEMA},
-})
-FINDING_SCHEMA = object_schema({
-    "criterion": {"type": "string", "enum": list(CRITERIA)},
-    "severity": {"type": "string", "enum": ["critical", "warning"]},
-    "section_id": TEXT, "claim_id": {"type": ["string", "null"], "minLength": 1},
-    "evidence_ids": IDS, "reason": TEXT,
-    "repair_kind": {"type": "string", "enum": ["rewrite", "research", "none"]},
-    "target_perspective": {"type": ["string", "null"], "enum": [None, *QUESTIONS]},
-})
-REPORT_JUDGE_SCHEMA = object_schema({
-    "criterion_scores": object_schema({name: {"type": "integer", "minimum": 0, "maximum": 4}
-                                      for name in CRITERIA}),
-    "findings": {"type": "array", "items": FINDING_SCHEMA},
-})
 
 
 def current_support(support: Any, claim: Mapping, evidence_by_id: Mapping,

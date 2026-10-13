@@ -1,39 +1,27 @@
 """Synthetic evidence and deterministic adapters; never a live model benchmark."""
 
 from copy import deepcopy
-import importlib.util
-import os
 from pathlib import Path
-import sys
+
+from main.agents.supervisor import contracts as COMMON
 
 from main.agents.quality.claim_support import ClaimSupportVerifier
 from main.agents.quality.evaluator import ReportEvaluator
 from main.agents.quality.sufficiency import SufficiencyAssessor
 from main.agents.quality.rubrics import (
-    CRITERIA, QUESTIONS, SECTION_ORDER, canonical_hash, quote_hash, record, semantic_hash,
+    CRITERIA, QUESTIONS, SECTION_ORDER, quote_hash, record,
 )
 
-COMMON = None
-if os.environ.get("HYOJIN_CONTRACTS_PATH"):
-    spec = importlib.util.spec_from_file_location("hyojin_common_contracts", os.environ["HYOJIN_CONTRACTS_PATH"])
-    COMMON = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = COMMON
-    spec.loader.exec_module(COMMON)
-
-
 def factory(name, payload):
-    if COMMON is not None:
-        return getattr(COMMON, name).model_validate(payload)
-    # Explicit fixture factory, not a runtime fallback or duplicated schema.
-    return deepcopy(payload)
+    return getattr(COMMON, name).model_validate(payload)
 
 
 def hash_fn(value):
-    return COMMON.canonical_hash(value) if COMMON else canonical_hash(value)
+    return COMMON.canonical_hash(value)
 
 
 def semantic_hash_fn(value):
-    return COMMON.semantic_hash(value) if COMMON else semantic_hash(value)
+    return COMMON.semantic_hash(value)
 
 
 def fixture():
@@ -188,7 +176,7 @@ class FixtureJudge:
 
 
 def services(case, *, verifier_judge=None, sufficiency_judge=None, report_judge=None,
-             timeout_seconds=1, contract_factory=factory):
+             timeout_seconds=1):
     stored = {}
 
     async def excerpt_loader(source, evidence):
@@ -201,21 +189,19 @@ def services(case, *, verifier_judge=None, sufficiency_judge=None, report_judge=
         stored[key] = deepcopy(payload)
         return {"relative_path": key, "sha256": hash_fn(payload), "media_type": "application/json", "schema_version": "1.0"}
 
-    valid_receipt = hash_fn(record(contract_factory("RetrievalReceipt",
+    valid_receipt = hash_fn(record(factory("RetrievalReceipt",
         case["perspective_results"]["technology_maturity"]["retrieval_receipts"][0])))
 
     async def receipt_validator(receipt):
         return hash_fn(receipt) == valid_receipt
 
     verifier = ClaimSupportVerifier(judge=verifier_judge or FixtureJudge(), excerpt_loader=excerpt_loader,
-                                   contract_factory=contract_factory, hash_fn=hash_fn, timeout_seconds=timeout_seconds)
+                                   timeout_seconds=timeout_seconds)
     assessor = SufficiencyAssessor(verifier=verifier, judge=sufficiency_judge or FixtureJudge(),
                                   save_claim_support=save, receipt_validator=receipt_validator,
-                                  contract_factory=contract_factory, hash_fn=hash_fn, semantic_hash_fn=semantic_hash_fn,
                                   company_id="alpha", corpus_version="corpus-1", index_version="index-1",
                                   timeout_seconds=timeout_seconds)
-    evaluator = ReportEvaluator(verifier=verifier, judge=report_judge or FixtureJudge(), contract_factory=contract_factory,
-                                hash_fn=hash_fn, company_id="alpha", judge_model="fixture-judge", timeout_seconds=timeout_seconds)
+    evaluator = ReportEvaluator(verifier=verifier, judge=report_judge or FixtureJudge(), company_id="alpha", judge_model="fixture-judge", timeout_seconds=timeout_seconds)
     return verifier, assessor, evaluator, stored
 
 

@@ -1,6 +1,7 @@
 """Run issue #21 against original shared modules in an isolated subprocess.
 
-HYOJIN_SUPERVISOR_ROOT points to the unmodified four-file reference snapshot.
+HYOJIN_SUPERVISOR_ROOT optionally selects a four-file reference snapshot.
+Without that override the integrated repository's actual Supervisor is used.
 Source retrieval, Judge and storage are explicit fixtures; Supervisor is real.
 """
 
@@ -27,7 +28,7 @@ def load_module(name, path):
 
 def bootstrap():
     repo = Path(__file__).resolve().parents[4]
-    shared = Path(os.environ["HYOJIN_SUPERVISOR_ROOT"]).resolve()
+    shared = Path(os.environ.get("HYOJIN_SUPERVISOR_ROOT", repo)).resolve()
     # Avoid importing the unrelated legacy graph's eager package __init__.
     for name, path in (
             ("main", repo / "main"), ("main.agents", repo / "main/agents"),

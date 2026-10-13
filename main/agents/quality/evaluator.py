@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from main.agents.supervisor import contracts as c
+
 from collections.abc import Callable
 import re
 from typing import Any
@@ -23,18 +25,15 @@ class ReportEvaluator:
     """
 
     def __init__(self, *, verifier: ClaimSupportVerifier, judge: Callable,
-                 contract_factory: Callable, hash_fn: Callable,
                  company_id: str, judge_model: str, timeout_seconds: float = 30):
         self.verifier = verifier
         self.judge = judge
-        self.contract_factory = contract_factory
-        self.hash_fn = hash_fn
         self.company_id = company_id
         self.judge_model = judge_model
         self.timeout_seconds = timeout_seconds
 
     async def __call__(self, request: Any):
-        data = record(self.contract_factory("EvaluatorRequest", record(request)))
+        data = record(c.EvaluatorRequest.model_validate(record(request)))
         report = data["report"]
         claims = index(data["claims"], "claim_id")
         evidence = index(data["evidence"], "evidence_id")
@@ -55,7 +54,7 @@ class ReportEvaluator:
                              "claim_id": claim_id, "evidence_ids": list(evidence_ids), "reason": reason[:2000],
                              "repair_kind": repair, "target_perspective": target})
 
-        expected_hash = digest(report, REPORT_FIELDS, self.hash_fn)
+        expected_hash = digest(report, REPORT_FIELDS, c.canonical_hash)
         if report.get("content_hash") != expected_hash:
             fail("report_integrity", "groundedness", "Report content_hash differs from its content")
         if tuple(section_by_id) != SECTION_ORDER or (sections and (
@@ -72,7 +71,7 @@ class ReportEvaluator:
             support = await self.verifier.verify(claim, evidence=data["evidence"], sources=data["sources"],
                                                  company_id=self.company_id, as_of_date=data["as_of_date"])
             supports[cid] = support
-            if current_support(support, claim, evidence, self.hash_fn, self.verifier.verifier_version):
+            if current_support(support, claim, evidence, c.canonical_hash, self.verifier.verifier_version):
                 original_excerpts.append(await self.verifier.prepare(
                     claim, evidence=data["evidence"], sources=data["sources"],
                     company_id=self.company_id, as_of_date=data["as_of_date"]))
@@ -122,12 +121,12 @@ class ReportEvaluator:
                           for cid in p["claim_ids"]}
             supported_ids = {cid for cid in linked_ids if cid in claims and cid in supports
                              and claims[cid]["perspective"] == perspective
-                             and current_support(supports[cid], claims[cid], evidence, self.hash_fn,
+                             and current_support(supports[cid], claims[cid], evidence, c.canonical_hash,
                                                  self.verifier.verifier_version)}
             if len(supported_ids) < 2:
                 existing = {cid for cid, claim in claims.items() if claim["perspective"] == perspective
                             and cid in supports and current_support(supports[cid], claim, evidence,
-                                                                   self.hash_fn, self.verifier.verifier_version)}
+                                                                   c.canonical_hash, self.verifier.verifier_version)}
                 research = len(existing) < 2
                 fail("perspective_coverage", "perspective_coverage", "Perspective needs two substantive supported claims", section_id=perspective,
                      target=perspective if research else None, repair="research" if research else "rewrite")
@@ -140,7 +139,7 @@ class ReportEvaluator:
                 # Existing approved material can sometimes fix a biased report by rewriting.
                 available_ids = {eid for cid, claim in claims.items() if claim["perspective"] == perspective
                                  and cid in supports and current_support(supports[cid], claim, evidence,
-                                                                        self.hash_fn, self.verifier.verifier_version)
+                                                                        c.canonical_hash, self.verifier.verifier_version)
                                  for eid in claim["evidence_ids"]}
                 available = {evidence[eid]["source_id"] for eid in available_ids}
                 all_sources = [sources[sid] for sid in sorted(available)]
@@ -226,7 +225,7 @@ class ReportEvaluator:
         passed = (all(checks.values()) and all(score >= 3 for score in scores.values())
                   and not any(f["severity"] == "critical" for f in findings))
         repair = "none" if passed else "research" if any(f["repair_kind"] == "research" for f in findings) else "rewrite"
-        return self.contract_factory("EvalVerdict", {
+        return c.EvalVerdict.model_validate({
             "report_revision": report["revision"], "report_hash": report["content_hash"],
             "evidence_epoch": report["evidence_epoch"], "structural_checks": checks,
             "criterion_scores": scores, "findings": findings, "overall_pass": passed,

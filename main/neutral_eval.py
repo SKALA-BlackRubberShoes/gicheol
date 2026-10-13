@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from contextlib import asynccontextmanager
 import hashlib
 import json
 import os
@@ -79,6 +80,17 @@ def _exit(status):
     return {"completed": 0, "incomplete": 3, "failed": 1}.get(status, 1)
 
 
+@asynccontextmanager
+async def _service_scope(runtime, store, llm, run_input):
+    bundle = await load_services(runtime, store, llm, run_input=run_input)
+    try:
+        yield bundle
+    finally:
+        close = getattr(bundle, "close", None)
+        if close is not None:
+            await close()
+
+
 async def _execute_graph(*, state, runtime, store, bundle, checkpointer, resume=False):
     recorder = TraceRecorder(store.root, run_id=state["run_id"], trace_id=state["trace_id"],
         metadata={"spec_version": "1.0", "schema_version": state["versions"]["schema"],
@@ -146,18 +158,18 @@ async def _run(args, runtime):
     store = FileArtifactStore(runtime.artifact_root / run_id, run_id=run_id)
     llm = StructuredLLMClient(timeout_seconds=runtime.run_config.llm_timeout_seconds,
                              max_retries=runtime.run_config.max_transient_retries)
-    bundle = await load_services(runtime, store, llm)
-    state = await initialize_run(run_input, runtime.run_config, store=store)
-    state["run_id"] = run_id
-    state = validate_state(state)
-    runtime_ref = await store.save(runtime.snapshot(), key="snapshots/runtime.json")
-    await store.save({"run_id": run_id, "thread_id": state["thread_id"],
-                      "runtime_ref": runtime_ref.model_dump(mode="json"),
-                      "input_ref": state["input_ref"].model_dump(mode="json"),
-                      "config_file_hash": _file_hash(runtime.config_path)}, key="runtime.json")
-    async with open_checkpointer(runtime.sqlite_path) as checkpointer:
-        result = await _execute_graph(state=state, runtime=runtime, store=store,
-                                     bundle=bundle, checkpointer=checkpointer)
+    async with _service_scope(runtime, store, llm, run_input) as bundle:
+        state = await initialize_run(run_input, runtime.run_config, store=store)
+        state["run_id"] = run_id
+        state = validate_state(state)
+        runtime_ref = await store.save(runtime.snapshot(), key="snapshots/runtime.json")
+        await store.save({"run_id": run_id, "thread_id": state["thread_id"],
+                          "runtime_ref": runtime_ref.model_dump(mode="json"),
+                          "input_ref": state["input_ref"].model_dump(mode="json"),
+                          "config_file_hash": _file_hash(runtime.config_path)}, key="runtime.json")
+        async with open_checkpointer(runtime.sqlite_path) as checkpointer:
+            result = await _execute_graph(state=state, runtime=runtime, store=store,
+                                         bundle=bundle, checkpointer=checkpointer)
     _output({"run_id": run_id, "status": result["status"], "mock": bundle.mock,
              "terminal_reason": result["terminal_reason"],
              "manifest": result["final_manifest_ref"]})
@@ -206,9 +218,9 @@ async def _resume(args):
         llm = StructuredLLMClient(deadline_at=state["deadline_at"],
             timeout_seconds=runtime.run_config.llm_timeout_seconds,
             max_retries=runtime.run_config.max_transient_retries)
-        bundle = await load_services(runtime, store, llm)
-        result = await _execute_graph(state=state, runtime=runtime, store=store,
-                                     bundle=bundle, checkpointer=checkpointer, resume=True)
+        async with _service_scope(runtime, store, llm, run_input) as bundle:
+            result = await _execute_graph(state=state, runtime=runtime, store=store,
+                                         bundle=bundle, checkpointer=checkpointer, resume=True)
     _output({"run_id": args.run_id, "status": result["status"], "mock": bundle.mock,
              "terminal_reason": result["terminal_reason"], "manifest": result["final_manifest_ref"]})
     return _exit(result["status"])
@@ -232,16 +244,31 @@ async def dispatch(args):
                  "note": "Configuration preflight only; owner service integration and live run are separate"})
         return 0
     store = FileArtifactStore(runtime.artifact_root / ("preflight-" + str(uuid4())))
-    bundle = await load_services(runtime, store, StructuredLLMClient(
-        timeout_seconds=runtime.run_config.llm_timeout_seconds,
-        max_retries=runtime.run_config.max_transient_retries))
-    async with asyncio.timeout(runtime.run_config.run_deadline_seconds):
-        if args.command == "ingest":
-            if bundle.ingest is None:
-                raise ValueError("No neutral ingestion adapter is registered")
-            result = await bundle.ingest(runtime=runtime, corpus_manifest=checked.corpus_manifest)
-        else:
-            result = await evaluate_retrieval(bundle, _read_json(args.dataset))
+    if runtime.services_factory == "main.runtime.neutral.production:create_production_services":
+        from main.runtime.neutral.production import ingest_production_corpus, evaluate_production_retrieval
+        async with asyncio.timeout(runtime.run_config.run_deadline_seconds):
+            if args.command == "ingest":
+                result = await ingest_production_corpus(runtime=runtime, store=store,
+                    corpus_manifest=checked.corpus_manifest)
+            else:
+                result = await evaluate_production_retrieval(runtime=runtime, store=store,
+                    corpus_manifest=checked.corpus_manifest, dataset=_read_json(args.dataset))
+    else:
+        bundle = await load_services(runtime, store, StructuredLLMClient(
+            timeout_seconds=runtime.run_config.llm_timeout_seconds,
+            max_retries=runtime.run_config.max_transient_retries))
+        try:
+            async with asyncio.timeout(runtime.run_config.run_deadline_seconds):
+                if args.command == "ingest":
+                    if bundle.ingest is None:
+                        raise ValueError("No neutral ingestion adapter is registered")
+                    result = await bundle.ingest(runtime=runtime, corpus_manifest=checked.corpus_manifest)
+                else:
+                    result = await evaluate_retrieval(bundle, _read_json(args.dataset))
+        finally:
+            close = getattr(bundle, "close", None)
+            if close is not None:
+                await close()
     _output(result)
     return 0
 

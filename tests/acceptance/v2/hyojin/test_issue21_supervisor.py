@@ -1,14 +1,12 @@
 """Actual Supervisor regression for failed target evidence (GitHub issue #21)."""
 
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
 import unittest
 
 
-@unittest.skipUnless(os.environ.get("HYOJIN_SUPERVISOR_ROOT"), "Set HYOJIN_SUPERVISOR_ROOT to the original shared-module snapshot")
 class EligibilityRoutingTests(unittest.TestCase):
     def run_scenario(self, scenario):
         path = Path(__file__).resolve().parents[3] / "fixtures/v2/hyojin/supervisor_regression.py"

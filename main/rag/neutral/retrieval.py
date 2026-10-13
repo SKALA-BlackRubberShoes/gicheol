@@ -67,6 +67,7 @@ class NeutralRetriever:
         self, *, corpus: Any, embedding: EmbeddingProvider, store: ArtifactStore,
         client: Any | None = None, index_revision: str | None = None,
         company_aliases: dict[str, str] | None = None,
+        collection_name: str | None = None,
     ):
         self.corpus, self.embedding, self.store = corpus, embedding, store
         self.sources: dict[str, Source] = dict(corpus.sources)
@@ -114,7 +115,7 @@ class NeutralRetriever:
         }
         self.index_hash = canonical_hash(self.manifest)
         self.index_revision = _component(index_revision or self.index_hash[:20])
-        self.collection_name = "neutral_v2_suhyeon_" + self.index_revision
+        self.collection_name = _component(collection_name) if collection_name else "neutral_v2_suhyeon_" + self.index_revision
         self._payloads = {c.chunk_id: _chunk_payload(c, corpus_hash=corpus.corpus_hash, index_hash=self.index_hash) for c in corpus.chunks}
         if client is None:
             from qdrant_client import QdrantClient
