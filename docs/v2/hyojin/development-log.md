@@ -43,4 +43,14 @@ Python 3.12.14·Pydantic 2.13.5 환경에서 동욱 contracts.py를 /tmp에서 �
 
 주현은 공통 계약·namespace package·runtime·ArtifactStore·LLMClient를 연결하고 RunConfig.rubric_version을 `neutral-quality-1.0`으로 맞춰야 한다. 수현은 실제 원문 로더와 저장된 검색 receipt 검증을 제공한다. 동욱은 assessor/evaluator를 Supervisor에 등록하고 gate·State·repair 정책을 검증한다. 웅희는 REFERENCE evidence 연결을 보존한 writer와 publish를 연결한다.
 
-현재 브랜치는 로컬 작업이며 원격 push·PR은 수행하지 않았다. 실제 모델의 의미 판정 정확도, 실제 RAG, PDF와 LangSmith 증빙 및 전체 그래프 통합은 해당 서비스 연결 후 확인해야 한다. 테스트의 의미 Judge와 저장·검색은 명시적인 deterministic fixture다.
+최초 로그 작성 시점에는 로컬 작업이며 원격 push·PR을 수행하지 않았다. 실제 모델의 의미 판정 정확도, 실제 RAG, PDF와 LangSmith 증빙 및 전체 그래프 통합은 해당 서비스 연결 후 확인해야 한다. 테스트의 의미 Judge와 저장·검색은 명시적인 deterministic fixture다.
+
+## 이슈 21 대상 검증 실패 라우팅 수정
+
+2026년 10월 13일, [이슈 21](https://github.com/SKALA-BlackRubberShoes/gicheol/issues/21)의 재현을 실제 공통 DTO·Supervisor와 효진 Assessor로 확인했다. C-eligibility 지원 판정이 unsupported여도 기존 코드가 대상 상태를 eligible로 유지하고 domain_application의 연구 횟수를 증가시켰다. 기존 53개 테스트가 다루지 않던 서비스 연결 결함이었다.
+
+SufficiencyAssessor가 대상 실패를 한 번 계산해 `perspective=eligibility`인 critical gap으로 반환하도록 수정했다. 실패 claim ID·지원 상태·verifier 이유·evidence ID 및 입력 critical gap의 검색 힌트를 보존한다. 연구 관점의 결과나 공통 Supervisor 코드는 수정하지 않았다.
+
+실제 Supervisor 회귀 테스트 세 개는 대상 실패 뒤 eligibility로 이동, 여전히 실패하면 대상만 재확인, 지원을 복구하면 gate/writer로 이동, 대상 시도 상한에서 ELIGIBILITY_UNKNOWN 종료를 검증한다. 모든 경로에서 네 연구 관점의 시도 횟수를 소비하지 않으며, 복구 후 최신 gate와 writer 입력 검증을 통과한다.
+
+공통 계약을 사용한 단위 테스트 50개와 인수 테스트 10개, 총 60개가 통과했다. 실제 Supervisor 테스트에 필요한 원본 모듈 추출 및 재현 명령은 interfaces.md의 이슈 21 절에 기록했다. 원문·Judge·저장소는 fixture이며 실제 RAG·LLM·PDF 검증과 구분한다.

@@ -104,3 +104,24 @@ PYTHONPATH=. HYOJIN_CONTRACTS_PATH=/tmp/hyojin-contracts-2fb927d.py \
 ```
 
 마지막 명령은 `tests/fixtures/v2/hyojin/handoff_cases.json`을 재생성한다. 통과 평가, rewrite 전용 평가, 시장·도메인 research 두 개와 neutrality rewrite 하나, 보고서 hash·revision·epoch 변경, 저장된 ClaimSupport와 충분성 verdict를 전달한다. 실제 모델·RAG·PDF·LangSmith 실행 결과가 아니다.
+
+## 이슈 21 대상 조건 재확인 회귀
+
+[GitHub 이슈 21](https://github.com/SKALA-BlackRubberShoes/gicheol/issues/21)의 대상 조건 검증 실패는 `perspective="eligibility"`인 critical gap으로 반환한다. 실패한 target claim ID, support 상태·원인, evidence_ids와 기존 critical gap의 종류·질문·query_hints를 보존한다. 네 verdict가 같은 gap ID를 공유하며 Supervisor가 중복을 제거한다. 대상 전용 ClaimSupport는 연구 claim 검증 목록에 섞지 않는다.
+
+실제 Supervisor는 이 gap으로 eligibility_status를 unknown으로 바꾸고 대상 확인을 예약한다. 다른 관점의 research_attempts를 소비하지 않는다. 대상 조건의 의미 검증이 다시 통과해야 새 gate와 writer로 진행하며, 대상 재확인 상한까지 실패하면 ELIGIBILITY_UNKNOWN으로 종료한다.
+
+원본 공유 모듈 네 개를 임시 경로에 추출하고 `HYOJIN_SUPERVISOR_ROOT`를 지정하면 실제 Supervisor 회귀 테스트를 실행한다. 로컬 legacy graph의 초기화와 DTO 타입 중복을 피하기 위해 fixture script가 별도 subprocess에서 원본 모듈을 canonical 이름으로 로드한다. 공유 production 파일은 수정하지 않는다.
+
+```bash
+mkdir -p /tmp/hyojin-supervisor-2fb927d
+git archive 2fb927db25d02e1bda5bdade02a9e25977a3b289 \
+  main/agents/supervisor/contracts.py main/agents/supervisor/policy.py \
+  main/agents/supervisor/agent.py main/graph/supervisor_state.py \
+  | tar -x -C /tmp/hyojin-supervisor-2fb927d
+HYOJIN_CONTRACTS_PATH=/tmp/hyojin-supervisor-2fb927d/main/agents/supervisor/contracts.py \
+HYOJIN_SUPERVISOR_ROOT=/tmp/hyojin-supervisor-2fb927d \
+  python -m unittest discover -s tests/acceptance/v2/hyojin -p 'test_*.py' -v
+```
+
+`test_issue21_supervisor.py`의 세 시나리오는 eligibility → writer, eligibility → eligibility → writer, eligibility → eligibility → abort를 검증한다. 모든 경로에서 네 관점의 연구 횟수와 기존 결과를 보존하며, 실패 동안 gate·writer를 차단한다. 복구 경로는 실제 `validate_current_gate`와 `validate_writer_inputs`도 통과해야 한다. Judge·원문 검색·저장소는 명시적인 fixture이며 실제 모델 실행이나 PDF 발행을 의미하지 않는다.

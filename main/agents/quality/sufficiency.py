@@ -49,19 +49,37 @@ class SufficiencyAssessor:
         source_by_id = index(sources, "source_id")
         index([claim for result in results.values() for claim in result["claims"]], "claim_id")
         eligibility = data["eligibility"]
-        eligible = (eligibility.get("verdict") == "eligible"
-                    and all(eligibility.get(field) is True
-                            for field in ("unlisted", "funding_stage", "exit_status"))
-                    and eligibility.get("result_hash") == self.semantic_hash_fn(eligibility))
-        if (not eligibility.get("claims")
-                or any(gap["severity"] == "critical" for gap in eligibility.get("gaps", []))):
-            eligible = False
+        # Supervisor routes target retries only from eligibility-scoped gaps.
+        # Keep target failures separate from the otherwise valid research views.
+        eligibility_gaps = [dict(gap, perspective="eligibility")
+                            for gap in eligibility.get("gaps", []) if gap["severity"] == "critical"]
+        target_evidence_ids = sorted({eid for claim in eligibility.get("claims", [])
+                                      for eid in claim["evidence_ids"]})
+        if eligibility.get("verdict") != "eligible":
+            eligibility_gaps.append(make_gap("eligibility", "eligibility_unknown",
+                f"Confirm target verdict: {eligibility.get('verdict')}", evidence_ids=target_evidence_ids))
+        for condition in ("unlisted", "funding_stage", "exit_status"):
+            if eligibility.get(condition) is not True:
+                eligibility_gaps.append(make_gap("eligibility", "eligibility_unknown",
+                    f"Confirm target condition {condition}: {eligibility.get(condition)}", evidence_ids=target_evidence_ids))
+        if eligibility.get("result_hash") != self.semantic_hash_fn(eligibility):
+            eligibility_gaps.append(make_gap("eligibility", "eligibility_unknown",
+                "Refresh changed target result hash", evidence_ids=target_evidence_ids))
+        if not eligibility.get("claims"):
+            eligibility_gaps.append(make_gap("eligibility", "eligibility_unknown",
+                "Provide original evidence for target conditions"))
         for claim in eligibility.get("claims", []):
             support = await self.verifier.verify(claim, evidence=evidence, sources=sources,
                                                  company_id=self.company_id, as_of_date=data["as_of_date"])
             if not current_support(support, claim, evidence_by_id, self.hash_fn,
                                    self.verifier.verifier_version):
-                eligible = False
+                value = record(support)
+                status = value["support_status"]
+                failure = "stale claim/evidence/verifier binding" if status == "supported" else status
+                eligibility_gaps.append(make_gap("eligibility", "eligibility_unknown",
+                    f"Verify target claim {claim['claim_id']} ({failure}): {value['reason']}"[:2000],
+                    evidence_ids=claim["evidence_ids"], query_hints=[f"Verify target claim {claim['claim_id']}"]))
+        eligibility_gaps = merge_gaps(eligibility_gaps)
         views = {}
         for perspective in QUESTIONS:
             result = results.get(perspective)
@@ -101,8 +119,7 @@ class SufficiencyAssessor:
                         gaps.append(make_gap(perspective, "citation_mismatch",
                                              support_payload["reason"][:2000],
                                              evidence_ids=claim["evidence_ids"]))
-            if not eligible:
-                gaps.append(make_gap(perspective, "eligibility_unknown", "Confirm eligible target conditions"))
+            gaps.extend(eligibility_gaps)
             if len({claim["text"].strip() for claim in supported.values()}) < 2:
                 gaps.append(make_gap(perspective, "missing_evidence", "Obtain two distinct supported claims"))
             answers = result["answered_questions"]

@@ -201,6 +201,64 @@ class SufficiencyTests(unittest.IsolatedAsyncioTestCase):
             f.rehash(case)
             verdicts, _ = await self.assess(case)
             self.assertFalse(any(v["structural_pass"] for v in verdicts.values()))
+            self.assertTrue(all(any(g["perspective"] == "eligibility" and g["severity"] == "critical"
+                                    for g in v["gaps"]) for v in verdicts.values()))
+
+    async def test_target_support_failure_keeps_scope_claim_evidence_and_reason(self):
+        for status in ("unsupported", "partial", "unverified"):
+            with self.subTest(status=status):
+                case = f.fixture()
+                judge = f.FixtureJudge()
+                if status == "unverified":
+                    case["evidence"][-1]["event_date"] = "2026-10-14"
+                    expected_reason = "event_date is after the assessment cutoff"
+                else:
+                    judge.support_status["C-eligibility"] = status
+                    expected_reason = "Synthetic fixture entailment verdict"
+                verdicts, stored = await self.assess(case, verifier_judge=judge)
+                identities = set()
+                for verdict in verdicts.values():
+                    gaps = [g for g in verdict["gaps"] if g["kind"] == "eligibility_unknown"]
+                    self.assertEqual(len(gaps), 1)
+                    gap = gaps[0]
+                    self.assertEqual(gap["perspective"], "eligibility")
+                    self.assertEqual(gap["evidence_ids"], ["E-eligibility"])
+                    self.assertIn("C-eligibility", gap["question"])
+                    self.assertIn(expected_reason, gap["question"])
+                    identities.add(gap["gap_id"])
+                self.assertEqual(len(identities), 1)
+                self.assertNotIn("C-eligibility", {support["claim_id"] for support in stored.values()})
+
+    async def test_declared_target_critical_gap_is_preserved(self):
+        case = f.fixture()
+        original = make_gap("eligibility", "conflicting_evidence", "Confirm conflicting exit reports",
+                            evidence_ids=["E-eligibility"], query_hints=["Exit registry", "Official target record"])
+        case["eligibility"]["gaps"] = [original]
+        f.rehash(case)
+        verdicts, _ = await self.assess(case)
+        self.assertTrue(all(original in verdict["gaps"] for verdict in verdicts.values()))
+
+    async def test_unknown_target_condition_and_missing_claims_have_target_gaps(self):
+        for mode in ("condition", "missing_claims"):
+            case = f.fixture()
+            if mode == "condition":
+                case["eligibility"].update(funding_stage="unknown", verdict="unknown")
+                expected = "funding_stage"
+            else:
+                case["eligibility"]["claims"] = []
+                expected = "Provide original evidence"
+            f.rehash(case)
+            verdicts, _ = await self.assess(case)
+            for verdict in verdicts.values():
+                self.assertFalse(verdict["structural_pass"])
+                self.assertTrue(any(g["perspective"] == "eligibility" and expected in g["question"] for g in verdict["gaps"]))
+
+    async def test_target_warning_alone_does_not_block_valid_support(self):
+        case = f.fixture()
+        case["eligibility"]["gaps"] = [make_gap("eligibility", "missing_evidence", "Optional registry follow-up", severity="warning")]
+        f.rehash(case)
+        verdicts, _ = await self.assess(case)
+        self.assertTrue(all(v["structural_pass"] and v["semantic_pass"] for v in verdicts.values()))
 
     async def test_missing_or_unverified_rag_receipt_fails(self):
         for mode in ("missing", "company", "corpus", "index", "chunk", "provider"):
