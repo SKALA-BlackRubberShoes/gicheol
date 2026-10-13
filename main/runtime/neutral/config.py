@@ -45,7 +45,7 @@ _RUNTIME_DEFAULTS: dict[str, Any] = {
     "corpus_domains": [],
     "prompt_paths": [],
     "search_provider": None,
-    "services_factory": "main.runtime.neutral.services:unconfigured_services",
+    "services_factory": "main.runtime.neutral.production:create_production_services",
     "langsmith_tracing": False,
     "langsmith_project": "neutral-evaluation-v2",
     "credential_env_vars": ["OPENAI_API_KEY", "TAVILY_API_KEY"],

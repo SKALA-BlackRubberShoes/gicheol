@@ -5,6 +5,7 @@ run_config:
   research_model: null
   report_model: null
   judge_model: null
+  rubric_version: neutral-quality-1.0
   embedding_model: BAAI/bge-m3
   embedding_revision: null # Set an immutable downloaded Hugging Face revision.
   embedding_dimension: 1024
@@ -35,11 +36,19 @@ corpus_paths:
 corpus_domains:
   - Physical AI / Robotics
 # All real prompts used by the service factory must be listed here before running.
-prompt_paths: []
-search_provider: null
-services_factory: main.runtime.neutral.services:unconfigured_services
+prompt_paths:
+  - main/prompts/eligibility/eligibility.md
+  - main/prompts/technology/research.md
+  - main/prompts/market/system.md
+  - main/prompts/stakeholders/system.md
+  - main/prompts/domain/system.md
+  - main/prompts/neutral_report/writer.txt
+  - main/prompts/quality/claim_support.md
+  - main/prompts/quality/sufficiency.md
+  - main/prompts/quality/report_judge.md
+search_provider: openai
+services_factory: main.runtime.neutral.production:create_production_services
 langsmith_tracing: false
 langsmith_project: neutral-evaluation-v2
 credential_env_vars:
   - OPENAI_API_KEY
-  - TAVILY_API_KEY

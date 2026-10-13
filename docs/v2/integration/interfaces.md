@@ -37,7 +37,7 @@ def create_services(*, runtime, store, llm):
     )
 ```
 
-위 코드는 연결 모양이며 아직 없는 서비스의 구현을 뜻하지 않는다. 기본 factory는 필요한 담당 구현을 명시하고 실패한다. 이전 투자 에이전트를 중립 평가 worker로 자동 대체하지 않는다.
+위 코드는 사용자 지정 factory의 연결 모양이다. 기본값은 `main.runtime.neutral.production:create_production_services`이며 기존 담당자의 실제 구현을 연결한다. 기본 factory는 검증된 `RunInput`을 추가로 받는다. `load_services(runtime, store, llm, run_input=...)`는 이 기본 factory에만 입력을 전달하므로 기존 사용자 지정 factory의 세 인수 계약은 유지된다. 선택적인 async `close`를 bundle에 등록하면 CLI가 정상 종료·중단 모두에서 호출한다.
 
 | 서비스 | 입력 | 반환 | 구현 담당 |
 | --- | --- | --- | --- |
@@ -58,7 +58,7 @@ def create_services(*, runtime, store, llm):
 
 ## 설정 및 색인 manifest
 
-설정은 `load_runtime_config`가 YAML < 환경변수 < CLI override 순으로 읽으며 경로는 저장소 루트 기준이다. 공통 RunConfig를 재사용하고 runtime wrapper에는 경로·서비스 설정만 추가한다. `runtime_config_from_snapshot`은 저장된 비밀 아닌 설정을 유지하며 자격 증명만 환경변수에서 다시 읽는다. 모델 ID, 실제 한글 TTF와 고정된 40자리 embedding revision SHA를 임의로 채우지 않는다. 기본 설정은 담당 서비스·prompt·색인을 등록하기 전 명시적으로 실패한다.
+설정은 `load_runtime_config`가 YAML < 환경변수 < CLI override 순으로 읽으며 경로는 저장소 루트 기준이다. 공통 RunConfig를 재사용하고 runtime wrapper에는 경로·서비스 설정만 추가한다. `runtime_config_from_snapshot`은 저장된 비밀 아닌 설정을 유지하며 자격 증명만 환경변수에서 다시 읽는다. 모델 ID, 실제 한글 TTF와 고정된 40자리 embedding revision SHA를 임의로 채우지 않는다. 기본 YAML에는 실제 factory와 9개 prompt, `search_provider: openai`, `rubric_version: neutral-quality-1.0`가 등록되어 있다. research/report/judge 모델 3개와 배포 경로는 명시해야 한다. `supervisor_model`은 과거 snapshot 호환을 위한 선택 필드다.
 
 입력 JSON의 선택 필드 `run_config`는 생략하거나, 적용된 YAML·환경변수·CLI 설정의 공통 RunConfig와 같아야 한다. 다르면 입력 오류(exit 2)로 거절하며 입력 설정을 조용히 덮어쓰지 않는다.
 
@@ -90,8 +90,23 @@ SDK 자체 retry를 끄고 adapter budget 소진을 최종 오류로 반환해 S
 
 `docs/v2/integration/package_submission.py`는 완료 manifest, 동일 run/revision의 trace 증빙과 PNG, README·브랜치 링크를 검사하고 허용 파일만 ZIP으로 묶는다. 실제 실행·화면 내용의 진위는 별도의 live 검증과 시각 검토가 필요하다. Slack으로 자동 제출하지 않는다.
 
-## 남은 통합 작업
+## 기본 서비스 실행
 
-웅희의 `NeutralWriter`와 `NeutralPublisher(store=store, evidence_resolver=resolver, artifact_root=store.root, font_path=runtime.report_font_path)`는 #26 회귀에서 실제 구현을 연결했다. 연구·Judge 결정은 fixture이며 실제 LLM·RAG 결과를 의미하지 않는다. 실제 서비스 factory 등록은 별도로 필요하다.
+기본 factory는 `EligibilityAgent`, `TechnologyWorker`, `MarketAgent`, `StakeholdersAgent`, `DomainAgent`, `NeutralWriter`, `ReportEvaluator`, `SufficiencyAssessor`, `NeutralPublisher`를 조립한다. 기존 `SentenceTransformerEmbeddings`를 사용하므로 모델 실행 환경에 `sentence-transformers`와 그 Torch 의존성을 별도로 설치해야 한다. 가벼운 `requirements-v2.lock` 테스트 환경에는 모델 가중치와 이 선택 의존성이 포함되어 있지 않다. 모델 ID는 BGE-M3 또는 multilingual-e5-base 중 하나이며 revision은 실제 다운로드한 40자리 commit SHA로 고정한다.
 
-수현·수영·효진·웅희의 실제 서비스 등록, 고정 open-source 색인과 prompt, 실제 model ID·font 설정이 필요하다. 이후 AT01–19 전체 통합, 실제 RAG와 모델 성공, 재조사·품질 보완 LangSmith PNG, 최대 10페이지 한글 PDF를 같은 run과 report revision에 연결해야 한다. 현재 mock fixture 성공을 그 완료로 해석하지 않는다.
+```bash
+python -m pip install -r requirements-v2.lock
+python -m pip install sentence-transformers
+python -m main.neutral_eval ingest --config configs/neutral-evaluation.yaml --env-file .env
+python -m main.neutral_eval run --config configs/neutral-evaluation.yaml --env-file .env --input input.json
+python -m main.neutral_eval resume --run-id RUN_UUID --env-file .env
+python -m main.neutral_eval evaluate-retrieval --dataset gold.json --env-file .env
+```
+
+먼저 YAML 또는 환경변수에서 research/report/judge 모델, embedding revision·차원, Qdrant URL·새 collection, 실제 한글 TTF를 설정한다. OpenAI 검색 모델은 web search를 지원해야 한다. `OPENAI_API_KEY`가 필요하며 LangSmith 활성화 시 그 키도 필요하다. ingest와 실행은 동일 설정을 사용한다. `sources.json`의 원본 PDF 귀속을 CSV의 회사명·공식 URL fingerprint로 변환하므로 입력의 회사명·URL은 준비된 CSV와 일치해야 한다. 출처 소유권이 없는 일반 논문을 회사 근거로 바꾸지 않는다. metadata와 corpus가 바뀌면 기존 색인은 거절하며 새 collection을 사용한다.
+
+검색 평가는 `company_id`에 준비된 CSV ID 또는 canonical ID, `domain`, `as_of_date`를 넣은 실제 gold 20질의를 사용한다. 합성 ID가 있는 예시 benchmark는 그대로 실제 회사 색인을 평가할 수 없다. gold의 정답 출처는 검색기에 전달하지 않는다. URL의 호스트명만으로 독립 출처·발행일을 확정하지 않으며, 미분류 웹 문서는 충분성 판정에서 독립 검증으로 계산하지 않는다.
+
+`runtime/evidence-registry.json`에 실제 source/evidence/receipt 참조와 PDF 페이지·SHA 처리 예산을 원자적으로 저장한다. 재개 시 원문 SHA를 먼저 확인하고 근거를 다시 해결한다. 손상된 저장 원문을 재수집으로 덮어써서 승인하지 않는다. 실제 호출 재시도는 기존 `RetryLedger`와 SQLite 예산을 유지한다.
+
+실제 모델·고정 가중치·서버 설정과 LangSmith 증빙이 갖춰진 live 실행은 별도 검증 사항이다. 이번 PDF·파일·Qdrant 통합 테스트의 외부 embedding/model은 명시적 fixture이며 실제 품질·속도·비용 수치나 제출 완료를 뜻하지 않는다.

@@ -33,6 +33,7 @@ class ServiceBundle:
     ingest: Callable | None = None
     retrieve: Callable | None = None
     mock: bool = False
+    close: Callable | None = None
 
     def validate(self) -> None:
         if type(self.mock) is not bool:
@@ -42,7 +43,7 @@ class ServiceBundle:
             raise ServiceConfigurationError("Register exactly the seven SDD business workers")
         for callback in [*self.workers.values(), self.assess_evidence, self.publish_worker,
                          getattr(self.evidence_resolver, "resolve", None),
-                         *[optional for optional in (self.ingest, self.retrieve) if optional is not None]]:
+                         *[optional for optional in (self.ingest, self.retrieve, self.close) if optional is not None]]:
             if not (inspect.iscoroutinefunction(callback) or
                     inspect.iscoroutinefunction(getattr(callback, "__call__", None))):
                 raise ServiceConfigurationError("All service boundaries must be async")
@@ -56,7 +57,7 @@ def unconfigured_services(**_: Any) -> ServiceBundle:
     )
 
 
-async def load_services(runtime, store, llm) -> ServiceBundle:
+async def load_services(runtime, store, llm, *, run_input=None) -> ServiceBundle:
     target = runtime.services_factory
     module, separator, attribute = target.partition(":")
     if not separator or not module or not attribute or "." in attribute:
@@ -65,12 +66,20 @@ async def load_services(runtime, store, llm) -> ServiceBundle:
         factory = getattr(importlib.import_module(module), attribute)
     except (ImportError, AttributeError) as exc:
         raise ServiceConfigurationError(f"Cannot load service factory {target}") from exc
-    value = factory(runtime=runtime, store=store, llm=llm)
+    if target == "main.runtime.neutral.production:create_production_services":
+        if run_input is None:
+            raise ServiceConfigurationError("Production evaluation requires the verified RunInput")
+        value = factory(runtime=runtime, store=store, llm=llm, run_input=run_input)
+    else:
+        value = factory(runtime=runtime, store=store, llm=llm)
     bundle = await value if inspect.isawaitable(value) else value
     if not isinstance(bundle, ServiceBundle):
         raise ServiceConfigurationError("Service factory must return ServiceBundle")
     bundle.validate()
     return bundle
+
+
+from .production import create_production_services
 
 
 def assemble_graph(*, bundle, store, run_config, checkpointer, recorder=None,
