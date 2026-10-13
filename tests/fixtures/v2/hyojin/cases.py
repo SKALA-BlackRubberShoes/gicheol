@@ -188,7 +188,7 @@ class FixtureJudge:
 
 
 def services(case, *, verifier_judge=None, sufficiency_judge=None, report_judge=None,
-             timeout_seconds=1, contract_factory=factory):
+             timeout_seconds=1):
     stored = {}
 
     async def excerpt_loader(source, evidence):
@@ -201,21 +201,19 @@ def services(case, *, verifier_judge=None, sufficiency_judge=None, report_judge=
         stored[key] = deepcopy(payload)
         return {"relative_path": key, "sha256": hash_fn(payload), "media_type": "application/json", "schema_version": "1.0"}
 
-    valid_receipt = hash_fn(record(contract_factory("RetrievalReceipt",
+    valid_receipt = hash_fn(record(factory("RetrievalReceipt",
         case["perspective_results"]["technology_maturity"]["retrieval_receipts"][0])))
 
     async def receipt_validator(receipt):
         return hash_fn(receipt) == valid_receipt
 
     verifier = ClaimSupportVerifier(judge=verifier_judge or FixtureJudge(), excerpt_loader=excerpt_loader,
-                                   contract_factory=contract_factory, hash_fn=hash_fn, timeout_seconds=timeout_seconds)
+                                   timeout_seconds=timeout_seconds)
     assessor = SufficiencyAssessor(verifier=verifier, judge=sufficiency_judge or FixtureJudge(),
                                   save_claim_support=save, receipt_validator=receipt_validator,
-                                  contract_factory=contract_factory, hash_fn=hash_fn, semantic_hash_fn=semantic_hash_fn,
                                   company_id="alpha", corpus_version="corpus-1", index_version="index-1",
                                   timeout_seconds=timeout_seconds)
-    evaluator = ReportEvaluator(verifier=verifier, judge=report_judge or FixtureJudge(), contract_factory=contract_factory,
-                                hash_fn=hash_fn, company_id="alpha", judge_model="fixture-judge", timeout_seconds=timeout_seconds)
+    evaluator = ReportEvaluator(verifier=verifier, judge=report_judge or FixtureJudge(), company_id="alpha", judge_model="fixture-judge", timeout_seconds=timeout_seconds)
     return verifier, assessor, evaluator, stored
 
 
