@@ -4,7 +4,7 @@
 
 `feature/V2/juhyeon/runtime-integration`은 SDD 1.0의 공통 Supervisor에 파일 저장·SQLite 복구·CLI·오류 재시도·trace를 연결한 별도 실행 경로입니다. 신규 명령은 `python -m main.neutral_eval --help`, 통합 검증은 `python -m pytest -q tests`입니다. 설치 버전은 `requirements-v2.lock`에 고정했습니다.
 
-주현은 저장·복구, 실행 환경, 설정과 CLI, LLM·재시도·로그 adapter, 통합 테스트와 제출 패키지 검사를 구현했습니다. 실제 RAG·대상/관점 조사·품질 평가·중립 보고서 서비스는 담당자 구현을 `ServiceBundle`로 등록해야 합니다. 현재 fixture 검증은 실제 모델·RAG·PDF·LangSmith 제출 증빙의 완료를 뜻하지 않습니다. 새 경로의 정확한 연결 상태와 한계는 [주현 구현 안내](docs/v2/juhyeon/README.md), [통합 계약](docs/v2/integration/interfaces.md), [검증 결과](docs/v2/juhyeon/verification.md)에 있습니다.
+기본 `create_production_services`가 실제 RAG·대상/관점 조사·품질 평가·중립 보고서 서비스를 공통 DTO로 연결합니다. `configs/neutral-evaluation.yaml`에서 모델 3개, 고정 embedding revision, Qdrant, 한글 TTF와 자격 증명을 설정하고 `ingest` 후 `run`을 실행합니다. Supervisor는 규칙으로 라우팅하므로 별도 모델을 요구하지 않습니다. 현재 fixture 검증은 실제 모델·LangSmith 제출 증빙의 완료를 뜻하지 않습니다. 연결 방법과 한계는 [통합 계약](docs/v2/integration/interfaces.md), [단순화 검증](docs/v2/dongwook/simplification.md)에 있습니다.
 
 아래는 기존 투자 분석 경로의 설명입니다. V2는 이 경로의 투자 추천·점수 기준을 사용하지 않습니다.
 

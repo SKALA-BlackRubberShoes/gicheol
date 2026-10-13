@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from main.agents.supervisor import contracts as c
+
 from collections.abc import Callable
 from typing import Any
 
@@ -23,23 +25,19 @@ class SufficiencyAssessor:
 
     def __init__(self, *, verifier: ClaimSupportVerifier, judge: Callable,
                  save_claim_support: Callable, receipt_validator: Callable,
-                 contract_factory: Callable, hash_fn: Callable, semantic_hash_fn: Callable,
                  company_id: str, corpus_version: str, index_version: str,
                  timeout_seconds: float = 30):
         self.verifier = verifier
         self.judge = judge
         self.save_claim_support = save_claim_support
         self.receipt_validator = receipt_validator
-        self.contract_factory = contract_factory
-        self.hash_fn = hash_fn
-        self.semantic_hash_fn = semantic_hash_fn
         self.company_id = company_id
         self.corpus_version = corpus_version
         self.index_version = index_version
         self.timeout_seconds = timeout_seconds
 
     async def __call__(self, request: Any):
-        data = record(self.contract_factory("SufficiencyRequest", record(request)))
+        data = record(c.SufficiencyRequest.model_validate(record(request)))
         results = data["perspective_results"]
         if set(results) - QUESTIONS.keys():
             raise QualityInputError("Unexpected perspective result")
@@ -62,7 +60,7 @@ class SufficiencyAssessor:
             if eligibility.get(condition) is not True:
                 eligibility_gaps.append(make_gap("eligibility", "eligibility_unknown",
                     f"Confirm target condition {condition}: {eligibility.get(condition)}", evidence_ids=target_evidence_ids))
-        if eligibility.get("result_hash") != self.semantic_hash_fn(eligibility):
+        if eligibility.get("result_hash") != c.semantic_hash(eligibility):
             eligibility_gaps.append(make_gap("eligibility", "eligibility_unknown",
                 "Refresh changed target result hash", evidence_ids=target_evidence_ids))
         if not eligibility.get("claims"):
@@ -71,7 +69,7 @@ class SufficiencyAssessor:
         for claim in eligibility.get("claims", []):
             support = await self.verifier.verify(claim, evidence=evidence, sources=sources,
                                                  company_id=self.company_id, as_of_date=data["as_of_date"])
-            if not current_support(support, claim, evidence_by_id, self.hash_fn,
+            if not current_support(support, claim, evidence_by_id, c.canonical_hash,
                                    self.verifier.verifier_version):
                 value = record(support)
                 status = value["support_status"]
@@ -90,7 +88,7 @@ class SufficiencyAssessor:
                 result = {"claims": [], "gaps": [], "limitations": [], "evidence_ids": [],
                           "answered_questions": {}, "retrieval_receipts": []}
             else:
-                if result.get("perspective") != perspective or result.get("result_hash") != self.semantic_hash_fn(result):
+                if result.get("perspective") != perspective or result.get("result_hash") != c.semantic_hash(result):
                     gaps.append(make_gap(perspective, "citation_mismatch", "Refresh changed perspective result"))
                 for claim in result["claims"]:
                     support = await self.verifier.verify(
@@ -100,14 +98,14 @@ class SufficiencyAssessor:
                     support_payload = record(support)
                     saved = await call_async(
                         self.save_claim_support, support_payload,
-                        key=f"claim-supports/{self.hash_fn(support_payload)}.json",
+                        key=f"claim-supports/{c.canonical_hash(support_payload)}.json",
                         timeout_seconds=self.timeout_seconds,
                     )
-                    ref = self.contract_factory("ArtifactRef", record(saved))
+                    ref = c.ArtifactRef.model_validate(record(saved))
                     support_refs.append(record(ref))
                     if (claim.get("perspective") == perspective
                             and set(claim["evidence_ids"]) <= set(result["evidence_ids"])
-                            and current_support(support, claim, evidence_by_id, self.hash_fn,
+                            and current_support(support, claim, evidence_by_id, c.canonical_hash,
                                                 self.verifier.verifier_version)):
                         supported[claim["claim_id"]] = claim
                         used_evidence.update(claim["evidence_ids"])
@@ -192,8 +190,8 @@ class SufficiencyAssessor:
                        "evidence_ids": view["evidence_ids"], "claim_support_refs": view["support_refs"],
                        "reason": reason[:2000], "rubric_version": RUBRIC_VERSION}
             # SufficiencyVerdict.result_hash hashes the verdict itself, not the research result.
-            payload["result_hash"] = self.semantic_hash_fn(payload)
-            verdicts.append(self.contract_factory("SufficiencyVerdict", payload))
+            payload["result_hash"] = c.semantic_hash(payload)
+            verdicts.append(c.SufficiencyVerdict.model_validate(payload))
         return verdicts
 
     async def _has_rag(self, result, used_evidence, evidence_by_id, source_by_id):

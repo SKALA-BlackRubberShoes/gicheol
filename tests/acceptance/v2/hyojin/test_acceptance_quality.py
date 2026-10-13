@@ -107,8 +107,12 @@ class AcceptanceTests(unittest.IsolatedAsyncioTestCase):
         old = await assessor(f.sufficiency_request(case))
         self.assertTrue(all(record(v)["semantic_pass"] for v in old))
         case["perspective_results"]["market"]["claims"][0]["text"] = "Changed assertion after gate approval"
-        # Exercise the quality check without letting the common DTO reject first.
-        _, assessor, _, _ = f.services(case, contract_factory=lambda name, payload: deepcopy(payload))
+        # Shared DTO validation rejects a changed payload under an old hash.
+        from pydantic import ValidationError
+        with self.assertRaises(ValidationError):
+            await assessor(f.sufficiency_request(case))
+        # A correctly rehashed changed claim must still fail semantic support.
+        f.rehash(case)
         new = {record(v)["perspective"]: record(v) for v in await assessor(f.sufficiency_request(case))}
         self.assertFalse(new["market"]["structural_pass"])
         self.assertTrue(any(g["kind"] == "citation_mismatch" for g in new["market"]["gaps"]))

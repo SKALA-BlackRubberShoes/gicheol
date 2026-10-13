@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from main.agents.supervisor import contracts as c
+
 from collections.abc import Callable, Sequence
 import re
 from typing import Any
@@ -16,20 +18,17 @@ from .rubrics import (
 class ClaimSupportVerifier:
     """The resolver must load hash-checked full-text pages/chunks, never snippets.
 
-    ``contract_factory(name, payload)`` validates with the common DTO model.
-    ``hash_fn`` is the shared canonical hash implementation. No fallback DTOs
-    or model configuration are created in this module.
+    Domain DTOs and hash conventions come directly from the common contract.
     """
 
     def __init__(self, *, judge: Callable, excerpt_loader: Callable,
-                 contract_factory: Callable, hash_fn: Callable,
                  timeout_seconds: float = 30, verifier_version=VERIFIER_VERSION):
         self.judge = judge
         self.excerpt_loader = excerpt_loader
-        self.contract_factory = contract_factory
-        self.hash_fn = hash_fn
         self.timeout_seconds = timeout_seconds
         self.verifier_version = verifier_version
+        # Run-scoped only: approvals never cross factories, runs or processes.
+        self._supports: dict[str, dict] = {}
 
     async def prepare(self, claim: Any, *, evidence: Sequence[Any], sources: Sequence[Any],
                       company_id: str, as_of_date: str) -> dict[str, Any]:
@@ -98,15 +97,25 @@ class ClaimSupportVerifier:
         sources = records(sources)
         evidence_by_id = index(evidence, "evidence_id")
         # Malformed shared input is an operation error, never an approved support.
-        claim_digest = digest(claim, CLAIM_FIELDS, self.hash_fn)
-        hashes = {eid: digest(evidence_by_id[eid], EVIDENCE_FIELDS, self.hash_fn)
+        claim_digest = digest(claim, CLAIM_FIELDS, c.canonical_hash)
+        hashes = {eid: digest(evidence_by_id[eid], EVIDENCE_FIELDS, c.canonical_hash)
                   for eid in claim["evidence_ids"] if eid in evidence_by_id}
         status, reason = "unverified", "Verification did not complete"
+        cache_key = None
         try:
             payload = await self.prepare(claim, evidence=evidence, sources=sources,
                                          company_id=company_id, as_of_date=as_of_date)
+            judge_prompt = prompt("claim_support")
+            model = getattr(self.judge, "model", None)
+            # Unknown callback configuration cannot establish a reusable verdict.
+            if isinstance(model, str) and model.strip():
+                cache_key = c.canonical_hash({"input": payload, "model": model,
+                    "prompt": judge_prompt, "verifier_version": self.verifier_version,
+                    "judge": id(self.judge), "client": id(getattr(self.judge, "client", None))})
+                if cache_key in self._supports:
+                    return c.ClaimSupport.model_validate(self._supports[cache_key])
             response = await call_async(
-                self.judge, prompt=prompt("claim_support"), payload=payload,
+                self.judge, prompt=judge_prompt, payload=payload,
                 schema=CLAIM_JUDGE_SCHEMA, timeout_seconds=self.timeout_seconds,
             )
             response = validate_response(response, CLAIM_JUDGE_SCHEMA)
@@ -119,8 +128,13 @@ class ClaimSupportVerifier:
         except Exception as exc:
             # Cancellation/KeyboardInterrupt propagate; technical failures never pass.
             status, reason = "unverified", f"Verification failed ({type(exc).__name__}): {exc}"[:2000]
-        return self.contract_factory("ClaimSupport", {
+        result = c.ClaimSupport.model_validate({
             "claim_id": claim["claim_id"], "claim_hash": claim_digest,
             "evidence_hashes": hashes, "support_status": status, "reason": reason,
             "verifier_version": self.verifier_version,
         })
+        if cache_key is not None and result.support_status == "supported":
+            if len(self._supports) >= 256:
+                self._supports.pop(next(iter(self._supports)))
+            self._supports[cache_key] = result.model_dump(mode="json")
+        return result

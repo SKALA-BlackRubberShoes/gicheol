@@ -45,7 +45,7 @@ _RUNTIME_DEFAULTS: dict[str, Any] = {
     "corpus_domains": [],
     "prompt_paths": [],
     "search_provider": None,
-    "services_factory": "main.runtime.neutral.services:unconfigured_services",
+    "services_factory": "main.runtime.neutral.production:create_production_services",
     "langsmith_tracing": False,
     "langsmith_project": "neutral-evaluation-v2",
     "credential_env_vars": ["OPENAI_API_KEY", "TAVILY_API_KEY"],
@@ -363,7 +363,8 @@ def preflight(config: RuntimeConfig, *, run_input: RunInput | None = None, requi
     must not label ``network_skipped`` reports as live service validation.
     """
     control = config.run_config
-    missing = [name.upper() for name in _MODEL_FIELDS if not getattr(control, name) or not getattr(control, name).strip()]
+    missing = [name.upper() for name in _MODEL_FIELDS if name != "supervisor_model"
+               and (not getattr(control, name) or not getattr(control, name).strip())]
     if missing:
         raise ConfigError("Required model settings are missing: " + ", ".join(missing))
     if not control.embedding_model or not control.embedding_revision or not control.embedding_dimension:

@@ -469,7 +469,6 @@ class ProvenanceTests(unittest.TestCase):
         self.assertEqual(result[0]["query_hints"], ["q1", "q2"])
 
 
-@unittest.skipUnless(f.COMMON is not None, "Live LLMClient adapter requires the Pydantic runtime")
 class LLMAdapterTests(unittest.IsolatedAsyncioTestCase):
     async def test_common_llmclient_receives_strict_response_models(self):
         class Client:

@@ -26,7 +26,7 @@ def runtime(tmp_path):
     path.write_text(yaml.safe_dump({"run_config": {
         "supervisor_model": "fixture-supervisor", "research_model": "fixture-research",
         "report_model": "fixture-report", "judge_model": "fixture-judge", "prompt_hash": "a" * 64,
-    }}), encoding="utf-8")
+    }, "services_factory": "main.runtime.neutral.services:unconfigured_services"}), encoding="utf-8")
     return load_runtime_config(path, repo_root=tmp_path, environ={})
 
 
@@ -85,7 +85,7 @@ def test_run_exit_codes_and_registry_identity_with_graph_fixture(runtime, tmp_pa
     captured = {}
     monkeypatch.setattr(cli, "load_runtime_config", lambda *args, **kwargs: runtime)
     monkeypatch.setattr(cli, "preflight", lambda cfg, **kwargs: SimpleNamespace(config=cfg, corpus_manifest=[]))
-    async def load(*args):
+    async def load(*args, **kwargs):
         return SimpleNamespace(mock=True)
     async def execute(**kwargs):
         captured.update(kwargs)
@@ -126,6 +126,35 @@ def test_conflicting_embedded_input_config_is_rejected_before_preflight(runtime,
     monkeypatch.setattr(cli, "load_runtime_config", lambda *args, **kwargs: runtime)
     monkeypatch.setattr(cli, "preflight", lambda *args, **kwargs: pytest.fail("Conflicting control config must be rejected"))
     assert cli.main(["run", "--input", str(path)]) == 2
+
+
+@pytest.mark.parametrize("interrupted", [False, True])
+def test_cli_binds_verified_input_and_closes_services(runtime, tmp_path, monkeypatch, interrupted):
+    path = tmp_path / "input.json"
+    original = input_json(path)
+    events = []
+    monkeypatch.setattr(cli, "preflight", lambda cfg, **kw: SimpleNamespace(config=cfg, corpus_manifest=[]))
+    async def close():
+        events.append("close")
+    async def load(*args, run_input=None):
+        assert run_input is not None and run_input.company_name == original.company_name
+        assert run_input.run_config == runtime.run_config
+        events.append("load")
+        return SimpleNamespace(mock=True, close=close)
+    async def execute(**kwargs):
+        events.append("execute")
+        if interrupted:
+            raise RuntimeError("fixture interruption")
+        return dict(kwargs["state"], status="incomplete", terminal_reason=c.TerminalReason.BUDGET_EXHAUSTED)
+    monkeypatch.setattr(cli, "load_services", load)
+    monkeypatch.setattr(cli, "_execute_graph", execute)
+    args = cli.parser().parse_args(["run", "--input", str(path)])
+    if interrupted:
+        with pytest.raises(RuntimeError, match="fixture interruption"):
+            asyncio.run(cli._run(args, runtime))
+    else:
+        assert asyncio.run(cli._run(args, runtime)) == 3
+    assert events == ["load", "execute", "close"]
 
 
 @pytest.mark.parametrize("error", [ConfigError("Required model settings are missing: JUDGE_MODEL"),
@@ -179,7 +208,7 @@ def test_resume_uses_frozen_configuration_despite_environment_change(runtime, tm
         def preflight(cfg, **kwargs):
             observed.append(cfg)
             return SimpleNamespace(config=cfg, versions=state["versions"])
-        async def services(cfg, *args):
+        async def services(cfg, *args, **kwargs):
             assert cfg.run_config.report_model == "fixture-report"
             return SimpleNamespace(mock=True)
         async def execute(**kwargs):
@@ -206,7 +235,7 @@ def test_resume_rejects_changes_before_service_dispatch(runtime, tmp_path, monke
             if changed == "corpus":
                 raise ConfigError("Changed original PDF", "ARTIFACT_INTEGRITY_ERROR")
             return SimpleNamespace(config=cfg, versions=dict(state["versions"], prompt="b" * 64))
-        async def services(*args):
+        async def services(*args, **kwargs):
             pytest.fail("Changed or terminal run cannot dispatch workers")
         monkeypatch.setattr(cli, "preflight", preflight)
         monkeypatch.setattr(cli, "load_services", services)

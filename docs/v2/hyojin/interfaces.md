@@ -13,7 +13,7 @@ SDD 1.0의 FR03·FR05·FR08을 구현한다. 공통 계약 기준은 동욱 브�
 
 모든 I/O adapter는 async 함수이고 취소를 준수해야 한다. 호출별 timeout을 적용한다. 전체 실행 deadline·재시도·State 갱신은 공통 wrapper와 Supervisor가 맡는다. Judge 예외·timeout·형식 오류는 ClaimSupport의 unverified 또는 실패 verdict가 된다. 입력 DTO·저장소 오류는 예외를 전달하며 성공으로 대체하지 않는다.
 
-## 공통 계약 주입
+## 통합 서비스 연결
 
 공통 브랜치가 통합된 실행 환경에서 아래와 같이 연결한다. 이 예시의 store·excerpt_loader·receipt_validator·llm_client는 담당 서비스가 제공해야 하는 실제 adapter다.
 
@@ -24,13 +24,9 @@ from main.agents.quality.sufficiency import SufficiencyAssessor
 from main.agents.quality.evaluator import ReportEvaluator
 from main.agents.quality.rubrics import LLMClientJudge, RUBRIC_VERSION
 
-def contract_factory(name, payload):
-    return getattr(c, name).model_validate(payload)
-
 judge = LLMClientJudge(client=llm_client, model=run_config.judge_model)
 verifier = ClaimSupportVerifier(
     judge=judge, excerpt_loader=excerpt_loader,
-    contract_factory=contract_factory, hash_fn=c.canonical_hash,
     timeout_seconds=run_config.tool_timeout_seconds,
 )
 
@@ -39,14 +35,12 @@ async def save_support(payload, *, key):
 
 assess_evidence = SufficiencyAssessor(
     verifier=verifier, judge=judge, save_claim_support=save_support,
-    receipt_validator=receipt_validator, contract_factory=contract_factory,
-    hash_fn=c.canonical_hash, semantic_hash_fn=c.semantic_hash,
+    receipt_validator=receipt_validator,
     company_id=company_id, corpus_version=corpus_version,
     index_version=index_version, timeout_seconds=run_config.tool_timeout_seconds,
 )
 evaluator = ReportEvaluator(
-    verifier=verifier, judge=judge, contract_factory=contract_factory,
-    hash_fn=c.canonical_hash, company_id=company_id,
+    verifier=verifier, judge=judge, company_id=company_id,
     judge_model=run_config.judge_model,
     timeout_seconds=run_config.llm_timeout_seconds,
 )
@@ -55,7 +49,7 @@ evaluator = ReportEvaluator(
 # workers["evaluator"] = evaluator
 ```
 
-`LLMClientJudge`는 확정된 `LLMClient.generate(model, system_prompt, payload, response_model)`을 호출한다. Pydantic은 이 adapter를 사용할 때만 로드한다. Judge용 응답 모델만 만들며 Source·Evidence·ClaimSupport·SufficiencyVerdict·EvalVerdict의 공통 DTO는 만들지 않는다. 모델 ID와 provider 설정을 추측하지 않는다.
+`LLMClientJudge`는 확정된 `LLMClient.generate(model, system_prompt, payload, response_model)`을 호출한다. 응답은 명시적인 ClaimJudgement·SufficiencyJudgement·ReportJudgement 모델로 검증한다. 범용 JSON Schema 변환기는 사용하지 않으며 Source·Evidence·ClaimSupport·SufficiencyVerdict·EvalVerdict의 공통 DTO는 만들지 않는다. 모델 ID와 provider 설정을 추측하지 않는다.
 
 ## 원문과 검색 receipt의 신뢰 경계
 
@@ -125,3 +119,7 @@ HYOJIN_SUPERVISOR_ROOT=/tmp/hyojin-supervisor-2fb927d \
 ```
 
 `test_issue21_supervisor.py`의 세 시나리오는 eligibility → writer, eligibility → eligibility → writer, eligibility → eligibility → abort를 검증한다. 모든 경로에서 네 관점의 연구 횟수와 기존 결과를 보존하며, 실패 동안 gate·writer를 차단한다. 복구 경로는 실제 `validate_current_gate`와 `validate_writer_inputs`도 통과해야 한다. Judge·원문 검색·저장소는 명시적인 fixture이며 실제 모델 실행이나 PDF 발행을 의미하지 않는다.
+
+## 같은 실행의 검증 결과 재사용
+
+같은 verifier 인스턴스에서 configured Judge 모델이 있는 supported 판정만 최대 256개 재사용한다. 매 호출에서 원문 로더의 무결성·quote·기준일 검사를 먼저 수행하고, 주장과 원문 전체 발췌·Source provenance·기준일·Judge 모델·프롬프트·verifier_version·Judge 및 client 인스턴스가 모두 같아야 재사용한다. 실패·partial·unverified는 재사용하지 않는다. 새 실행·프로세스·verifier에서는 새로 검증하며, 원래 실행의 resume 호출 예산은 별도 RetryLedger가 보존한다. 전체 출처 편향과 최종 보고서 Judge는 계속 실행한다.

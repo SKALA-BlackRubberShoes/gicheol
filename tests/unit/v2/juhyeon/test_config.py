@@ -107,6 +107,21 @@ def test_versions_match_shared_supervisor(configured):
     assert configured.sqlite_path.is_file()
 
 
+def test_rule_supervisor_accepts_missing_model(configured):
+    config = replace(configured, run_config=configured.run_config.model_copy(
+        update={"supervisor_model": None}))
+    config = validated(config).config
+    run_input = RunInput(company_name="Fixture", official_url="https://example.org",
+                        domain="Physical AI / Robotics", as_of_date="2026-01-01",
+                        corpus_manifest=inspect_corpus(config))
+    versions = validate_run_settings(run_input, config.run_config,
+                                     datetime(2026, 1, 2, tzinfo=timezone.utc))
+    assert config.run_config.supervisor_model is None
+    assert versions["model"] == canonical_hash({
+        "supervisor_model": None, "research_model": "fixture-research",
+        "report_model": "fixture-report", "judge_model": "fixture-judge"})
+
+
 def test_fingerprints_detect_prompt_and_font_changes(configured):
     first = validated(configured)
     Path(configured.prompt_paths[0]).write_text("Changed prompt", encoding="utf-8")
@@ -126,7 +141,7 @@ def test_manifest_content_change_affects_config_fingerprint(configured):
     assert validated(first.config).versions["config"] != first.versions["config"]
 
 
-@pytest.mark.parametrize("field", ["supervisor_model", "research_model", "report_model", "judge_model"])
+@pytest.mark.parametrize("field", ["research_model", "report_model", "judge_model"])
 def test_missing_models_fail_without_guessing(configured, field):
     config = replace(configured, run_config=configured.run_config.model_copy(update={field: None}))
     with pytest.raises(ConfigError, match=field.upper()):
