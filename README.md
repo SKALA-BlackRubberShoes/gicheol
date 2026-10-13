@@ -1,5 +1,13 @@
 # 스타트업 투자 분석 RAG · 에이전트
 
+## V2 중립 평가 실행 경로
+
+`feature/V2/juhyeon/runtime-integration`은 SDD 1.0의 공통 Supervisor에 파일 저장·SQLite 복구·CLI·오류 재시도·trace를 연결한 별도 실행 경로입니다. 신규 명령은 `python -m main.neutral_eval --help`, 통합 검증은 `python -m pytest -q tests`입니다. 설치 버전은 `requirements-v2.lock`에 고정했습니다.
+
+주현은 저장·복구, 실행 환경, 설정과 CLI, LLM·재시도·로그 adapter, 통합 테스트와 제출 패키지 검사를 구현했습니다. 실제 RAG·대상/관점 조사·품질 평가·중립 보고서 서비스는 담당자 구현을 `ServiceBundle`로 등록해야 합니다. 현재 fixture 검증은 실제 모델·RAG·PDF·LangSmith 제출 증빙의 완료를 뜻하지 않습니다. 새 경로의 정확한 연결 상태와 한계는 [주현 구현 안내](docs/v2/juhyeon/README.md), [통합 계약](docs/v2/integration/interfaces.md), [검증 결과](docs/v2/juhyeon/verification.md)에 있습니다.
+
+아래는 기존 투자 분석 경로의 설명입니다. V2는 이 경로의 투자 추천·점수 기준을 사용하지 않습니다.
+
 본 프로젝트는 **Physical AI / Robotics** 스타트업의 투자 검토 가능성을 자동으로 평가하는 멀티 에이전트·Agentic RAG 실습 프로젝트입니다. The VC에서 수집한 30개 기업을 후보 풀로 사용하며, 기본 대화형 파이프라인은 사용자 조건에 맞는 기업 한 곳을 선택해 기술력·시장성·경쟁 우위·창업자 및 팀 역량을 평가합니다. 최종 `invest`는 투자 집행 확정이 아니라 **후속 투자 검토 추천**을 의미합니다.
 
 ## Overview
