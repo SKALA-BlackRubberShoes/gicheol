@@ -1,0 +1,15 @@
+{
+  "eligible": "As of 2026-10-13, Acme is privately held and unlisted. Acme current funding stage is Series B as of 2026-10-13. Acme has not completed an exit as of 2026-10-13.",
+  "stale": "As of 2025-01-01, Acme is unlisted. Acme current funding stage is Series B as of 2025-01-01. Acme has not completed an exit as of 2025-01-01.",
+  "completed_exit": "Acme was acquired by BigCo on 2025-01-01.",
+  "mixed_negation_exit": "As of 2026-10-13, Acme is not publicly listed. Acme was acquired by BigCo on 2025-01-01.",
+  "negated_private": "As of 2026-10-13, Acme is not privately held. Acme current funding stage is Series B as of 2026-10-13. Acme has not completed an exit as of 2026-10-13.",
+  "other_company": "Acme develops robots. Beta is unlisted as of 2026-10-13. Beta current funding stage is Series B as of 2026-10-13. Beta has not completed an exit as of 2026-10-13.",
+  "korean_eligible": "아크미는 비상장 기업이다. 아크미의 현재 투자 단계는 시리즈 A이다. 아크미는 엑시트 미완료 상태다.",
+  "korean_exit": "아크미는 빅코에 인수되었다.",
+  "unlisted_unrelated_product_date": "Acme is unlisted as of 2025-01-01 and released its latest product on 2026-10-13. Acme current funding stage is Series B. Acme has not completed an exit.",
+  "funding_slash_range": "Acme is unlisted. Acme current funding stage is Series C/D. Acme has not completed an exit.",
+  "funding_korean_lower_bound": "아크미는 비상장 기업이다. 아크미의 현재 투자 단계는 시리즈 C 이상이다. 아크미는 엑시트 미완료 상태다.",
+  "funding_current_d_update": "Acme is unlisted. Acme current funding stage is Series C, but is now Series D. Acme has not completed an exit.",
+  "funding_past_d_current_c": "Acme is unlisted. Acme current funding stage was Series D as of 2025-01-01, but is now Series C. Acme has not completed an exit."
+}
