@@ -1,0 +1,1978 @@
+{
+  "schema_version": "1.0",
+  "measurement_status": "completed_provisional_labels",
+  "label_provenance": "agent_curated_pending_human_review",
+  "human_label_reviewed": false,
+  "production_company_attribution_valid": false,
+  "benchmark_scope": "Synthetic domain-context owner; original company ownership preserved below",
+  "original_source_provenance": [
+    {
+      "source_id": "RLWRLD_RLDX1_V2_2026",
+      "original_company_ids": [
+        "14"
+      ],
+      "original_evidence_scope": "company_technical",
+      "path": "docs/data/technology_competition/raw/rlwrld_rldx1_2605.03269v2.pdf"
+    },
+    {
+      "source_id": "STARTUPRECIPE_20260608",
+      "original_company_ids": [
+        "17"
+      ],
+      "original_evidence_scope": "company_business_context",
+      "path": "docs/data/technology_competition/raw/startuprecipe_20260608.pdf"
+    },
+    {
+      "source_id": "PI05_2504_16054_V1",
+      "original_company_ids": [],
+      "original_evidence_scope": "technical_background",
+      "path": "docs/data/technology_competition/raw/pi05_2504.16054v1.pdf"
+    },
+    {
+      "source_id": "DIFFUSION_POLICY_IJRR_2024",
+      "original_company_ids": [],
+      "original_evidence_scope": "technical_background",
+      "path": "docs/data/technology_competition/raw/diffusion_policy_ijrr_2024.pdf"
+    },
+    {
+      "source_id": "KIRIA_ROBOT_SURVEY_2024",
+      "original_company_ids": [],
+      "original_evidence_scope": null,
+      "path": "docs/data/market/raw/01_KIRIA_2024_robot_industry_survey_selected.pdf"
+    },
+    {
+      "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+      "original_company_ids": [],
+      "original_evidence_scope": null,
+      "path": "docs/data/market/raw/02_IFR_2026_industrial_robots_selected.pdf"
+    },
+    {
+      "source_id": "IFR_SERVICE_ROBOTS_2026",
+      "original_company_ids": [],
+      "original_evidence_scope": null,
+      "path": "docs/data/market/raw/03_IFR_2026_service_robots_selected.pdf"
+    },
+    {
+      "source_id": "MOTIE_ROBOT_PLAN_2024",
+      "original_company_ids": [],
+      "original_evidence_scope": null,
+      "path": "docs/data/market/raw/04_MOTIE_2024_robot_basic_plan_selected.pdf"
+    },
+    {
+      "source_id": "KIET_PHYSICAL_AI_2026",
+      "original_company_ids": [],
+      "original_evidence_scope": null,
+      "path": "docs/data/market/raw/05_KIET_2026_physical_ai_ecosystem_full.pdf"
+    },
+    {
+      "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+      "original_company_ids": [],
+      "original_evidence_scope": null,
+      "path": "docs/data/market/raw/06_EC_JRC_2023_autonomous_machines_selected.pdf"
+    }
+  ],
+  "embedding": {
+    "model_id": "BAAI/bge-m3",
+    "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+    "dimension": 1024,
+    "normalize": true,
+    "max_input_tokens": 8192,
+    "query_prefix": "",
+    "passage_prefix": "",
+    "representation": "dense",
+    "device": "cpu"
+  },
+  "corpus_hash": "21e776d16980509b685feab30bad2eacecf62fee3ed91ae52f3d08fa09a8ec51",
+  "corpus_total_pages": 193,
+  "chunk_count": 526,
+  "chunk_manifest_hash": "1ad6f912d0e45059e4b7355db7b7ad7b06c2f735a2686a6499eaecafedb3cb36",
+  "index_hash": "a0edd4b4b39169f09fa7857f7319e2067f6981d6dcbdfa98b6ebb7f45e172120",
+  "index_revision": "a0edd4b4b39169f09fa7",
+  "collection_name": "neutral_v2_suhyeon_a0edd4b4b39169f09fa7",
+  "query_fixture_sha256": "3e8986c6a6a791c49097b775ccc6593f778116b65be1f96bfa1a034d6105bb5f",
+  "runtime": {
+    "python": "3.12.14",
+    "platform": "macOS-26.6.2-arm64-arm-64bit",
+    "machine": "arm64",
+    "torch": "2.14.1",
+    "sentence_transformers": "5.1.1",
+    "qdrant_client": "1.19.1",
+    "threads": 4,
+    "batch_size": 8,
+    "device": "cpu"
+  },
+  "queries": [
+    {
+      "query_id": "T01",
+      "perspective": "technology_maturity",
+      "language": "ko",
+      "query": "실세계 조작을 위한 RLDX-1의 3단계 학습 절차는 어떻게 구성되는가?",
+      "relevant_source_ids": [
+        "RLWRLD_RLDX1_V2_2026"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_c90fc3dff60911f7a95aadfe9901f035ddc9067aaceda660b3f542a9d4f4b3cb",
+          "rank": 1,
+          "score": 0.6738941581594278
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_eea6157d6227edf593bddde3dafddc12b51aa283bfcbee8970eadfe5f8bb226f",
+          "rank": 2,
+          "score": 0.6731276579649852
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_bf8b0328d9d1dbdbf73293f025853ffad0a3c4f8088fa8b8052a4532529addaf",
+          "rank": 3,
+          "score": 0.6490045707643051
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_31a35ff76ac26f66e225603a1712cccc48c43508bb982a1936d3f8c127b1a764",
+          "rank": 4,
+          "score": 0.6474886491628119
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_5697346131b3b99c94f87d02b0123196cb60d268e4a5534e431cbabc004a30de",
+          "rank": 5,
+          "score": 0.647448835698745
+        }
+      ],
+      "receipt": {
+        "query_id": "query_a988baaebb3a47a3a31ce4db846b610e",
+        "query_text": "실세계 조작을 위한 RLDX-1의 3단계 학습 절차는 어떻게 구성되는가?",
+        "queries_hash": "f2baaef5d7243105ef7c54c1b73ba193d9cd0b047d6ab10e2c9a11dbb0424db3",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_c90fc3dff60911f7a95aadfe9901f035ddc9067aaceda660b3f542a9d4f4b3cb",
+            "rank": 1,
+            "score": 0.6738941581594278
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_eea6157d6227edf593bddde3dafddc12b51aa283bfcbee8970eadfe5f8bb226f",
+            "rank": 2,
+            "score": 0.6731276579649852
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_bf8b0328d9d1dbdbf73293f025853ffad0a3c4f8088fa8b8052a4532529addaf",
+            "rank": 3,
+            "score": 0.6490045707643051
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_31a35ff76ac26f66e225603a1712cccc48c43508bb982a1936d3f8c127b1a764",
+            "rank": 4,
+            "score": 0.6474886491628119
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_5697346131b3b99c94f87d02b0123196cb60d268e4a5534e431cbabc004a30de",
+            "rank": 5,
+            "score": 0.647448835698745
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:08.801495Z"
+      },
+      "latency_seconds": 0.08934275002684444
+    },
+    {
+      "query_id": "T02",
+      "perspective": "technology_maturity",
+      "language": "en",
+      "query": "How are tactile and torque signals incorporated into the Multi-Stream Action Transformer?",
+      "relevant_source_ids": [
+        "RLWRLD_RLDX1_V2_2026"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_aa4fe1610c5e214d6bb4815e889448c19e687002e34c3ab11c6bdc1ef516b61a",
+          "rank": 1,
+          "score": 0.6262949668014716
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_b53ead90a02cbce1c306ed640af13f3428c71e761f5701320ce9f7938ede5291",
+          "rank": 2,
+          "score": 0.6115782510070349
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_2cfef41be6ed4d21d21b3d5de1fe84d127e4708a2f88479e3c6a8fbf5ccec0d8",
+          "rank": 3,
+          "score": 0.5869996157287659
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_2bf15c4b6129b0dc203afadc8f8914a23ed83ee660e118b168f03d161dc3c614",
+          "rank": 4,
+          "score": 0.5808828629653202
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_24c1ffdc97cb634c881f0a8a9768eb78bdfc07ca7e281577ac97f5fc11c920e9",
+          "rank": 5,
+          "score": 0.5683236653632857
+        }
+      ],
+      "receipt": {
+        "query_id": "query_5480077a4fce4a1db7b30bc40bb78161",
+        "query_text": "How are tactile and torque signals incorporated into the Multi-Stream Action Transformer?",
+        "queries_hash": "b4e002054e5af9ae45690c8a7a76952f5e7958c256b7878b78707aafa30ab79b",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_aa4fe1610c5e214d6bb4815e889448c19e687002e34c3ab11c6bdc1ef516b61a",
+            "rank": 1,
+            "score": 0.6262949668014716
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_b53ead90a02cbce1c306ed640af13f3428c71e761f5701320ce9f7938ede5291",
+            "rank": 2,
+            "score": 0.6115782510070349
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_2cfef41be6ed4d21d21b3d5de1fe84d127e4708a2f88479e3c6a8fbf5ccec0d8",
+            "rank": 3,
+            "score": 0.5869996157287659
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_2bf15c4b6129b0dc203afadc8f8914a23ed83ee660e118b168f03d161dc3c614",
+            "rank": 4,
+            "score": 0.5808828629653202
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_24c1ffdc97cb634c881f0a8a9768eb78bdfc07ca7e281577ac97f5fc11c920e9",
+            "rank": 5,
+            "score": 0.5683236653632857
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:08.889599Z"
+      },
+      "latency_seconds": 0.08812662505079061
+    },
+    {
+      "query_id": "T03",
+      "perspective": "technology_maturity",
+      "language": "ko",
+      "query": "Diffusion Policy에서 receding horizon 제어와 시각 조건화가 사용되는 이유는 무엇인가?",
+      "relevant_source_ids": [
+        "DIFFUSION_POLICY_IJRR_2024"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "chunk_id": "chunk_ac679055cfd8f6052b28a3f8fb4c4fb583b7ed48aa37e9625050d5fd4c3d2a20",
+          "rank": 1,
+          "score": 0.6836758397947801
+        },
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "chunk_id": "chunk_f8301db8d9742a4f1cc5a92b1b7870ef39b321044be28e43de6d4f2a60ae1b55",
+          "rank": 2,
+          "score": 0.6775158355416406
+        },
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "chunk_id": "chunk_7798e700b6a13dbfe1670addbc456b19e2022df012ed90b7ec79e401edd9bb85",
+          "rank": 3,
+          "score": 0.6726178135311228
+        },
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "chunk_id": "chunk_3256dc3baf154db1ce515c66eb105c30325c5d4ea629077e4d9635fb17ecc20e",
+          "rank": 4,
+          "score": 0.6724683666515525
+        },
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "chunk_id": "chunk_b37295a4aab4394139f58e0c5d40c0f726a464a171febf1892000085f1db9b0a",
+          "rank": 5,
+          "score": 0.6689320352663342
+        }
+      ],
+      "receipt": {
+        "query_id": "query_53cb71162a50435aac2b2919b71cb9db",
+        "query_text": "Diffusion Policy에서 receding horizon 제어와 시각 조건화가 사용되는 이유는 무엇인가?",
+        "queries_hash": "ac692b92235ecb861e3fe9178281a0cc836dc898b81d47b79bc07343c7cc58df",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "DIFFUSION_POLICY_IJRR_2024",
+            "chunk_id": "chunk_ac679055cfd8f6052b28a3f8fb4c4fb583b7ed48aa37e9625050d5fd4c3d2a20",
+            "rank": 1,
+            "score": 0.6836758397947801
+          },
+          {
+            "source_id": "DIFFUSION_POLICY_IJRR_2024",
+            "chunk_id": "chunk_f8301db8d9742a4f1cc5a92b1b7870ef39b321044be28e43de6d4f2a60ae1b55",
+            "rank": 2,
+            "score": 0.6775158355416406
+          },
+          {
+            "source_id": "DIFFUSION_POLICY_IJRR_2024",
+            "chunk_id": "chunk_7798e700b6a13dbfe1670addbc456b19e2022df012ed90b7ec79e401edd9bb85",
+            "rank": 3,
+            "score": 0.6726178135311228
+          },
+          {
+            "source_id": "DIFFUSION_POLICY_IJRR_2024",
+            "chunk_id": "chunk_3256dc3baf154db1ce515c66eb105c30325c5d4ea629077e4d9635fb17ecc20e",
+            "rank": 4,
+            "score": 0.6724683666515525
+          },
+          {
+            "source_id": "DIFFUSION_POLICY_IJRR_2024",
+            "chunk_id": "chunk_b37295a4aab4394139f58e0c5d40c0f726a464a171febf1892000085f1db9b0a",
+            "rank": 5,
+            "score": 0.6689320352663342
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:08.969637Z"
+      },
+      "latency_seconds": 0.07998629205394536
+    },
+    {
+      "query_id": "T04",
+      "perspective": "technology_maturity",
+      "language": "en",
+      "query": "Which visuomotor policy represents multimodal robot action distributions through conditional denoising diffusion?",
+      "relevant_source_ids": [
+        "DIFFUSION_POLICY_IJRR_2024"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "chunk_id": "chunk_dc190a31b7429c06e2030d1c5d7c9cacabda3257a1c9873a27fccbd6de7fc353",
+          "rank": 1,
+          "score": 0.7782574624701638
+        },
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "chunk_id": "chunk_6caa8afab400ca84f4a01cd15000fc7b951ed670b4e91c016768c4c43e6646e3",
+          "rank": 2,
+          "score": 0.7209672811864617
+        },
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "chunk_id": "chunk_eeb7cd32f08e6b9ada7e54913fdd20432f21ba1f5a8fad8be6bf3a570592b19e",
+          "rank": 3,
+          "score": 0.6878220767652274
+        },
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "chunk_id": "chunk_f099af20218be43220621e8f3602d426ed34106188a7e419edee93ab3e5a7bb8",
+          "rank": 4,
+          "score": 0.6667773873884254
+        },
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "chunk_id": "chunk_b8eb537fa1115ca43af18d8742150b992f1228da457a0a68c3be68219a16c0d8",
+          "rank": 5,
+          "score": 0.6557135215888378
+        }
+      ],
+      "receipt": {
+        "query_id": "query_b333bbad66ae456e8c0539d6aac5c0aa",
+        "query_text": "Which visuomotor policy represents multimodal robot action distributions through conditional denoising diffusion?",
+        "queries_hash": "961a1d06dd4aa412eef869bb4dc0dc6874b571d5dedb45430087975733f37ee6",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "DIFFUSION_POLICY_IJRR_2024",
+            "chunk_id": "chunk_dc190a31b7429c06e2030d1c5d7c9cacabda3257a1c9873a27fccbd6de7fc353",
+            "rank": 1,
+            "score": 0.7782574624701638
+          },
+          {
+            "source_id": "DIFFUSION_POLICY_IJRR_2024",
+            "chunk_id": "chunk_6caa8afab400ca84f4a01cd15000fc7b951ed670b4e91c016768c4c43e6646e3",
+            "rank": 2,
+            "score": 0.7209672811864617
+          },
+          {
+            "source_id": "DIFFUSION_POLICY_IJRR_2024",
+            "chunk_id": "chunk_eeb7cd32f08e6b9ada7e54913fdd20432f21ba1f5a8fad8be6bf3a570592b19e",
+            "rank": 3,
+            "score": 0.6878220767652274
+          },
+          {
+            "source_id": "DIFFUSION_POLICY_IJRR_2024",
+            "chunk_id": "chunk_f099af20218be43220621e8f3602d426ed34106188a7e419edee93ab3e5a7bb8",
+            "rank": 4,
+            "score": 0.6667773873884254
+          },
+          {
+            "source_id": "DIFFUSION_POLICY_IJRR_2024",
+            "chunk_id": "chunk_b8eb537fa1115ca43af18d8742150b992f1228da457a0a68c3be68219a16c0d8",
+            "rank": 5,
+            "score": 0.6557135215888378
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.048270Z"
+      },
+      "latency_seconds": 0.07859337492845953
+    },
+    {
+      "query_id": "T05",
+      "perspective": "technology_maturity",
+      "language": "ko",
+      "query": "π0.5는 여러 로봇과 웹 데이터 등 이질적인 데이터를 어떻게 공동 학습에 활용하는가?",
+      "relevant_source_ids": [
+        "PI05_2504_16054_V1"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "chunk_id": "chunk_e02d46fd1d1e3852b8c616b3367c9595cc7cec1af076e6d660ff2297c0ae7bb8",
+          "rank": 1,
+          "score": 0.6943721798253899
+        },
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "chunk_id": "chunk_9c0a3f4fbaf4f63939127dc3d217fbc323b0fdd4c49893c0c595b24c171a8199",
+          "rank": 2,
+          "score": 0.6933791790421182
+        },
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "chunk_id": "chunk_9d08e5339daa74eff8b5b127a282157da107779ccfeb05271cedecc765b68dc4",
+          "rank": 3,
+          "score": 0.6745476058650737
+        },
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "chunk_id": "chunk_278ecd482fdab9e8a0f21dcc07848ebec410f269181a872dbb222fc92c359128",
+          "rank": 4,
+          "score": 0.6629514279227946
+        },
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "chunk_id": "chunk_4541f3eb23a401a2639d22b16e26f07b90f577ce503856be2eafce8d867676ee",
+          "rank": 5,
+          "score": 0.658076941312614
+        }
+      ],
+      "receipt": {
+        "query_id": "query_b4d23d81400f49ce8039f244ea262d68",
+        "query_text": "π0.5는 여러 로봇과 웹 데이터 등 이질적인 데이터를 어떻게 공동 학습에 활용하는가?",
+        "queries_hash": "32210d70748b00851b21c141c5545c87850593d85fa5fe3ac8c719175777be8e",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "PI05_2504_16054_V1",
+            "chunk_id": "chunk_e02d46fd1d1e3852b8c616b3367c9595cc7cec1af076e6d660ff2297c0ae7bb8",
+            "rank": 1,
+            "score": 0.6943721798253899
+          },
+          {
+            "source_id": "PI05_2504_16054_V1",
+            "chunk_id": "chunk_9c0a3f4fbaf4f63939127dc3d217fbc323b0fdd4c49893c0c595b24c171a8199",
+            "rank": 2,
+            "score": 0.6933791790421182
+          },
+          {
+            "source_id": "PI05_2504_16054_V1",
+            "chunk_id": "chunk_9d08e5339daa74eff8b5b127a282157da107779ccfeb05271cedecc765b68dc4",
+            "rank": 3,
+            "score": 0.6745476058650737
+          },
+          {
+            "source_id": "PI05_2504_16054_V1",
+            "chunk_id": "chunk_278ecd482fdab9e8a0f21dcc07848ebec410f269181a872dbb222fc92c359128",
+            "rank": 4,
+            "score": 0.6629514279227946
+          },
+          {
+            "source_id": "PI05_2504_16054_V1",
+            "chunk_id": "chunk_4541f3eb23a401a2639d22b16e26f07b90f577ce503856be2eafce8d867676ee",
+            "rank": 5,
+            "score": 0.658076941312614
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.153839Z"
+      },
+      "latency_seconds": 0.10556866601109505
+    },
+    {
+      "query_id": "M01",
+      "perspective": "market",
+      "language": "en",
+      "query": "What is the worldwide annual industrial robot installation trend and the forecast for 2026 through 2029?",
+      "relevant_source_ids": [
+        "IFR_INDUSTRIAL_ROBOTS_2026"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+          "chunk_id": "chunk_8f8e7974e860a5e5429c1993699080857c547d78ba1ec79cfd59dda2a86be01b",
+          "rank": 1,
+          "score": 0.7561129451853643
+        },
+        {
+          "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+          "chunk_id": "chunk_412c90fb0341a8b00bdcc2ac4307b9c2ef7e3dd65b481d5b27c96f0a63bf4913",
+          "rank": 2,
+          "score": 0.7070367728810147
+        },
+        {
+          "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+          "chunk_id": "chunk_45b289e0252ae1fc0ee8594b18e3601d75762565eb824c8c69c9745926edff48",
+          "rank": 3,
+          "score": 0.6927180088846916
+        },
+        {
+          "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+          "chunk_id": "chunk_7ec7c4c3843152c1a99e319cd16e7437113a219ea5e1dace2b18321e15f976be",
+          "rank": 4,
+          "score": 0.6472919770292895
+        },
+        {
+          "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+          "chunk_id": "chunk_77fdf69e95262afdfc49b12c4ffc1e05723f1a0d019b6e65d3d9b6b4956c45dc",
+          "rank": 5,
+          "score": 0.6208906520695474
+        }
+      ],
+      "receipt": {
+        "query_id": "query_4833293a2b4d40d5825032596d4fc35d",
+        "query_text": "What is the worldwide annual industrial robot installation trend and the forecast for 2026 through 2029?",
+        "queries_hash": "3114df25796e6e65bfc1aca92c65b80582608ae36cf1325bef1f31aa78f7aa7c",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+            "chunk_id": "chunk_8f8e7974e860a5e5429c1993699080857c547d78ba1ec79cfd59dda2a86be01b",
+            "rank": 1,
+            "score": 0.7561129451853643
+          },
+          {
+            "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+            "chunk_id": "chunk_412c90fb0341a8b00bdcc2ac4307b9c2ef7e3dd65b481d5b27c96f0a63bf4913",
+            "rank": 2,
+            "score": 0.7070367728810147
+          },
+          {
+            "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+            "chunk_id": "chunk_45b289e0252ae1fc0ee8594b18e3601d75762565eb824c8c69c9745926edff48",
+            "rank": 3,
+            "score": 0.6927180088846916
+          },
+          {
+            "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+            "chunk_id": "chunk_7ec7c4c3843152c1a99e319cd16e7437113a219ea5e1dace2b18321e15f976be",
+            "rank": 4,
+            "score": 0.6472919770292895
+          },
+          {
+            "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+            "chunk_id": "chunk_77fdf69e95262afdfc49b12c4ffc1e05723f1a0d019b6e65d3d9b6b4956c45dc",
+            "rank": 5,
+            "score": 0.6208906520695474
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.232633Z"
+      },
+      "latency_seconds": 0.07875104201957583
+    },
+    {
+      "query_id": "M02",
+      "perspective": "market",
+      "language": "ko",
+      "query": "2024년 로봇산업 실태조사는 로봇 품목별 생산과 내수 및 수출 출하를 어떤 항목으로 조사하는가?",
+      "relevant_source_ids": [
+        "KIRIA_ROBOT_SURVEY_2024"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "chunk_id": "chunk_696f34c46a4deb502a7340b2861bddfc9a55eee8144022e4137ea7f4eda19594",
+          "rank": 1,
+          "score": 0.6870695930147371
+        },
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "chunk_id": "chunk_ddafc61ce701b7d4c1a58d9075a211cc77fd71fa005a02b440b925eeec92983c",
+          "rank": 2,
+          "score": 0.6839601146311423
+        },
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "chunk_id": "chunk_ee0d53db10ffa35f8374e09dff243db1f9a691025b02e6f15c771bc2adff3410",
+          "rank": 3,
+          "score": 0.6799837481787625
+        },
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "chunk_id": "chunk_aee012d1744f6dedeef540bebc7d6d63a1f336909e9273635367467704a6afdc",
+          "rank": 4,
+          "score": 0.6770148975947332
+        },
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "chunk_id": "chunk_5dcae41b30d4de5a781d0fba0bd76596757075679a0d5a1085c88d13b3fce088",
+          "rank": 5,
+          "score": 0.6761097417968853
+        }
+      ],
+      "receipt": {
+        "query_id": "query_2b050b58db704b388fa53651adf1de6d",
+        "query_text": "2024년 로봇산업 실태조사는 로봇 품목별 생산과 내수 및 수출 출하를 어떤 항목으로 조사하는가?",
+        "queries_hash": "ced4d6f28efa847089a7fdeb5ff024d11835a49d97745dddd3368620cd21459b",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "KIRIA_ROBOT_SURVEY_2024",
+            "chunk_id": "chunk_696f34c46a4deb502a7340b2861bddfc9a55eee8144022e4137ea7f4eda19594",
+            "rank": 1,
+            "score": 0.6870695930147371
+          },
+          {
+            "source_id": "KIRIA_ROBOT_SURVEY_2024",
+            "chunk_id": "chunk_ddafc61ce701b7d4c1a58d9075a211cc77fd71fa005a02b440b925eeec92983c",
+            "rank": 2,
+            "score": 0.6839601146311423
+          },
+          {
+            "source_id": "KIRIA_ROBOT_SURVEY_2024",
+            "chunk_id": "chunk_ee0d53db10ffa35f8374e09dff243db1f9a691025b02e6f15c771bc2adff3410",
+            "rank": 3,
+            "score": 0.6799837481787625
+          },
+          {
+            "source_id": "KIRIA_ROBOT_SURVEY_2024",
+            "chunk_id": "chunk_aee012d1744f6dedeef540bebc7d6d63a1f336909e9273635367467704a6afdc",
+            "rank": 4,
+            "score": 0.6770148975947332
+          },
+          {
+            "source_id": "KIRIA_ROBOT_SURVEY_2024",
+            "chunk_id": "chunk_5dcae41b30d4de5a781d0fba0bd76596757075679a0d5a1085c88d13b3fce088",
+            "rank": 5,
+            "score": 0.6761097417968853
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.306005Z"
+      },
+      "latency_seconds": 0.07342737505678087
+    },
+    {
+      "query_id": "M03",
+      "perspective": "market",
+      "language": "en",
+      "query": "How did professional service robot sales and Robotics-as-a-Service evolve in 2025?",
+      "relevant_source_ids": [
+        "IFR_SERVICE_ROBOTS_2026"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "IFR_SERVICE_ROBOTS_2026",
+          "chunk_id": "chunk_3bcde0fb9f5e17772a9405025420d8e0018cc68b5d749a7cbd32940e9efd0fa5",
+          "rank": 1,
+          "score": 0.7315840648707368
+        },
+        {
+          "source_id": "IFR_SERVICE_ROBOTS_2026",
+          "chunk_id": "chunk_0352e765f4b49bf50e7156540cbcaa22a23d67d5a0597c883ac83ce315521423",
+          "rank": 2,
+          "score": 0.6718526315004278
+        },
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "chunk_id": "chunk_6eb60be8069b402e4f79807d61f2b7408ebe1e56508c32af422615fc308f58fb",
+          "rank": 3,
+          "score": 0.6493217465221907
+        },
+        {
+          "source_id": "IFR_SERVICE_ROBOTS_2026",
+          "chunk_id": "chunk_4e72568e56fd5f0c52fa5b5ffde71a83a2a1a9d0c3251a42eab81ad6d1e7e84d",
+          "rank": 4,
+          "score": 0.6465155702933029
+        },
+        {
+          "source_id": "IFR_SERVICE_ROBOTS_2026",
+          "chunk_id": "chunk_e2890f6d74f8f0c84918c2b168bdaeb5aa75b082539055a0b3c13e901d921014",
+          "rank": 5,
+          "score": 0.6381588978589052
+        }
+      ],
+      "receipt": {
+        "query_id": "query_c32263fbbc9f497e92a08b24893f9c7d",
+        "query_text": "How did professional service robot sales and Robotics-as-a-Service evolve in 2025?",
+        "queries_hash": "96b048d31ae1f46a4857c111259ea135d3de3ad50590f20766f11a86b815e7a5",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "IFR_SERVICE_ROBOTS_2026",
+            "chunk_id": "chunk_3bcde0fb9f5e17772a9405025420d8e0018cc68b5d749a7cbd32940e9efd0fa5",
+            "rank": 1,
+            "score": 0.7315840648707368
+          },
+          {
+            "source_id": "IFR_SERVICE_ROBOTS_2026",
+            "chunk_id": "chunk_0352e765f4b49bf50e7156540cbcaa22a23d67d5a0597c883ac83ce315521423",
+            "rank": 2,
+            "score": 0.6718526315004278
+          },
+          {
+            "source_id": "MOTIE_ROBOT_PLAN_2024",
+            "chunk_id": "chunk_6eb60be8069b402e4f79807d61f2b7408ebe1e56508c32af422615fc308f58fb",
+            "rank": 3,
+            "score": 0.6493217465221907
+          },
+          {
+            "source_id": "IFR_SERVICE_ROBOTS_2026",
+            "chunk_id": "chunk_4e72568e56fd5f0c52fa5b5ffde71a83a2a1a9d0c3251a42eab81ad6d1e7e84d",
+            "rank": 4,
+            "score": 0.6465155702933029
+          },
+          {
+            "source_id": "IFR_SERVICE_ROBOTS_2026",
+            "chunk_id": "chunk_e2890f6d74f8f0c84918c2b168bdaeb5aa75b082539055a0b3c13e901d921014",
+            "rank": 5,
+            "score": 0.6381588978589052
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.384904Z"
+      },
+      "latency_seconds": 0.07882558298297226
+    },
+    {
+      "query_id": "M04",
+      "perspective": "market",
+      "language": "ko",
+      "query": "자율 제조를 위한 제조 AX에서 비정형 업무 수행과 피지컬 AI 수요는 어떻게 설명되는가?",
+      "relevant_source_ids": [
+        "KIET_PHYSICAL_AI_2026"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_6b76a8352ca887e02d05587ee7acb70f15098517271fe604b676d24e655e426e",
+          "rank": 1,
+          "score": 0.7329269823618242
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_b65a44291a66b1953d1d184681b610338e0f89d952406822f7f6b65947239da9",
+          "rank": 2,
+          "score": 0.7241432223884141
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_1062f88d98d36242cf45acacef5f0d91831b45c9bcb0b447f3cb280b29e64fbe",
+          "rank": 3,
+          "score": 0.6692578133319858
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_f816168751da0ba5990b275f4c3a8ca8424c120e2d671c7d461d8d825f9e8826",
+          "rank": 4,
+          "score": 0.6642001723888121
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_4bc0ff1c3aa7312a8103ca43aee1c45b91a2d98a4f0b01479e549c191b93ee63",
+          "rank": 5,
+          "score": 0.6578296073076448
+        }
+      ],
+      "receipt": {
+        "query_id": "query_10e3f84d8a444336bcc1dad162f2bfeb",
+        "query_text": "자율 제조를 위한 제조 AX에서 비정형 업무 수행과 피지컬 AI 수요는 어떻게 설명되는가?",
+        "queries_hash": "c8844f7097ba314b2e723601ca7bc2a3bdcf29736e3405aa26effe84d7150c3e",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_6b76a8352ca887e02d05587ee7acb70f15098517271fe604b676d24e655e426e",
+            "rank": 1,
+            "score": 0.7329269823618242
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_b65a44291a66b1953d1d184681b610338e0f89d952406822f7f6b65947239da9",
+            "rank": 2,
+            "score": 0.7241432223884141
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_1062f88d98d36242cf45acacef5f0d91831b45c9bcb0b447f3cb280b29e64fbe",
+            "rank": 3,
+            "score": 0.6692578133319858
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_f816168751da0ba5990b275f4c3a8ca8424c120e2d671c7d461d8d825f9e8826",
+            "rank": 4,
+            "score": 0.6642001723888121
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_4bc0ff1c3aa7312a8103ca43aee1c45b91a2d98a4f0b01479e549c191b93ee63",
+            "rank": 5,
+            "score": 0.6578296073076448
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.451268Z"
+      },
+      "latency_seconds": 0.06633254198823124
+    },
+    {
+      "query_id": "M05",
+      "perspective": "market",
+      "language": "en",
+      "query": "What investment context for CarbonSix was reported in the June 2026 weekly startup funding bulletin?",
+      "relevant_source_ids": [
+        "STARTUPRECIPE_20260608"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "STARTUPRECIPE_20260608",
+          "chunk_id": "chunk_ec34dd12dde5f258d15a80ea525ed1647fa1b772a20d20ef2b411e7fb58b3e8d",
+          "rank": 1,
+          "score": 0.4472788434915499
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_7524655889a4c1d9ae5a9ed375e904bb3d94f6cc08e252b1c86734a3bf1eb9dd",
+          "rank": 2,
+          "score": 0.4363376689115524
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_99e4fc25801646a607331d9d9b19e1733ed0989cc81298da5657bba041371c74",
+          "rank": 3,
+          "score": 0.43603292003613
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_1062f88d98d36242cf45acacef5f0d91831b45c9bcb0b447f3cb280b29e64fbe",
+          "rank": 4,
+          "score": 0.429485534546031
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_8319a4fd0dbc2453d5585d4761525004cb671d61b6c1c928d4fbd7a05b70d1f9",
+          "rank": 5,
+          "score": 0.42926198347298306
+        }
+      ],
+      "receipt": {
+        "query_id": "query_db64cfff075647bda7316a63c2c3f1c4",
+        "query_text": "What investment context for CarbonSix was reported in the June 2026 weekly startup funding bulletin?",
+        "queries_hash": "a7808782bce3858aa1b059029934fb5c3af21836f533603ed313f6786731fe67",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "STARTUPRECIPE_20260608",
+            "chunk_id": "chunk_ec34dd12dde5f258d15a80ea525ed1647fa1b772a20d20ef2b411e7fb58b3e8d",
+            "rank": 1,
+            "score": 0.4472788434915499
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_7524655889a4c1d9ae5a9ed375e904bb3d94f6cc08e252b1c86734a3bf1eb9dd",
+            "rank": 2,
+            "score": 0.4363376689115524
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_99e4fc25801646a607331d9d9b19e1733ed0989cc81298da5657bba041371c74",
+            "rank": 3,
+            "score": 0.43603292003613
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_1062f88d98d36242cf45acacef5f0d91831b45c9bcb0b447f3cb280b29e64fbe",
+            "rank": 4,
+            "score": 0.429485534546031
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_8319a4fd0dbc2453d5585d4761525004cb671d61b6c1c928d4fbd7a05b70d1f9",
+            "rank": 5,
+            "score": 0.42926198347298306
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.524284Z"
+      },
+      "latency_seconds": 0.07299516699276865
+    },
+    {
+      "query_id": "S01",
+      "perspective": "stakeholders",
+      "language": "ko",
+      "query": "지능형로봇 기본계획은 기존 제도와 안전 기준이 시장 진입 및 로봇 윤리에 미치는 부담을 어떻게 설명하는가?",
+      "relevant_source_ids": [
+        "MOTIE_ROBOT_PLAN_2024"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "chunk_id": "chunk_72bc21a66459c8281e031dadc1923a581a20166c54edab063736d2946812eaac",
+          "rank": 1,
+          "score": 0.6486864522031679
+        },
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "chunk_id": "chunk_addd285ff3e56c08ffa1df2b636e94b774f191a7a4967eb3bb1119b785106766",
+          "rank": 2,
+          "score": 0.5861136775437681
+        },
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "chunk_id": "chunk_5db24712c8b4192e01770d9382a3e46f51af00cbddb9954c88743264889a69bc",
+          "rank": 3,
+          "score": 0.5659374879582927
+        },
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "chunk_id": "chunk_8f1968247d132856fc5be30385c216e21405cefe05a29e29860d9a69983fc0f9",
+          "rank": 4,
+          "score": 0.5593337929391022
+        },
+        {
+          "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+          "chunk_id": "chunk_70495f246fbbfd58700bfcfbb37ed57f7bf3d7aa51e31cbcd398a6fa880c3913",
+          "rank": 5,
+          "score": 0.5504978657228624
+        }
+      ],
+      "receipt": {
+        "query_id": "query_6c9f9a3d27b745eea050bb3b77df0351",
+        "query_text": "지능형로봇 기본계획은 기존 제도와 안전 기준이 시장 진입 및 로봇 윤리에 미치는 부담을 어떻게 설명하는가?",
+        "queries_hash": "1e9b191b66a93d07d68e478f64a6f8a5c1b2bad63f072b2a13e70a66ecf63857",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "MOTIE_ROBOT_PLAN_2024",
+            "chunk_id": "chunk_72bc21a66459c8281e031dadc1923a581a20166c54edab063736d2946812eaac",
+            "rank": 1,
+            "score": 0.6486864522031679
+          },
+          {
+            "source_id": "MOTIE_ROBOT_PLAN_2024",
+            "chunk_id": "chunk_addd285ff3e56c08ffa1df2b636e94b774f191a7a4967eb3bb1119b785106766",
+            "rank": 2,
+            "score": 0.5861136775437681
+          },
+          {
+            "source_id": "MOTIE_ROBOT_PLAN_2024",
+            "chunk_id": "chunk_5db24712c8b4192e01770d9382a3e46f51af00cbddb9954c88743264889a69bc",
+            "rank": 3,
+            "score": 0.5659374879582927
+          },
+          {
+            "source_id": "MOTIE_ROBOT_PLAN_2024",
+            "chunk_id": "chunk_8f1968247d132856fc5be30385c216e21405cefe05a29e29860d9a69983fc0f9",
+            "rank": 4,
+            "score": 0.5593337929391022
+          },
+          {
+            "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+            "chunk_id": "chunk_70495f246fbbfd58700bfcfbb37ed57f7bf3d7aa51e31cbcd398a6fa880c3913",
+            "rank": 5,
+            "score": 0.5504978657228624
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.621854Z"
+      },
+      "latency_seconds": 0.09756587503943592
+    },
+    {
+      "query_id": "S02",
+      "perspective": "stakeholders",
+      "language": "en",
+      "query": "Which autonomous machine adoption barriers affect large firms, including liability, reputation and data access?",
+      "relevant_source_ids": [
+        "JRC_AUTONOMOUS_MACHINES_2023"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "chunk_id": "chunk_250eb352cef9700c04424b56d0f724d9faeec8d94a08649c3f33d13f75ba3066",
+          "rank": 1,
+          "score": 0.6809983997439119
+        },
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "chunk_id": "chunk_6172ed1e34783d1e87c4f7397fad2550c6c3a9dcff22e50eed6b997b18a4bfe3",
+          "rank": 2,
+          "score": 0.6462102918957154
+        },
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "chunk_id": "chunk_2aee79fd4295a7dc5143f4461ff4c4676b54900542e943410427c2820c60b92f",
+          "rank": 3,
+          "score": 0.6267055799802437
+        },
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "chunk_id": "chunk_cd1e650a06bbe412cbf3627ba58568e14b70e1d1163d90e67a62a157557a3cfd",
+          "rank": 4,
+          "score": 0.6249498536221159
+        },
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "chunk_id": "chunk_713efc614841696ed473305216d3d70200906ac59777e600c45624d5f4272c9c",
+          "rank": 5,
+          "score": 0.6029945531783525
+        }
+      ],
+      "receipt": {
+        "query_id": "query_ea4398a11ba241f1b0f928f845aec649",
+        "query_text": "Which autonomous machine adoption barriers affect large firms, including liability, reputation and data access?",
+        "queries_hash": "5133c7bbf44589a260dd022c611a17157f3ddb3436a2495dbbca9fd1d6ae7906",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+            "chunk_id": "chunk_250eb352cef9700c04424b56d0f724d9faeec8d94a08649c3f33d13f75ba3066",
+            "rank": 1,
+            "score": 0.6809983997439119
+          },
+          {
+            "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+            "chunk_id": "chunk_6172ed1e34783d1e87c4f7397fad2550c6c3a9dcff22e50eed6b997b18a4bfe3",
+            "rank": 2,
+            "score": 0.6462102918957154
+          },
+          {
+            "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+            "chunk_id": "chunk_2aee79fd4295a7dc5143f4461ff4c4676b54900542e943410427c2820c60b92f",
+            "rank": 3,
+            "score": 0.6267055799802437
+          },
+          {
+            "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+            "chunk_id": "chunk_cd1e650a06bbe412cbf3627ba58568e14b70e1d1163d90e67a62a157557a3cfd",
+            "rank": 4,
+            "score": 0.6249498536221159
+          },
+          {
+            "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+            "chunk_id": "chunk_713efc614841696ed473305216d3d70200906ac59777e600c45624d5f4272c9c",
+            "rank": 5,
+            "score": 0.6029945531783525
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.695475Z"
+      },
+      "latency_seconds": 0.07366495800670236
+    },
+    {
+      "query_id": "S03",
+      "perspective": "stakeholders",
+      "language": "ko",
+      "query": "로봇산업 실태조사는 종사자의 성별, 직무별 부족 인원과 채용 예정 인원을 어떻게 다루는가?",
+      "relevant_source_ids": [
+        "KIRIA_ROBOT_SURVEY_2024"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "chunk_id": "chunk_ee0d53db10ffa35f8374e09dff243db1f9a691025b02e6f15c771bc2adff3410",
+          "rank": 1,
+          "score": 0.7387442653596457
+        },
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "chunk_id": "chunk_5dcae41b30d4de5a781d0fba0bd76596757075679a0d5a1085c88d13b3fce088",
+          "rank": 2,
+          "score": 0.7070331254018727
+        },
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "chunk_id": "chunk_285e7175bfab85d812542a9a63132b2b1403aedaf6f761ba0e2dadf10d77fdfc",
+          "rank": 3,
+          "score": 0.6966208603583698
+        },
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "chunk_id": "chunk_8b91dc0ebd58f897a8304bf9b45fd729b302cb943a9eec44e93c17fffb30dbce",
+          "rank": 4,
+          "score": 0.6874684011806304
+        },
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "chunk_id": "chunk_b4d2d589f24ae66085c3effa6c8607bdf6793ded9a6f1a3fcc9da4af7aef469f",
+          "rank": 5,
+          "score": 0.6851335696193349
+        }
+      ],
+      "receipt": {
+        "query_id": "query_57029d0a42c5493ba50822dc3ce598e6",
+        "query_text": "로봇산업 실태조사는 종사자의 성별, 직무별 부족 인원과 채용 예정 인원을 어떻게 다루는가?",
+        "queries_hash": "9dbe0d8620717200b9010f52e6107a51286cac983bcdd5e3cb3fa33ec45a2ec4",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "KIRIA_ROBOT_SURVEY_2024",
+            "chunk_id": "chunk_ee0d53db10ffa35f8374e09dff243db1f9a691025b02e6f15c771bc2adff3410",
+            "rank": 1,
+            "score": 0.7387442653596457
+          },
+          {
+            "source_id": "KIRIA_ROBOT_SURVEY_2024",
+            "chunk_id": "chunk_5dcae41b30d4de5a781d0fba0bd76596757075679a0d5a1085c88d13b3fce088",
+            "rank": 2,
+            "score": 0.7070331254018727
+          },
+          {
+            "source_id": "KIRIA_ROBOT_SURVEY_2024",
+            "chunk_id": "chunk_285e7175bfab85d812542a9a63132b2b1403aedaf6f761ba0e2dadf10d77fdfc",
+            "rank": 3,
+            "score": 0.6966208603583698
+          },
+          {
+            "source_id": "KIRIA_ROBOT_SURVEY_2024",
+            "chunk_id": "chunk_8b91dc0ebd58f897a8304bf9b45fd729b302cb943a9eec44e93c17fffb30dbce",
+            "rank": 4,
+            "score": 0.6874684011806304
+          },
+          {
+            "source_id": "KIRIA_ROBOT_SURVEY_2024",
+            "chunk_id": "chunk_b4d2d589f24ae66085c3effa6c8607bdf6793ded9a6f1a3fcc9da4af7aef469f",
+            "rank": 5,
+            "score": 0.6851335696193349
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.769662Z"
+      },
+      "latency_seconds": 0.0741582919145003
+    },
+    {
+      "query_id": "S04",
+      "perspective": "stakeholders",
+      "language": "en",
+      "query": "How do company size, employee knowledge and complementary technologies influence autonomous machine adoption by manufacturing SMEs?",
+      "relevant_source_ids": [
+        "JRC_AUTONOMOUS_MACHINES_2023"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "chunk_id": "chunk_fe6de0b05a2f231adebfb1895dbcaf1b152a3bb6c313088ff895f0d29ddbe41d",
+          "rank": 1,
+          "score": 0.7026251865214256
+        },
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "chunk_id": "chunk_be1fe7a181781872e600005a40b97b41cb80e442fd8a716eddb66fc5aa697f47",
+          "rank": 2,
+          "score": 0.6861611560061253
+        },
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "chunk_id": "chunk_cd1e650a06bbe412cbf3627ba58568e14b70e1d1163d90e67a62a157557a3cfd",
+          "rank": 3,
+          "score": 0.6813993832250922
+        },
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "chunk_id": "chunk_43f330e64de0950a7300b69fe3967d3a59da6283ad774e4293cde85c3e823ef9",
+          "rank": 4,
+          "score": 0.6479976866538965
+        },
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "chunk_id": "chunk_2aee79fd4295a7dc5143f4461ff4c4676b54900542e943410427c2820c60b92f",
+          "rank": 5,
+          "score": 0.6275996989678049
+        }
+      ],
+      "receipt": {
+        "query_id": "query_54bf59c2465e49fb8e25665dceae0ed8",
+        "query_text": "How do company size, employee knowledge and complementary technologies influence autonomous machine adoption by manufacturing SMEs?",
+        "queries_hash": "9304d68cbcf93dbb6d061c327ee84ad0bb3e3694dc75f45c72383e3ee62c2477",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+            "chunk_id": "chunk_fe6de0b05a2f231adebfb1895dbcaf1b152a3bb6c313088ff895f0d29ddbe41d",
+            "rank": 1,
+            "score": 0.7026251865214256
+          },
+          {
+            "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+            "chunk_id": "chunk_be1fe7a181781872e600005a40b97b41cb80e442fd8a716eddb66fc5aa697f47",
+            "rank": 2,
+            "score": 0.6861611560061253
+          },
+          {
+            "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+            "chunk_id": "chunk_cd1e650a06bbe412cbf3627ba58568e14b70e1d1163d90e67a62a157557a3cfd",
+            "rank": 3,
+            "score": 0.6813993832250922
+          },
+          {
+            "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+            "chunk_id": "chunk_43f330e64de0950a7300b69fe3967d3a59da6283ad774e4293cde85c3e823ef9",
+            "rank": 4,
+            "score": 0.6479976866538965
+          },
+          {
+            "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+            "chunk_id": "chunk_2aee79fd4295a7dc5143f4461ff4c4676b54900542e943410427c2820c60b92f",
+            "rank": 5,
+            "score": 0.6275996989678049
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.844494Z"
+      },
+      "latency_seconds": 0.07477599999401718
+    },
+    {
+      "query_id": "S05",
+      "perspective": "stakeholders",
+      "language": "ko",
+      "query": "제조 AX 피지컬 AI 생태계에 참여하는 폼팩터, 액추에이터, 로봇손과 AI 반도체 주체들의 역할은 무엇인가?",
+      "relevant_source_ids": [
+        "KIET_PHYSICAL_AI_2026"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_8319a4fd0dbc2453d5585d4761525004cb671d61b6c1c928d4fbd7a05b70d1f9",
+          "rank": 1,
+          "score": 0.7106333480474045
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_1062f88d98d36242cf45acacef5f0d91831b45c9bcb0b447f3cb280b29e64fbe",
+          "rank": 2,
+          "score": 0.7067545243198677
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_7524655889a4c1d9ae5a9ed375e904bb3d94f6cc08e252b1c86734a3bf1eb9dd",
+          "rank": 3,
+          "score": 0.7059623593164882
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_589db881811e9aac8b728fce14433c24abe6669eb3999758c7a9e38dd3551fb3",
+          "rank": 4,
+          "score": 0.6802566914145591
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_0793ccf6372eb7b3e2d252cc99f280b001b50cba9e1fd1ddbc2a18fbff9bc95b",
+          "rank": 5,
+          "score": 0.666709452491129
+        }
+      ],
+      "receipt": {
+        "query_id": "query_dccfbb10838e4d60968e21664aa9a43c",
+        "query_text": "제조 AX 피지컬 AI 생태계에 참여하는 폼팩터, 액추에이터, 로봇손과 AI 반도체 주체들의 역할은 무엇인가?",
+        "queries_hash": "3f9064604a66d69f3971efe7381b775afa203180aa40febe204cc3793c8a98d0",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_8319a4fd0dbc2453d5585d4761525004cb671d61b6c1c928d4fbd7a05b70d1f9",
+            "rank": 1,
+            "score": 0.7106333480474045
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_1062f88d98d36242cf45acacef5f0d91831b45c9bcb0b447f3cb280b29e64fbe",
+            "rank": 2,
+            "score": 0.7067545243198677
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_7524655889a4c1d9ae5a9ed375e904bb3d94f6cc08e252b1c86734a3bf1eb9dd",
+            "rank": 3,
+            "score": 0.7059623593164882
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_589db881811e9aac8b728fce14433c24abe6669eb3999758c7a9e38dd3551fb3",
+            "rank": 4,
+            "score": 0.6802566914145591
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_0793ccf6372eb7b3e2d252cc99f280b001b50cba9e1fd1ddbc2a18fbff9bc95b",
+            "rank": 5,
+            "score": 0.666709452491129
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:09.926301Z"
+      },
+      "latency_seconds": 0.08183112507686019
+    },
+    {
+      "query_id": "D01",
+      "perspective": "domain_application",
+      "language": "en",
+      "query": "Which robot model was evaluated on cleaning kitchens and bedrooms in previously unseen homes with 10 to 15 minute multistage tasks?",
+      "relevant_source_ids": [
+        "PI05_2504_16054_V1"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "chunk_id": "chunk_9d08e5339daa74eff8b5b127a282157da107779ccfeb05271cedecc765b68dc4",
+          "rank": 1,
+          "score": 0.5870233506890346
+        },
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "chunk_id": "chunk_e02d46fd1d1e3852b8c616b3367c9595cc7cec1af076e6d660ff2297c0ae7bb8",
+          "rank": 2,
+          "score": 0.5687475835181443
+        },
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "chunk_id": "chunk_ef5365baa16943edae74477be39927f767913ed8e54273eb6ea3e14c762f8bd4",
+          "rank": 3,
+          "score": 0.5681712620982124
+        },
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "chunk_id": "chunk_9c0a3f4fbaf4f63939127dc3d217fbc323b0fdd4c49893c0c595b24c171a8199",
+          "rank": 4,
+          "score": 0.5666927036678115
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_beec7fd3253d471cf0ee1b875bdf8654e26878b8f613cb0a0230d44afd568b6e",
+          "rank": 5,
+          "score": 0.5603107466001269
+        }
+      ],
+      "receipt": {
+        "query_id": "query_88e9128a94c0402db9aa3296c119936e",
+        "query_text": "Which robot model was evaluated on cleaning kitchens and bedrooms in previously unseen homes with 10 to 15 minute multistage tasks?",
+        "queries_hash": "c290e1de65e7df8d3fd583ea3ca72284a248d5b4db58acfedcfd1ebcd43b0efb",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "PI05_2504_16054_V1",
+            "chunk_id": "chunk_9d08e5339daa74eff8b5b127a282157da107779ccfeb05271cedecc765b68dc4",
+            "rank": 1,
+            "score": 0.5870233506890346
+          },
+          {
+            "source_id": "PI05_2504_16054_V1",
+            "chunk_id": "chunk_e02d46fd1d1e3852b8c616b3367c9595cc7cec1af076e6d660ff2297c0ae7bb8",
+            "rank": 2,
+            "score": 0.5687475835181443
+          },
+          {
+            "source_id": "PI05_2504_16054_V1",
+            "chunk_id": "chunk_ef5365baa16943edae74477be39927f767913ed8e54273eb6ea3e14c762f8bd4",
+            "rank": 3,
+            "score": 0.5681712620982124
+          },
+          {
+            "source_id": "PI05_2504_16054_V1",
+            "chunk_id": "chunk_9c0a3f4fbaf4f63939127dc3d217fbc323b0fdd4c49893c0c595b24c171a8199",
+            "rank": 4,
+            "score": 0.5666927036678115
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_beec7fd3253d471cf0ee1b875bdf8654e26878b8f613cb0a0230d44afd568b6e",
+            "rank": 5,
+            "score": 0.5603107466001269
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:10.054149Z"
+      },
+      "latency_seconds": 0.12784087506588548
+    },
+    {
+      "query_id": "D02",
+      "perspective": "domain_application",
+      "language": "ko",
+      "query": "인구구조 변화와 고위험 직종에서 로봇 적용이 산업재해 감소와 근로환경에 어떤 역할을 하는가?",
+      "relevant_source_ids": [
+        "MOTIE_ROBOT_PLAN_2024"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "chunk_id": "chunk_e931c6c62f1f65c7da7cd022966904c5a4cbdb90e096f971587ce3187245f3f2",
+          "rank": 1,
+          "score": 0.6200875170247129
+        },
+        {
+          "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+          "chunk_id": "chunk_70495f246fbbfd58700bfcfbb37ed57f7bf3d7aa51e31cbcd398a6fa880c3913",
+          "rank": 2,
+          "score": 0.5872171138514563
+        },
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "chunk_id": "chunk_8d9c7a4bca63919b1c223e72dc6751a1e350df1a63d65f95c40929ad0e94e379",
+          "rank": 3,
+          "score": 0.5806555629115205
+        },
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "chunk_id": "chunk_c3e5eb52cffdf1024903e26b94546549fe8f41e249bc7e488a2482e9557b536d",
+          "rank": 4,
+          "score": 0.5766199769438303
+        },
+        {
+          "source_id": "IFR_SERVICE_ROBOTS_2026",
+          "chunk_id": "chunk_f18769a5c9225a6d7b7529dbff111e87bc709e85f58b905c4f3c8f8e6f6e6e77",
+          "rank": 5,
+          "score": 0.5689131306990822
+        }
+      ],
+      "receipt": {
+        "query_id": "query_8e99005001ad45138344b300c9d1595b",
+        "query_text": "인구구조 변화와 고위험 직종에서 로봇 적용이 산업재해 감소와 근로환경에 어떤 역할을 하는가?",
+        "queries_hash": "5799e54d1f4fe48634bc04e31ac1a16bfa2cb4703648734ca454caab3332d4b9",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "MOTIE_ROBOT_PLAN_2024",
+            "chunk_id": "chunk_e931c6c62f1f65c7da7cd022966904c5a4cbdb90e096f971587ce3187245f3f2",
+            "rank": 1,
+            "score": 0.6200875170247129
+          },
+          {
+            "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+            "chunk_id": "chunk_70495f246fbbfd58700bfcfbb37ed57f7bf3d7aa51e31cbcd398a6fa880c3913",
+            "rank": 2,
+            "score": 0.5872171138514563
+          },
+          {
+            "source_id": "MOTIE_ROBOT_PLAN_2024",
+            "chunk_id": "chunk_8d9c7a4bca63919b1c223e72dc6751a1e350df1a63d65f95c40929ad0e94e379",
+            "rank": 3,
+            "score": 0.5806555629115205
+          },
+          {
+            "source_id": "MOTIE_ROBOT_PLAN_2024",
+            "chunk_id": "chunk_c3e5eb52cffdf1024903e26b94546549fe8f41e249bc7e488a2482e9557b536d",
+            "rank": 4,
+            "score": 0.5766199769438303
+          },
+          {
+            "source_id": "IFR_SERVICE_ROBOTS_2026",
+            "chunk_id": "chunk_f18769a5c9225a6d7b7529dbff111e87bc709e85f58b905c4f3c8f8e6f6e6e77",
+            "rank": 5,
+            "score": 0.5689131306990822
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:10.142725Z"
+      },
+      "latency_seconds": 0.08851041691377759
+    },
+    {
+      "query_id": "D03",
+      "perspective": "domain_application",
+      "language": "en",
+      "query": "Where are professional service robots applied in transportation and logistics, including mobile order fulfilment and cargo handling?",
+      "relevant_source_ids": [
+        "IFR_SERVICE_ROBOTS_2026"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "IFR_SERVICE_ROBOTS_2026",
+          "chunk_id": "chunk_3bcde0fb9f5e17772a9405025420d8e0018cc68b5d749a7cbd32940e9efd0fa5",
+          "rank": 1,
+          "score": 0.6990667019722879
+        },
+        {
+          "source_id": "IFR_SERVICE_ROBOTS_2026",
+          "chunk_id": "chunk_4e72568e56fd5f0c52fa5b5ffde71a83a2a1a9d0c3251a42eab81ad6d1e7e84d",
+          "rank": 2,
+          "score": 0.6702311292591525
+        },
+        {
+          "source_id": "IFR_SERVICE_ROBOTS_2026",
+          "chunk_id": "chunk_e2890f6d74f8f0c84918c2b168bdaeb5aa75b082539055a0b3c13e901d921014",
+          "rank": 3,
+          "score": 0.6527914446263341
+        },
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "chunk_id": "chunk_b3c34fa020206993d75ec7042d293dc47ea6c1e101d31033b56cbfc72cc47f02",
+          "rank": 4,
+          "score": 0.6311846972990014
+        },
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "chunk_id": "chunk_6eb60be8069b402e4f79807d61f2b7408ebe1e56508c32af422615fc308f58fb",
+          "rank": 5,
+          "score": 0.6229525934869197
+        }
+      ],
+      "receipt": {
+        "query_id": "query_f9cd9d5f28bd4bcfbea4799db8034e15",
+        "query_text": "Where are professional service robots applied in transportation and logistics, including mobile order fulfilment and cargo handling?",
+        "queries_hash": "71d0e8a151c4445583eb9cfc2db6d522a221f11f7acd8b55fdcc5c75354097da",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "IFR_SERVICE_ROBOTS_2026",
+            "chunk_id": "chunk_3bcde0fb9f5e17772a9405025420d8e0018cc68b5d749a7cbd32940e9efd0fa5",
+            "rank": 1,
+            "score": 0.6990667019722879
+          },
+          {
+            "source_id": "IFR_SERVICE_ROBOTS_2026",
+            "chunk_id": "chunk_4e72568e56fd5f0c52fa5b5ffde71a83a2a1a9d0c3251a42eab81ad6d1e7e84d",
+            "rank": 2,
+            "score": 0.6702311292591525
+          },
+          {
+            "source_id": "IFR_SERVICE_ROBOTS_2026",
+            "chunk_id": "chunk_e2890f6d74f8f0c84918c2b168bdaeb5aa75b082539055a0b3c13e901d921014",
+            "rank": 3,
+            "score": 0.6527914446263341
+          },
+          {
+            "source_id": "MOTIE_ROBOT_PLAN_2024",
+            "chunk_id": "chunk_b3c34fa020206993d75ec7042d293dc47ea6c1e101d31033b56cbfc72cc47f02",
+            "rank": 4,
+            "score": 0.6311846972990014
+          },
+          {
+            "source_id": "MOTIE_ROBOT_PLAN_2024",
+            "chunk_id": "chunk_6eb60be8069b402e4f79807d61f2b7408ebe1e56508c32af422615fc308f58fb",
+            "rank": 5,
+            "score": 0.6229525934869197
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:10.220105Z"
+      },
+      "latency_seconds": 0.07733479200396687
+    },
+    {
+      "query_id": "D04",
+      "perspective": "domain_application",
+      "language": "ko",
+      "query": "움직이는 컨베이어에서 물체 궤적과 시간적 역학을 이해해야 하는 로봇 조작의 조건은 무엇인가?",
+      "relevant_source_ids": [
+        "RLWRLD_RLDX1_V2_2026"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_85fc6204db7fa217c5c7ab605b0264ff84179b20b30d848f4721b8b2b60cbee4",
+          "rank": 1,
+          "score": 0.5998421785930589
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_f65ee15bb8ee8f0b5ae4518e428c0cfd5b23bb2468495a2c06fdafb49009c223",
+          "rank": 2,
+          "score": 0.5876169071907706
+        },
+        {
+          "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+          "chunk_id": "chunk_776353748949ef4a604abdd4d0d4dc12ca7a5d3099a556998e0f644700927fce",
+          "rank": 3,
+          "score": 0.5816569064411489
+        },
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "chunk_id": "chunk_e02d46fd1d1e3852b8c616b3367c9595cc7cec1af076e6d660ff2297c0ae7bb8",
+          "rank": 4,
+          "score": 0.5718677469223945
+        },
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "chunk_id": "chunk_336f26de0049281864af64d14fd833eb58fd91a84c498c1acfba022ba762ce1d",
+          "rank": 5,
+          "score": 0.569173037624806
+        }
+      ],
+      "receipt": {
+        "query_id": "query_d00b97b89ff64b31a6c12f67345624db",
+        "query_text": "움직이는 컨베이어에서 물체 궤적과 시간적 역학을 이해해야 하는 로봇 조작의 조건은 무엇인가?",
+        "queries_hash": "4a816d2444eddeadd8b678bd77460537b88d7743829d02abe05b865ff58ff504",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_85fc6204db7fa217c5c7ab605b0264ff84179b20b30d848f4721b8b2b60cbee4",
+            "rank": 1,
+            "score": 0.5998421785930589
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_f65ee15bb8ee8f0b5ae4518e428c0cfd5b23bb2468495a2c06fdafb49009c223",
+            "rank": 2,
+            "score": 0.5876169071907706
+          },
+          {
+            "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+            "chunk_id": "chunk_776353748949ef4a604abdd4d0d4dc12ca7a5d3099a556998e0f644700927fce",
+            "rank": 3,
+            "score": 0.5816569064411489
+          },
+          {
+            "source_id": "PI05_2504_16054_V1",
+            "chunk_id": "chunk_e02d46fd1d1e3852b8c616b3367c9595cc7cec1af076e6d660ff2297c0ae7bb8",
+            "rank": 4,
+            "score": 0.5718677469223945
+          },
+          {
+            "source_id": "RLWRLD_RLDX1_V2_2026",
+            "chunk_id": "chunk_336f26de0049281864af64d14fd833eb58fd91a84c498c1acfba022ba762ce1d",
+            "rank": 5,
+            "score": 0.569173037624806
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:10.364386Z"
+      },
+      "latency_seconds": 0.14428812509868294
+    },
+    {
+      "query_id": "D05",
+      "perspective": "domain_application",
+      "language": "en",
+      "query": "What staged manufacturing AX roadmap expands robot applications from lightweight to general-purpose and high-strength tasks?",
+      "relevant_source_ids": [
+        "KIET_PHYSICAL_AI_2026"
+      ],
+      "ranked_hits": [
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_4bc0ff1c3aa7312a8103ca43aee1c45b91a2d98a4f0b01479e549c191b93ee63",
+          "rank": 1,
+          "score": 0.6191661724014907
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_f816168751da0ba5990b275f4c3a8ca8424c120e2d671c7d461d8d825f9e8826",
+          "rank": 2,
+          "score": 0.6177539115835862
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_8319a4fd0dbc2453d5585d4761525004cb671d61b6c1c928d4fbd7a05b70d1f9",
+          "rank": 3,
+          "score": 0.6168633474304542
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_145e2bd2f3403559af86cdde73b9637fd07f88f0771372ebdb7873e29ca4f171",
+          "rank": 4,
+          "score": 0.6149598857972436
+        },
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "chunk_id": "chunk_b65a44291a66b1953d1d184681b610338e0f89d952406822f7f6b65947239da9",
+          "rank": 5,
+          "score": 0.6046737461569354
+        }
+      ],
+      "receipt": {
+        "query_id": "query_e474685894394a5e90f2d7ce5320df8c",
+        "query_text": "What staged manufacturing AX roadmap expands robot applications from lightweight to general-purpose and high-strength tasks?",
+        "queries_hash": "82dac3d1973ade942de547c594e7eee6d2ef97c3336072a3045fb191d3f428a9",
+        "provider": "BAAI/bge-m3",
+        "corpus_version": "benchmark-physical-ai-1.0",
+        "index_version": "a0edd4b4b39169f09fa7",
+        "filters": {
+          "company_id": "benchmark_physical_ai",
+          "domain": "Physical AI / Robotics",
+          "as_of_date": "2026-10-13",
+          "top_k": "5",
+          "publication_date_policy": "exclude_future_preserve_unknown",
+          "excluded_source_ids_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+        },
+        "ranked_hits": [
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_4bc0ff1c3aa7312a8103ca43aee1c45b91a2d98a4f0b01479e549c191b93ee63",
+            "rank": 1,
+            "score": 0.6191661724014907
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_f816168751da0ba5990b275f4c3a8ca8424c120e2d671c7d461d8d825f9e8826",
+            "rank": 2,
+            "score": 0.6177539115835862
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_8319a4fd0dbc2453d5585d4761525004cb671d61b6c1c928d4fbd7a05b70d1f9",
+            "rank": 3,
+            "score": 0.6168633474304542
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_145e2bd2f3403559af86cdde73b9637fd07f88f0771372ebdb7873e29ca4f171",
+            "rank": 4,
+            "score": 0.6149598857972436
+          },
+          {
+            "source_id": "KIET_PHYSICAL_AI_2026",
+            "chunk_id": "chunk_b65a44291a66b1953d1d184681b610338e0f89d952406822f7f6b65947239da9",
+            "rank": 5,
+            "score": 0.6046737461569354
+          }
+        ],
+        "outcome": "success",
+        "ts": "2026-10-13T04:49:10.431011Z"
+      },
+      "latency_seconds": 0.06661108299158514
+    }
+  ],
+  "indexing_seconds_including_model_load": 92.64582833403256,
+  "metrics": {
+    "overall": {
+      "query_count": 20,
+      "hit_rate_at_5": 1.0,
+      "mrr_at_5": 1.0
+    },
+    "technology_maturity": {
+      "query_count": 5,
+      "hit_rate_at_5": 1.0,
+      "mrr_at_5": 1.0
+    },
+    "market": {
+      "query_count": 5,
+      "hit_rate_at_5": 1.0,
+      "mrr_at_5": 1.0
+    },
+    "stakeholders": {
+      "query_count": 5,
+      "hit_rate_at_5": 1.0,
+      "mrr_at_5": 1.0
+    },
+    "domain_application": {
+      "query_count": 5,
+      "hit_rate_at_5": 1.0,
+      "mrr_at_5": 1.0
+    }
+  },
+  "query_latency_p50_seconds": 0.07878831250127405,
+  "query_latency_p95_seconds": 0.12866323756752537,
+  "sampled_peak_process_rss_bytes": 2396192768,
+  "memory_method": "50ms sampled process RSS, includes model loading/index/query; excludes tokenizer/corpus preflight peak"
+}

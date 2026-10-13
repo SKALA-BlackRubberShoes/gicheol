@@ -1,0 +1,428 @@
+{
+  "schema_version": "1.0",
+  "label_provenance": "agent_curated_pending_human_review",
+  "human_label_reviewed": false,
+  "scope": "domain-context benchmark only; synthetic owner must never be used as production company attribution",
+  "queries": [
+    {
+      "query_id": "T01",
+      "perspective": "technology_maturity",
+      "language": "ko",
+      "query": "실세계 조작을 위한 RLDX-1의 3단계 학습 절차는 어떻게 구성되는가?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "RLWRLD_RLDX1_V2_2026"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "pdf_file": "docs/data/technology_competition/raw/rlwrld_rldx1_2605.03269v2.pdf",
+          "page_number": 3,
+          "quote": " manipulation scenarios via motion-consistency\nfiltering; a three-stage training procedure bridging internet-scale pre-trained priors with embodiment-specific deployment;\nand an inference optimization pipeline that enables real-time control",
+          "quote_sha256": "3fa3caa2122276d056596f043e81716fe0de5d70c0cf54067638f468c6e519f5"
+        }
+      ]
+    },
+    {
+      "query_id": "T02",
+      "perspective": "technology_maturity",
+      "language": "en",
+      "query": "How are tactile and torque signals incorporated into the Multi-Stream Action Transformer?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "RLWRLD_RLDX1_V2_2026"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "pdf_file": "docs/data/technology_competition/raw/rlwrld_rldx1_2605.03269v2.pdf",
+          "page_number": 4,
+          "quote": "rmation that visual observation alone cannot provide (e.g., tactile and torque),\nwe feed physical signal inputs into the action module (Lee et al., 2026). We train this module to predict the future physical\nsensory signals.\nTo handle the di",
+          "quote_sha256": "19cdf5c8ad596c9af5c8a6d5a5e3f088f52f8fa19562a559e51bf3619a761c74"
+        }
+      ]
+    },
+    {
+      "query_id": "T03",
+      "perspective": "technology_maturity",
+      "language": "ko",
+      "query": "Diffusion Policy에서 receding horizon 제어와 시각 조건화가 사용되는 이유는 무엇인가?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "DIFFUSION_POLICY_IJRR_2024"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "pdf_file": "docs/data/technology_competition/raw/diffusion_policy_ijrr_2024.pdf",
+          "page_number": 1,
+          "quote": " key technical contributions including the incorporation of receding horizon control,\nvisual conditioning, and the time-series diffusion transformer. We hope this work will help motivate a new generation of\npolicy learning techniques that a",
+          "quote_sha256": "a4a947c30128d9e52d8f4a7312934475e5c6718a76fc8c4d6a71b362bcbce0a1"
+        }
+      ]
+    },
+    {
+      "query_id": "T04",
+      "perspective": "technology_maturity",
+      "language": "en",
+      "query": "Which visuomotor policy represents multimodal robot action distributions through conditional denoising diffusion?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "DIFFUSION_POLICY_IJRR_2024"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "DIFFUSION_POLICY_IJRR_2024",
+          "pdf_file": "docs/data/technology_competition/raw/diffusion_policy_ijrr_2024.pdf",
+          "page_number": 1,
+          "quote": "when used for robot policies, including\ngracefully handling multimodal action distributions, being suitable for high-dimensional action spaces, and exhibiting\nimpressive training stability. To fully unlock the potential of diffusion models ",
+          "quote_sha256": "11254d21458d8d914822ea0bb55b50e0cdfca4990d212d95dba580b175e6b593"
+        }
+      ]
+    },
+    {
+      "query_id": "T05",
+      "perspective": "technology_maturity",
+      "language": "ko",
+      "query": "π0.5는 여러 로봇과 웹 데이터 등 이질적인 데이터를 어떻게 공동 학습에 활용하는가?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "PI05_2504_16054_V1"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "pdf_file": "docs/data/technology_competition/raw/pi05_2504.16054v1.pdf",
+          "page_number": 1,
+          "quote": "Chocolate\nFig. 1: The π0.5 model transfers knowledge from a heterogeneous range of data sources, including other robots, high-level subtask prediction, verbal instructions,\nand data from the web, in order to enable broad generalization acro",
+          "quote_sha256": "9e371cc0e2f84f1586691e16fde7e9caf94d60f7ec422d077f455dfe2fefb847"
+        }
+      ]
+    },
+    {
+      "query_id": "M01",
+      "perspective": "market",
+      "language": "en",
+      "query": "What is the worldwide annual industrial robot installation trend and the forecast for 2026 through 2029?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "IFR_INDUSTRIAL_ROBOTS_2026"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "IFR_INDUSTRIAL_ROBOTS_2026",
+          "pdf_file": "docs/data/market/raw/02_IFR_2026_industrial_robots_selected.pdf",
+          "page_number": 4,
+          "quote": "ary World Robotics 2026 Industrial Robots \nWorldwide annual installations of industrial robots: \n• 2025: 603,307 units (+11%) \n• 2026: 655,000 units (+9%) \n• 2029: 806,000 units (+7% CAGR from 2026 to 2029) \n \nRobot installations 2025: from",
+          "quote_sha256": "3d648b7a5057d3a7544944c5a420a67d1d55be51e408900acc923b4de1213171"
+        }
+      ]
+    },
+    {
+      "query_id": "M02",
+      "perspective": "market",
+      "language": "ko",
+      "query": "2024년 로봇산업 실태조사는 로봇 품목별 생산과 내수 및 수출 출하를 어떤 항목으로 조사하는가?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "KIRIA_ROBOT_SURVEY_2024"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "pdf_file": "docs/data/market/raw/01_KIRIA_2024_robot_industry_survey_selected.pdf",
+          "page_number": 6,
+          "quote": "종사자 수 남 여( / )∘\n로봇산업 업종 로봇산업 해당 업종∘ 가장 주된 업종∘\n로봇산업 품목별\n생산 및 출하 현황\n로봇단품 및 부품명∘ 로봇형태 및 적용산업 제어축수 기계구조 적용산업( , , )∘\n생산실적 수량 금액( , )∘ 출하실적 내수 수출 수량 금액 국가( , : , , )∘\n로봇산업 품목별\n수입 현황 로봇단품 및 부품별 수입 현황 수량 금액 국가( , , )∘\n연구개발 및\n지식재산권 현황\n로봇 관련 연구개발 실적",
+          "quote_sha256": "34861c9d1525338c98d953a1dd95499c87a109b3a37d82341aa39bbf368aeb9a"
+        }
+      ]
+    },
+    {
+      "query_id": "M03",
+      "perspective": "market",
+      "language": "en",
+      "query": "How did professional service robot sales and Robotics-as-a-Service evolve in 2025?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "IFR_SERVICE_ROBOTS_2026"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "IFR_SERVICE_ROBOTS_2026",
+          "pdf_file": "docs/data/market/raw/03_IFR_2026_service_robots_selected.pdf",
+          "page_number": 4,
+          "quote": "increased by 24%. At the same time, Robotics -as-a-Service (RaaS) continued to gain \nimportance with a high double- digit growth rate. Economic uncertainty, high upfront \ninvestment costs, and the need for greater operational flexibility ar",
+          "quote_sha256": "932273088b05869fd379e14104b6fcf65361f32071685c872b4a3a9f4db76c98"
+        }
+      ]
+    },
+    {
+      "query_id": "M04",
+      "perspective": "market",
+      "language": "ko",
+      "query": "자율 제조를 위한 제조 AX에서 비정형 업무 수행과 피지컬 AI 수요는 어떻게 설명되는가?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "KIET_PHYSICAL_AI_2026"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "pdf_file": "docs/data/market/raw/05_KIET_2026_physical_ai_ecosystem_full.pdf",
+          "page_number": 1,
+          "quote": "전망l(제조 AX의 한계) 인간의 개입이 최소화되는 자율 제조를 통한 제조업 경쟁력 제고를 위해서는 다양한 비정형적 업무를 수행할 수 있는 ‘피지컬 AI 기반 제조 AX’가 필수l(생태계 핵심 요소) 제조 AX 관점에서 피지컬 AI 생태계의 핵심 요소는 ① 폼팩터 개발·설계, ② 제조 특화 AI 행동 학습, ③ 액추에이터, ④ 로봇손, ⑤ AI 파운데이션 모델, ⑥ 온-디바이스 AI 반도체l(생태계 확장 전략) 비교우위를 지닌",
+          "quote_sha256": "cd90ff0525cc79470de45c5fe51e74bed112690c1a43e506024dd3e20645675f"
+        }
+      ]
+    },
+    {
+      "query_id": "M05",
+      "perspective": "market",
+      "language": "en",
+      "query": "What investment context for CarbonSix was reported in the June 2026 weekly startup funding bulletin?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "STARTUPRECIPE_20260608"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "STARTUPRECIPE_20260608",
+          "pdf_file": "docs/data/technology_competition/raw/startuprecipe_20260608.pdf",
+          "page_number": 4,
+          "quote": "카본식스  : 150 억원  시리즈 A\n미국에  기반을  둔  피지컬  AI 스타트업  카본식스가  LB 인베스트먼트로부\n터  150 억  원  규모의  초기  투자를  확보했다 . 카본식스는  제조  현장에서  활\n용되는  로봇에  인공지능을  결합해  인간  작업을  학습하고  수행하도록  만\n드는  기술을  개발하고",
+          "quote_sha256": "1e87e8435f88ebb79f808c7da6dee7fcf64398c97228ad95f61342f4b5c91458"
+        }
+      ]
+    },
+    {
+      "query_id": "S01",
+      "perspective": "stakeholders",
+      "language": "ko",
+      "query": "지능형로봇 기본계획은 기존 제도와 안전 기준이 시장 진입 및 로봇 윤리에 미치는 부담을 어떻게 설명하는가?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "MOTIE_ROBOT_PLAN_2024"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "pdf_file": "docs/data/market/raw/04_MOTIE_2024_robot_basic_plan_selected.pdf",
+          "page_number": 7,
+          "quote": "한지원체계도미정착인프라사람중심으로설계된기존제도,안전기준부재등이로봇의시장진입에걸림돌로작용    * ｢첨단로봇 규제혁신 방안｣(’23.3.2)을 통해 발굴된 51개 과제의 규제개선 추진중 ㅇ 로봇의활용범위가확대되면서로봇안전사고대비,건전한로봇윤리·문화등이새로운이슈로부각",
+          "quote_sha256": "b8503b5422b2586e4c71bea105b72ff94b5f14d0b85d07f880358c7219bddafa"
+        }
+      ]
+    },
+    {
+      "query_id": "S02",
+      "perspective": "stakeholders",
+      "language": "en",
+      "query": "Which autonomous machine adoption barriers affect large firms, including liability, reputation and data access?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "JRC_AUTONOMOUS_MACHINES_2023"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "pdf_file": "docs/data/market/raw/06_EC_JRC_2023_autonomous_machines_selected.pdf",
+          "page_number": 3,
+          "quote": "fically for large firms (those with 250 employees or more), liability and reputation risks, as \nwell as data access, are the most important obstacles. Second, certain types of obstacles (namely: liability and \nreputation risks, data access ",
+          "quote_sha256": "8677cff632bd1aa399efde86c4c4dba3d458e11df0e576834d2d076d0b95fe03"
+        }
+      ]
+    },
+    {
+      "query_id": "S03",
+      "perspective": "stakeholders",
+      "language": "ko",
+      "query": "로봇산업 실태조사는 종사자의 성별, 직무별 부족 인원과 채용 예정 인원을 어떻게 다루는가?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "KIRIA_ROBOT_SURVEY_2024"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "KIRIA_ROBOT_SURVEY_2024",
+          "pdf_file": "docs/data/market/raw/01_KIRIA_2024_robot_industry_survey_selected.pdf",
+          "page_number": 6,
+          "quote": "야 종사자 수 남 여( / )∘\n직무별 로봇산업 분야 종사자 수 남 여( / )∘\n직무별 로봇산업 분야 년 부족 인원2024∘\n직무별 로봇산업 분야 년 채용 예정 인원2025∘\n로봇산업 분야 연구개발직 학력별 종사자 수 남 여( / )∘\n로봇산업 업종 로봇산업 해당 업종∘ 가장 주된 업종∘\n로봇산업 품목별\n생산 및 출하 현황\n로봇단품 및 부품명∘ 로봇형태 및 적용산업 제어축수 기계구조 적용산업( , , )∘\n생산실적 수량 금액",
+          "quote_sha256": "1642774ebecbdbcfa6bf60d98c7a5233489866dbdef8b975f1e6e48d1182cfa9"
+        }
+      ]
+    },
+    {
+      "query_id": "S04",
+      "perspective": "stakeholders",
+      "language": "en",
+      "query": "How do company size, employee knowledge and complementary technologies influence autonomous machine adoption by manufacturing SMEs?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "JRC_AUTONOMOUS_MACHINES_2023"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "JRC_AUTONOMOUS_MACHINES_2023",
+          "pdf_file": "docs/data/market/raw/06_EC_JRC_2023_autonomous_machines_selected.pdf",
+          "page_number": 6,
+          "quote": " \n5 \nand medium-sized enterprises (SMEs) might be aware of the relevance of new technologies, their adoption \ncapacity is much lower than that of large companies. Larger companies have the resources to develop the r",
+          "quote_sha256": "be85cce207a1fae0612f0490a719166fcc22d676f7db8752377015342efdfeaa"
+        }
+      ]
+    },
+    {
+      "query_id": "S05",
+      "perspective": "stakeholders",
+      "language": "ko",
+      "query": "제조 AX 피지컬 AI 생태계에 참여하는 폼팩터, 액추에이터, 로봇손과 AI 반도체 주체들의 역할은 무엇인가?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "KIET_PHYSICAL_AI_2026"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "pdf_file": "docs/data/market/raw/05_KIET_2026_physical_ai_ecosystem_full.pdf",
+          "page_number": 1,
+          "quote": "AX 관점에서 피지컬 AI 생태계의 핵심 요소는 ① 폼팩터 개발·설계, ② 제조 특화 AI 행동 학습, ③ 액추에이터, ④ 로봇손, ⑤ AI 파운데이션 모델, ⑥ 온-디바이스 AI 반도체l(생태계 확장 전략) 비교우위를 지닌 ‘제조 특화 AI 행동 학습’을 교두보로 피지컬 AI 생태계에서 우리나라의 영역을 확장하는 ‘K-피지컬 AI 생태계 확장 전략’이 필요l(K-폼팩터 개발) 「대한민국 대도약 3대 메가프로젝트」의 ‘AI 로",
+          "quote_sha256": "bcacc04f92e4d39f3ce427b72d257173fecb7575cebb5193a325b96302a49ca6"
+        }
+      ]
+    },
+    {
+      "query_id": "D01",
+      "perspective": "domain_application",
+      "language": "en",
+      "query": "Which robot model was evaluated on cleaning kitchens and bedrooms in previously unseen homes with 10 to 15 minute multistage tasks?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "PI05_2504_16054_V1"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "PI05_2504_16054_V1",
+          "pdf_file": "docs/data/technology_competition/raw/pi05_2504.16054v1.pdf",
+          "page_number": 1,
+          "quote": " performing complex multi-stage behaviors with durations of 10 to 15 minutes.\nAbstract—In order for robots to be useful, they must perform\npractically relevant tasks in the real world, outside of the lab.\nWhile vision-language-action (VLA) ",
+          "quote_sha256": "332317157462672e4f858a9f3b7e00efa9c4b8e2c561a5928c682e978fe689d8"
+        }
+      ]
+    },
+    {
+      "query_id": "D02",
+      "perspective": "domain_application",
+      "language": "ko",
+      "query": "인구구조 변화와 고위험 직종에서 로봇 적용이 산업재해 감소와 근로환경에 어떤 역할을 하는가?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "MOTIE_ROBOT_PLAN_2024"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "MOTIE_ROBOT_PLAN_2024",
+          "pdf_file": "docs/data/market/raw/04_MOTIE_2024_robot_basic_plan_selected.pdf",
+          "page_number": 2,
+          "quote": "부)   * 2022년 65세 이상 고령인구는 약 902만명으로 전체 인구의 17.5%(’22, 통계청)ㅇ 고위험업종에투입되어산업재해를줄일수있어,점점높아지는산업안전기대치에부응하는한편,위험직종에대한사회적인식개선◇ 첨단로봇은 잠재력이 큰 전략산업으로, 세계 각국도 정책경쟁 본격화ㅇ 첨단로봇은반도체,AI,이차전지,첨단부품등이융복합되어전후방파급효과가큰신성장동력이자국가적전략산업으로잠재력부각ㅇ 주요국가는첨단로봇을미래전략산업이자산업경쟁력을",
+          "quote_sha256": "47ea6114b8597267cde3cf9a714a25f83da6628d6472befd5905aa0d88a7192e"
+        }
+      ]
+    },
+    {
+      "query_id": "D03",
+      "perspective": "domain_application",
+      "language": "en",
+      "query": "Where are professional service robots applied in transportation and logistics, including mobile order fulfilment and cargo handling?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "IFR_SERVICE_ROBOTS_2026"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "IFR_SERVICE_ROBOTS_2026",
+          "pdf_file": "docs/data/market/raw/03_IFR_2026_service_robots_selected.pdf",
+          "page_number": 4,
+          "quote": "cation groups for professional service robots in 2025 were \ntransportation and logistics (AP5), hospitality (AP8), professional cleaning (AP2), \nagriculture (AP1), and inspection and maintenance (AP3).  \n \n \n \nTransportation and logistics r",
+          "quote_sha256": "755bace3ae6cf0b067b4d860ab57df6598f80a2aec6bd2e48514cdf3242ac503"
+        }
+      ]
+    },
+    {
+      "query_id": "D04",
+      "perspective": "domain_application",
+      "language": "ko",
+      "query": "움직이는 컨베이어에서 물체 궤적과 시간적 역학을 이해해야 하는 로봇 조작의 조건은 무엇인가?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "RLWRLD_RLDX1_V2_2026"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "RLWRLD_RLDX1_V2_2026",
+          "pdf_file": "docs/data/technology_competition/raw/rlwrld_rldx1_2605.03269v2.pdf",
+          "page_number": 3,
+          "quote": "nce, in dynamic environments\nsuch as manipulation on moving conveyors, existing VLAs struggle to act appropriately, as static visual observations fail to\ncapture object trajectories or temporal dynamics. Similar limitations extend beyond dy",
+          "quote_sha256": "fac22e0ea33a84e5cd84772df8ffc575fe3c1a3cf97f3444a5ed54998ab00de1"
+        }
+      ]
+    },
+    {
+      "query_id": "D05",
+      "perspective": "domain_application",
+      "language": "en",
+      "query": "What staged manufacturing AX roadmap expands robot applications from lightweight to general-purpose and high-strength tasks?",
+      "company_id": "benchmark_physical_ai",
+      "domain": "Physical AI / Robotics",
+      "as_of_date": "2026-10-13",
+      "relevant_source_ids": [
+        "KIET_PHYSICAL_AI_2026"
+      ],
+      "label_evidence": [
+        {
+          "source_id": "KIET_PHYSICAL_AI_2026",
+          "pdf_file": "docs/data/market/raw/05_KIET_2026_physical_ai_ecosystem_full.pdf",
+          "page_number": 1,
+          "quote": "특화 행동 학습·데이터 축적이 필수l(단계적 전환 로드맵) 피지컬 AI 기술 성숙도와 현장 여건을 고려하여 경량·범용·고강도 작업용 AI 로봇으로 적용 범위를 단계적으로 확대하는 업종·공정별 제조 AX 로드맵 수립이 필요l(주력 제조업 전환 전략) 주력 제조업 특화 피지컬 AI 전환의 경우, 각 업종·공정에 적합한 AI 로봇의 형태를 고려한 업종·산업단지 단위의 제조 피지컬 AI 전환 정책 추진이 필요핵심 주제어: 피지컬 AI",
+          "quote_sha256": "d189206c176320ce6ca22c464b3115ccf06ffec13c52a766a406ba3c506153a5"
+        }
+      ]
+    }
+  ]
+}
