@@ -14,6 +14,8 @@
 
 공통 State, 결정 정책, 4개 관점 gate, groundedness/neutrality/bias/coverage, immutable RepairPlan, SQLite·receipt·재시도 예산, 최종 manifest commit은 유지한다. 원문 변조·회사 불일치·색인 불일치·재개 근거 복구를 실제 파일/PDF/Qdrant로 검사한다. 외부 모델/embedding은 fixture로 표시한다.
 
+품질 테스트 fixture도 같은 공통 DTO로 정규화한다. 별도 계약 경로 환경변수 없이 검증된 receipt의 기본 필드와 실제 서비스 입력이 일치하며, 실제 Supervisor 대상 이슈 #21 회귀와 Judge adapter 테스트가 기본 테스트 실행에서 생략되지 않는다.
+
 전체 테스트에서 기존 투자 보고서의 아래 2개 실패는 기준 브랜치에도 있던 문제다. 이번 중립 V2 변경으로 수정하지 않았다.
 
 - `main/agents/report/tests/test_agent.py::ReportAgentTests::test_page_overflow_raises_and_leaves_failed_audit_and_complete_markdown`

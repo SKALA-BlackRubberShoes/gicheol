@@ -1,39 +1,27 @@
 """Synthetic evidence and deterministic adapters; never a live model benchmark."""
 
 from copy import deepcopy
-import importlib.util
-import os
 from pathlib import Path
-import sys
+
+from main.agents.supervisor import contracts as COMMON
 
 from main.agents.quality.claim_support import ClaimSupportVerifier
 from main.agents.quality.evaluator import ReportEvaluator
 from main.agents.quality.sufficiency import SufficiencyAssessor
 from main.agents.quality.rubrics import (
-    CRITERIA, QUESTIONS, SECTION_ORDER, canonical_hash, quote_hash, record, semantic_hash,
+    CRITERIA, QUESTIONS, SECTION_ORDER, quote_hash, record,
 )
 
-COMMON = None
-if os.environ.get("HYOJIN_CONTRACTS_PATH"):
-    spec = importlib.util.spec_from_file_location("hyojin_common_contracts", os.environ["HYOJIN_CONTRACTS_PATH"])
-    COMMON = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = COMMON
-    spec.loader.exec_module(COMMON)
-
-
 def factory(name, payload):
-    if COMMON is not None:
-        return getattr(COMMON, name).model_validate(payload)
-    # Explicit fixture factory, not a runtime fallback or duplicated schema.
-    return deepcopy(payload)
+    return getattr(COMMON, name).model_validate(payload)
 
 
 def hash_fn(value):
-    return COMMON.canonical_hash(value) if COMMON else canonical_hash(value)
+    return COMMON.canonical_hash(value)
 
 
 def semantic_hash_fn(value):
-    return COMMON.semantic_hash(value) if COMMON else semantic_hash(value)
+    return COMMON.semantic_hash(value)
 
 
 def fixture():
