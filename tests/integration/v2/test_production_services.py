@@ -1,9 +1,11 @@
 """Production wiring with real PDF/files/Qdrant and explicit external fixtures."""
 import asyncio
 import csv
+from dataclasses import replace
 from datetime import date
 import json
 from pathlib import Path
+import shutil
 
 import pytest
 from qdrant_client import QdrantClient
@@ -15,6 +17,7 @@ from main.runtime.neutral import services
 from main.runtime.neutral.config import inspect_corpus, load_runtime_config
 from main.storage.artifacts import FileArtifactStore
 from main.storage.artifacts import ArtifactIntegrityError
+from main.rag.neutral.ingestion import CorpusIngestionError
 
 
 class Embedding:
@@ -200,3 +203,25 @@ async def test_cli_ingest_and_retrieval_use_actual_production_adapters(tmp_path,
     assert result["query_count"] == 20
     # This metric uses real retrieval but synthetic external embeddings.
     # The test asserts adapter wiring, not a live retrieval acceptance score.
+
+
+@pytest.mark.parametrize("declared_name", ["Alpha", "Beta"])
+def test_external_corpus_identity_uses_authoritative_company_registry(tmp_path, declared_name):
+    from main.runtime.neutral import production
+    runtime, run_input = deployment(tmp_path)
+    source = tmp_path / "docs/data/technology_competition"
+    external = tmp_path / "external-corpus"
+    shutil.copytree(source, external)
+    rows = json.loads((external / "sources.json").read_text())
+    for row in rows:
+        row["company_names"]["14"] = [declared_name]
+    (external / "sources.json").write_text(json.dumps(rows))
+    runtime = replace(runtime, corpus_paths=(str(external / "raw/*.pdf"),))
+    manifest = inspect_corpus(runtime)
+    if declared_name == "Beta":
+        with pytest.raises(CorpusIngestionError, match="identity differs"):
+            production._documents(runtime, manifest)
+    else:
+        documents, registry = production._documents(runtime, manifest)
+        assert all(document.company_names == ("Alpha",) for document in documents)
+        assert all(document.company_ids == (registry["14"]["canonical"],) for document in documents)

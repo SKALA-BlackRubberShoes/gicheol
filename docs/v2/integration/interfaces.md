@@ -105,6 +105,8 @@ python -m main.neutral_eval evaluate-retrieval --dataset gold.json --env-file .e
 
 먼저 YAML 또는 환경변수에서 research/report/judge 모델, embedding revision·차원, Qdrant URL·새 collection, 실제 한글 TTF를 설정한다. OpenAI 검색 모델은 web search를 지원해야 한다. `OPENAI_API_KEY`가 필요하며 LangSmith 활성화 시 그 키도 필요하다. ingest와 실행은 동일 설정을 사용한다. `sources.json`의 원본 PDF 귀속을 CSV의 회사명·공식 URL fingerprint로 변환하므로 입력의 회사명·URL은 준비된 CSV와 일치해야 한다. 출처 소유권이 없는 일반 논문을 회사 근거로 바꾸지 않는다. metadata와 corpus가 바뀌면 기존 색인은 거절하며 새 collection을 사용한다.
 
+현재 기본 adapter는 준비된 `Physical AI / Robotics` 자료를 사용한다. 다른 도메인 입력은 근거 부족으로 거절하며 도메인을 바꿔 자료를 재해석하지 않는다. 외부 corpus 폴더도 저장소의 기준 CSV 회사명을 검사한 뒤 ID를 변환한다. 기본 `corpus_paths` glob 전체 자료는 200페이지를 초과하므로, 실제 사용할 원본 PDF 파일을 명시적으로 선택해 중복 제외 합계를 200페이지 이하로 구성해야 한다. 이 한도를 완화하거나 자료를 자동으로 잘라 색인하지 않는다.
+
 검색 평가는 `company_id`에 준비된 CSV ID 또는 canonical ID, `domain`, `as_of_date`를 넣은 실제 gold 20질의를 사용한다. 합성 ID가 있는 예시 benchmark는 그대로 실제 회사 색인을 평가할 수 없다. gold의 정답 출처는 검색기에 전달하지 않는다. URL의 호스트명만으로 독립 출처·발행일을 확정하지 않으며, 미분류 웹 문서는 충분성 판정에서 독립 검증으로 계산하지 않는다.
 
 `runtime/evidence-registry.json`에 실제 source/evidence/receipt 참조와 PDF 페이지·SHA 처리 예산을 원자적으로 저장한다. 재개 시 원문 SHA를 먼저 확인하고 근거를 다시 해결한다. 손상된 저장 원문을 재수집으로 덮어써서 승인하지 않는다. 실제 호출 재시도는 기존 `RetryLedger`와 SQLite 예산을 유지한다.

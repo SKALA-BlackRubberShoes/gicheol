@@ -20,3 +20,5 @@
 - `main/agents/report/tests/test_content.py::ContentTests::test_repeated_decision_limitations_are_printed_once_with_both_owners`
 
 실제 모델 3개의 ID, 고정 embedding 가중치, Qdrant 서버·색인, 한글 글꼴을 설정한 live 실행과 LangSmith 제출 증빙은 아직 검증하지 않았다. 배포 방법은 [통합 계약](../integration/interfaces.md)을 참고한다.
+
+검토 결정: 회사명·공식 URL의 기준 CSV를 소유권의 기준으로 사용한다. 이름이 다른 외부 corpus를 같은 숫자 ID로 연결하지 않는다. 현재 준비된 Physical AI 자료만 기본 factory에 사용하며, 미확인 웹 날짜·독립성을 추정하지 않는다. 이 보수적인 기준에서 원본 자료가 부족하면 보고서가 `incomplete`로 끝날 수 있다. 무거운 모델 설치·가중치는 기존 adapter의 배포 의존성으로 별도 준비하고, 가벼운 테스트 lock은 유지한다. 기존 투자 보고서 실패 2개는 범위 밖으로 남겨두므로 해당 경로에는 그 제한이 지속된다.

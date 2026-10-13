@@ -47,8 +47,9 @@ def _documents(runtime, corpus_manifest):
                     "canonical": _company(row["기업명"], row["홈페이지"])} for row in csv.DictReader(stream)}
     requested = {Path(item.file_path).resolve(): item for item in corpus_manifest}
     documents = {}
+    aliases = {key: (row["name"],) for key, row in registry.items()}
     for directory in {path.parent.parent if path.parent.name == "raw" else path.parent for path in requested}:
-        for original in legacy_corpus_documents(directory):
+        for original in legacy_corpus_documents(directory, company_aliases=aliases):
             path = original.path.resolve()
             if path not in requested:
                 continue
