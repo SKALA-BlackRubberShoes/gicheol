@@ -126,7 +126,7 @@ async def _execute_graph(*, state, runtime, store, bundle, checkpointer, resume=
         manifest_ref = await store.find_manifest(result["run_id"], result["report_revision"])
         if manifest_ref is None or manifest_ref != result["final_manifest_ref"]:
             raise StateIntegrityError("Completed result has no matching committed manifest")
-        await store.approved_report_path(result["run_id"], result["report_revision"])
+        await store.approved_artifact_paths(result["run_id"], result["report_revision"])
     return result
 
 

@@ -33,6 +33,9 @@ class ArtifactIntegrityError(StateIntegrityError):
 
 
 class FileArtifactStore:
+    PUBLICATION_FILES = {"report_md": "report.md", "report_json": "report.json",
+                         "evaluation_json": "evaluation.json"}
+
     def __init__(self, root: str | Path, run_id: str | None = None):
         candidate = Path(root).expanduser().absolute()
         if candidate.is_symlink():
@@ -74,7 +77,15 @@ class FileArtifactStore:
     @contextmanager
     def _transaction(self):
         with self._parent(".storage/lock", create=True) as (directory, name):
-            descriptor = os.open(name, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600, dir_fd=directory)
+            flags = os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW
+            try:
+                descriptor = os.open(name, flags, 0o600, dir_fd=directory)
+            except FileNotFoundError:
+                # Concurrent first creation can transiently return ENOENT on
+                # macOS even with a live directory and the lock now present.
+                # Retry once through the same safe descriptor and flags;
+                # removed paths and all other failures still fail closed.
+                descriptor = os.open(name, flags, 0o600, dir_fd=directory)
             try:
                 fcntl.flock(descriptor, fcntl.LOCK_EX)
                 yield
@@ -194,7 +205,7 @@ class FileArtifactStore:
         if not isinstance(data, bytes):
             raise TypeError("save_bytes requires bytes")
         def save():
-            if key.startswith("snapshots/"):
+            if key.startswith("snapshots/") or key in self.PUBLICATION_FILES.values():
                 with self._transaction():
                     if self._exists(key):
                         ref = self._ref(key, data, media_type)
@@ -215,7 +226,19 @@ class FileArtifactStore:
         from .receipts import ReceiptStore
         await asyncio.to_thread(ReceiptStore(self).save, task, result)
 
-    def _validate_manifest(self, manifest: Manifest) -> None:
+    def _publication_payloads(self, manifest: Manifest) -> dict[str, tuple[str, bytes, str]]:
+        # Reuse the report owner's renderer; never rewrite an evaluated draft.
+        from main.agents.report.neutral_renderers import neutral_markdown
+
+        draft = DraftReport.model_validate(self._load(manifest.draft_ref))
+        evaluation = EvalVerdict.model_validate(self._load(manifest.evaluation_ref))
+        return {
+            "report_md": ("report.md", neutral_markdown(draft).encode("utf-8"), "text/markdown"),
+            "report_json": ("report.json", canonical_json(draft).encode("utf-8"), "application/json"),
+            "evaluation_json": ("evaluation.json", canonical_json(evaluation).encode("utf-8"), "application/json"),
+        }
+
+    def _validate_manifest(self, manifest: Manifest, *, require_exports: bool = True) -> None:
         if self.run_id is not None and manifest.run_id != self.run_id:
             raise ArtifactIntegrityError("manifest run_id differs from this store")
         gate = GateCertificate.model_validate(self._load(manifest.gate_ref))
@@ -237,6 +260,14 @@ class FileArtifactStore:
         # the entire referenced chain on both initial commit and every reopen,
         # so a still-valid outer JSON hash cannot conceal changed source bytes.
         self._verify_embedded_refs(manifest.model_dump(mode="json"))
+        if require_exports:
+            for name, (key, data, media_type) in self._publication_payloads(manifest).items():
+                # The enclosing manifest binds each exact export to its
+                # run/revision/hash/epoch and to the accepted draft/evaluation.
+                if manifest.artifacts.get(name) != self._ref(key, data, media_type):
+                    raise ArtifactIntegrityError(f"completed manifest has missing or inconsistent {name}")
+                if self._verify(manifest.artifacts[name]) != data:
+                    raise ArtifactIntegrityError(f"publication bytes differ from evaluated {name}")
         data = self._verify(manifest.report_pdf_ref)
         try:
             from pypdf import PdfReader
@@ -280,9 +311,30 @@ class FileArtifactStore:
                 if existing is None:
                     raise ArtifactIntegrityError("this run already has a different completed report key")
                 previous = Manifest.model_validate(self._load(existing))
-                if previous.model_dump(mode="json", exclude={"committed_at"}) != manifest.model_dump(mode="json", exclude={"committed_at"}):
+                # The graph supplies the original intent on replay; the store
+                # adds deterministic export refs before the first commit.
+                expected = previous.model_dump(mode="json", exclude={"committed_at", "artifacts"})
+                actual = manifest.model_dump(mode="json", exclude={"committed_at", "artifacts"})
+                extras = {k: v for k, v in previous.artifacts.items() if k not in self.PUBLICATION_FILES}
+                supplied_extras = {k: v for k, v in manifest.artifacts.items() if k not in self.PUBLICATION_FILES}
+                if (expected != actual or extras != supplied_extras or any(
+                    previous.artifacts.get(k) != v for k, v in manifest.artifacts.items()
+                )):
                     raise ArtifactIntegrityError("completed report key cannot be overwritten with different artifacts")
                 return existing
+            # Validate approvals and the staged PDF before writing exports.
+            self._validate_manifest(manifest, require_exports=False)
+            exports = {}
+            for name, (key, data, media_type) in self._publication_payloads(manifest).items():
+                expected = self._ref(key, data, media_type)
+                if name in manifest.artifacts and manifest.artifacts[name] != expected:
+                    raise ArtifactIntegrityError(f"supplied {name} differs from the evaluated content")
+                if self._exists(key):
+                    self._verify(expected)
+                    exports[name] = expected
+                else:
+                    exports[name] = self._write(key, data, media_type)
+            manifest = manifest.model_copy(update={"artifacts": {**manifest.artifacts, **exports}})
             self._validate_manifest(manifest)
             data = canonical_json(manifest).encode("utf-8")
             ref = self._ref("manifest.json", data)
@@ -300,6 +352,17 @@ class FileArtifactStore:
         manifest = Manifest.model_validate(await self.load(ref))
         await self.verify(manifest.report_pdf_ref)
         return self.root / manifest.report_pdf_ref.relative_path
+
+    async def approved_artifact_paths(self, run_id: str, report_revision: int) -> dict[str, Path] | None:
+        """Expose the whole report only behind its fully verified commit marker."""
+        ref = await self.find_manifest(run_id, report_revision)
+        if ref is None:
+            return None
+        manifest = Manifest.model_validate(await self.load(ref))
+        paths = {filename: self.root / manifest.artifacts[name].relative_path
+                 for name, filename in self.PUBLICATION_FILES.items()}
+        return {**paths, "report.pdf": self.root / manifest.report_pdf_ref.relative_path,
+                "manifest.json": self.root / ref.relative_path}
 
 
 FileSystemArtifactStore = FileArtifactStore

@@ -43,14 +43,14 @@ company.json은 공통 `RunInput` 형식의 company_name, official_url, domain, 
 | 저장 | actual bytes SHA, symlink 방지, 원자적 파일 저장 | 변경·누락·경로 이동·rename 실패 |
 | receipt | 동일 task/input에 대한 결과 재사용 | 저장 직후 중단, 중복 결과 방지 |
 | SQLite | 실제 비동기 SQLite saver, 제한된 DTO 복원 | 연결 종료·재연결, 프로세스 중단 |
-| 발행 | staging → 검증 → completed manifest 마지막 commit | AT19 직전·직후 crash |
+| 발행 | 평가된 Markdown·보고서 JSON·평가 JSON·PDF 검증 후 manifest 마지막 commit | 실제 Writer/Publisher, 저장 실패·변조·중단 재개 |
 | 설정 | 모델·font·PDF 총 페이지·manifest·domain·Qdrant 검사 | 버전·hash 차이 거부, 201페이지 거부 |
 | 오류 | 429/5xx/network 재시도, 401/403 분류, deadline | AT11 결정론적 오류 주입 |
-| LLM | 명시적 모델, 구조화 결과, 교정 1회 | 가짜 transport의 계약·budget 검사 |
+| LLM | 명시적 모델, task별 영속 retry 예약, 구조화 교정 1회 | 외부 timeout·receipt replay·SQLite 재개 후 총 호출 상한 |
 | trace | decisions.jsonl, metadata-only LangSmith adapter | 비밀 제거, mock 표시, 중복 결정 방지 |
 | 통합 | 실제 filesystem/SQLite와 동욱 그래프 결합 | mock 업무 fixture 완료·중단 후 재개 |
 | 패키징 | 완료 artifact·trace metadata 결합, ZIP 허용 목록 | AT13 준비 조건 검사; 실제 live 증빙 미완료 |
 
-실행 결과 수와 기존 경로 실패는 `verification.md`에 기록한다. 실제 모델/RAG·LangSmith 화면·한국어 보고서 검증은 담당 서비스가 연결된 뒤 수행해야 한다. 이 브랜치의 빈 PDF fixture는 저장·발행 경계 테스트용이며 평가 보고서가 아니다.
+실행 결과 수와 기존 경로 실패는 `verification.md`에 기록한다. #26 회귀는 실제 NeutralWriter·NeutralPublisher·한글 PDF와 파일/SQLite를 연결하며 연구·Judge 결정만 fixture다. 기존 빈 PDF fixture는 저장 경계 검사용으로 유지한다. 실제 모델/RAG·LangSmith와 업무 자료를 통한 보고서 종단 간 검증은 담당 서비스를 등록한 뒤 수행해야 한다.
 
 연결 상세: [통합 인터페이스](../integration/interfaces.md), [동욱 계약](../dongwook/interfaces.md), [SDD](../../../specs/sdd-spec.md).

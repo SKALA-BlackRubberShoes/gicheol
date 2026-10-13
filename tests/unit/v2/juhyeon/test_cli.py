@@ -288,7 +288,8 @@ def test_assessor_receives_original_deadline_and_logs_gate_metadata(tmp_path, mo
             evidence_resolver=SimpleNamespace(resolve=noop), assess_evidence=assess, publish_worker=noop, mock=True)
         recorder = TraceRecorder(tmp_path, run_id=str(uuid4()), trace_id=str(uuid4()), mock=True)
         monkeypatch.setattr(services, "build_supervisor_graph", lambda **kwargs: kwargs["supervisor"])
-        supervisor = services.assemble_graph(bundle=bundle, store=None, run_config=c.RunConfig(),
+        store = FileArtifactStore(tmp_path / "artifacts", run_id=recorder.run_id)
+        supervisor = services.assemble_graph(bundle=bundle, store=store, run_config=c.RunConfig(),
                                              checkpointer=object(), recorder=recorder, deadline_at=deadline)
         request = c.SufficiencyRequest(eligibility=c.EligibilityResult(task_id="fixture", unlisted=True,
             funding_stage=True, exit_status=True, verdict="eligible", claims=[], gaps=[]),

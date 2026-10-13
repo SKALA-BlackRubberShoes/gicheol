@@ -1,5 +1,6 @@
 """Submission rejection checks; these fixtures are NOT live AT13 evidence."""
 import asyncio
+import hashlib
 from io import BytesIO
 import json
 from pathlib import Path
@@ -115,6 +116,34 @@ def test_zip_writer_only_includes_allowlisted_bytes_without_directory_scan(tmp_p
     with pytest.raises(SubmissionNotReady, match="already exists"):
         _write_archive(path, {"README.md": b"replacement"})
     assert path.read_bytes() == previous
+
+
+def test_packager_passes_all_committed_exports_to_archive_writer(tmp_path, monkeypatch):
+    """Inspect synthetic structural input without producing submission evidence."""
+    import docs.v2.integration.package_submission as packaging
+    captured = {}
+
+    def capture(output_path, files):
+        captured.update(files)
+        return output_path
+
+    monkeypatch.setattr(packaging, "_write_archive", capture)
+
+    async def scenario():
+        store, manifest, evidence, arguments = await negative_fixture(tmp_path)
+        arguments["trace_evidence_path"].write_text(json.dumps(evidence))
+        await package_submission(**arguments)
+        assert not arguments["output_path"].exists()
+        paths = await store.approved_artifact_paths(manifest.run_id, manifest.report_revision)
+        for filename in ("report.md", "report.json", "evaluation.json", "report.pdf", "manifest.json"):
+            assert captured[filename] == paths[filename].read_bytes()
+        index = json.loads(captured["submission-index.json"])
+        assert {"report.md", "report.json", "evaluation.json", "report.pdf", "manifest.json"} <= set(index["artifacts"])
+        for filename in paths:
+            assert index["artifacts"][filename]["sha256"] == hashlib.sha256(captured[filename]).hexdigest()
+        assert "Local structure and integrity only" in index["validation_scope"]
+
+    asyncio.run(scenario())
 
 
 @pytest.mark.parametrize("name", ["submission.zip", "Agent_서울_1_주현.zip", "Agent_서울_1반_주현.zip\n", ".env"])

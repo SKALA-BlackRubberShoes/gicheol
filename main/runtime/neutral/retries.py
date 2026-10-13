@@ -39,6 +39,16 @@ class RetryBudget:
         self.corrections += int(correction)
         return True
 
+    async def reserve_call(self, *, node: str) -> None:
+        """Durable budgets override this to reserve before provider dispatch."""
+
+    async def prepare_retry(self, *, correction: bool = False) -> bool:
+        return self.consume(correction=correction)
+
+    @property
+    def retry_number(self) -> int:
+        return self.used
+
 
 @dataclass(frozen=True)
 class CallScope:
@@ -104,6 +114,8 @@ async def retry_call(
     budget = budget if budget is not None else RetryBudget()
     while True:
         remaining = remaining_seconds(deadline_at, now, node)
+        await budget.reserve_call(node=node)
+        remaining = remaining_seconds(deadline_at, now, node)
         timer = asyncio.timeout(min(timeout_seconds, remaining))
         try:
             async with timer:
@@ -120,14 +132,14 @@ async def retry_call(
                 if isinstance(exc, RuntimeFailure):
                     raise
                 raise RuntimeFailure(error) from None
-            if not budget.consume():
+            if not await budget.prepare_retry():
                 # The Supervisor also understands transient receipts. Mark an
                 # exhausted runtime budget final so it cannot multiply retries
                 # by replaying this same task with a fresh adapter budget.
                 raise RuntimeFailure(error.model_copy(update={
                     "retriable": False, "message": "The shared technical retry budget is exhausted",
                 })) from None
-            delay = max(float(2 ** (budget.used - 1)), retry_after_seconds(exc, now=now()))
+            delay = max(float(2 ** (budget.retry_number - 1)), retry_after_seconds(exc, now=now()))
             remaining = remaining_seconds(deadline_at, now, node)
             if delay >= remaining:
                 raise deadline_failure(node) from None

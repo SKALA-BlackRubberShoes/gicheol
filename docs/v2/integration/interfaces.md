@@ -7,7 +7,8 @@
 - 원격 main 기준: `ae83a9735966a38c90a22ab807bea64ecf378392`
 - 공통 계약 의존 커밋: `2fb927d` (`feature/V2/dongwook/supervisor`)
 - 구현 브랜치: `feature/V2/juhyeon/runtime-integration`
-- 작업 시점에 `integration/V2/supervisor-neutral`은 원격에 없었다. 팀 합의 전 통합 완료 커밋을 임의로 만들지 않았으며, 주현 브랜치는 동욱 커밋을 직접 부모로 사용한다. 복사하거나 cherry-pick하지 않았다.
+- 최초 구현 시 통합 브랜치가 없어 동욱 커밋을 직접 부모로 사용했다. 현재 PR #19의 병합 대상은 `integration/V2/supervisor-neutral`이다.
+- #26의 실제 보고서 통합 검증을 위해 웅희 PR #20의 `454722d`를 merge commit `23d9ab7`로 가져왔다. 기존 구현과 이력을 재사용하며, PR #16·#20이 선행 의존성이다.
 - 동욱의 contracts, State, 정책, 그래프, wrapper는 수정하지 않았다. 신규 package `__init__.py`, 공통 환경과 테스트 구성은 주현 소유다.
 
 ## 서비스 등록
@@ -69,13 +70,17 @@ preflight는 실제 PDF 페이지 합계(동일 SHA 중복 제외 최대 200), �
 
 파일은 임시 파일, flush/fsync, 원자적 rename, 디렉터리 fsync 순으로 기록한다. 경로 이동·symlink·변경된 SHA를 거부하고 receipt의 task와 입력 hash, payload·result 참조를 재검증한다. worker의 결과 재사용과 Supervisor의 결과 수용은 구분한다. 외부 API가 한 번만 호출된다는 보장은 하지 않는다.
 
-보고서 renderer는 `staging/report-{revision}.pdf`를 저장하고 검증 정보를 반환한다. 저장소는 gate·draft·evaluation hash와 epoch, 실제 PDF를 검사한 뒤 `manifest.json`을 마지막에 commit한다. 완료 전 staging 파일은 최종 보고서로 제공되지 않는다. `approved_report_path(run_id, report_revision)`만 최종 조회에 사용한다. summary 분량·한글 글꼴·본문 의미 검증은 웅희와 효진의 책임이며, PDF 파싱 성공으로 이 기준을 대체하지 않는다.
+보고서 renderer는 `staging/report-{revision}.pdf`를 저장하고 검증 정보를 반환한다. 저장소는 gate·draft·evaluation hash와 epoch, 실제 PDF를 검사하고, 그 평가 완료 DraftReport에서 `report.md`·`report.json`, 같은 EvalVerdict에서 `evaluation.json`을 원자적으로 저장한다. Markdown은 웅희의 `neutral_markdown`을, JSON은 공통 DTO의 canonical JSON을 사용한다. `Manifest.artifacts`의 `report_md`·`report_json`·`evaluation_json`에 bytes SHA 참조를 연결하고 모두 다시 검증한 뒤 `manifest.json`을 마지막에 commit한다.
+
+완료 전 파일은 승인된 산출물로 제공되지 않는다. `approved_artifact_paths(run_id, report_revision)`는 3개 export·PDF·manifest의 검증된 경로를 반환하고, 기존 `approved_report_path`도 같은 완료 검증을 통과한 PDF만 반환한다. 파일 하나라도 누락·변조되면 공개가 차단된다. 기존 export 없는 완료 manifest를 읽을 때도 무결성 오류로 거절하며, 승인되지 않은 파일을 자동 보충하지 않는다. summary 분량·한글 글꼴·본문 의미 검증은 웅희와 효진의 책임이며, PDF 파싱 성공으로 이 기준을 대체하지 않는다.
 
 ## 실행과 복구
 
 `open_checkpointer(sqlite_path)`는 실제 AsyncSqliteSaver 연결을 관리한다. DTO와 enum 직렬화는 공통 계약 클래스만 허용하며 pickle을 켜지 않는다. CLI의 runtime.json에는 run/thread ID와 저장된 runtime/input snapshot 참조가 있다. 재개는 저장된 모델과 설정을 그대로 사용하고 원래 config 파일·corpus·prompt·index·font의 변경을 검출한다. completed/incomplete/failed 실행은 재시작하지 않는다.
 
-기술 호출에는 deadline과 timeout, Retry-After, 기술 retry budget을 적용한다. JSON 구조 교정은 1회이며 같은 기술 retry budget을 소비한다. SDK 자체 retry를 끄고 adapter budget 소진을 최종 오류로 반환해 Supervisor의 재시도와 중첩하지 않는다. 업무 attempt, gate, repair cycle은 Supervisor만 갱신한다.
+기술 호출에는 deadline과 timeout, Retry-After, 기술 retry budget을 적용한다. `RetryLedger`는 동일 run/task/input에 대해 `.runtime/retries/`에 호출 예약을 lock·fsync·원자적 rename으로 기록한 뒤 provider를 호출한다. 외부 timeout, receipt 재생, SQLite 재시작이 있어도 사용한 예산을 돌려주지 않는다. 한 task가 여러 정상적인 LLM 호출을 할 수 있도록 논리 호출 순번·요청 hash를 구분하고 성공 결과는 재사용한다. 기술 재시도 최대 2회와 JSON 구조 교정 최대 1회는 task 전체가 공유한다. 같은 논리 호출은 최초 1회와 재시도 2회를 넘지 않는다. 요청 내용이 바뀌거나 ledger가 손상되면 호출을 거부하며, 401·403과 최종 schema 오류도 재개 시 다시 호출하지 않는다.
+
+SDK 자체 retry를 끄고 adapter budget 소진을 최종 오류로 반환해 Supervisor의 재시도와 중첩하지 않는다. 업무 attempt, gate, repair cycle은 Supervisor만 갱신한다. 기존 예산 기록이 없는 과거 실행의 소비 횟수는 복원할 수 없으므로 이 보장은 수정 버전으로 시작한 실행에 적용된다.
 
 충분성 assessor의 예산 소진은 기존 Supervisor의 timeout 계약으로 전달해 `incomplete / BUDGET_EXHAUSTED`를 유지한다. 다만 현재 동욱의 `refresh_evidence`는 timeout 외의 assessor 예외를 `MODEL_OUTPUT_INVALID`로 분류한다. 따라서 이 경로의 provider 401·403은 재시도 없이 `failed`로 종료되지만 `CONFIG_OR_AUTH_ERROR`라는 세부 코드는 보존되지 않는다. 일반 worker 경로는 인증 오류 코드를 보존하며, assessor 오류 코드 통일은 담당자 간 후속 계약 조정 사항이다.
 
@@ -87,6 +92,6 @@ preflight는 실제 PDF 페이지 합계(동일 SHA 중복 제외 최대 200), �
 
 ## 남은 통합 작업
 
-작업 중 원격 확인에서 웅희의 `feature/V2/woonghee/report-pdf` (`454722d`)가 추가된 것을 확인했다. 해당 브랜치는 아직 주현 브랜치에 병합하지 않았다. 통합 시 `NeutralWriter`와 `NeutralPublisher(store=store, evidence_resolver=resolver, artifact_root=store.root, font_path=runtime.report_font_path)`를 공통 계약으로 등록할 수 있다. 다른 담당 변경을 복사하거나 임의로 중복 반영하지 않는다.
+웅희의 `NeutralWriter`와 `NeutralPublisher(store=store, evidence_resolver=resolver, artifact_root=store.root, font_path=runtime.report_font_path)`는 #26 회귀에서 실제 구현을 연결했다. 연구·Judge 결정은 fixture이며 실제 LLM·RAG 결과를 의미하지 않는다. 실제 서비스 factory 등록은 별도로 필요하다.
 
 수현·수영·효진·웅희의 실제 서비스 등록, 고정 open-source 색인과 prompt, 실제 model ID·font 설정이 필요하다. 이후 AT01–19 전체 통합, 실제 RAG와 모델 성공, 재조사·품질 보완 LangSmith PNG, 최대 10페이지 한글 PDF를 같은 run과 report revision에 연결해야 한다. 현재 mock fixture 성공을 그 완료로 해석하지 않는다.

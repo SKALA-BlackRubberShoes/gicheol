@@ -78,13 +78,16 @@ def assemble_graph(*, bundle, store, run_config, checkpointer, recorder=None,
     """Inject production storage/checkpointer into Dongwook's unchanged graph."""
     from .llm import call_scope
     from .errors import RuntimeFailure
-    from .retries import RetryBudget
+    from .retry_ledger import RetryLedger
 
     bundle.validate()
+    ledger = RetryLedger(store, mock=bundle.mock)
     def wrap(node, callback):
         async def invoke(request):
             with call_scope(deadline_at=deadline_at, node=node,
-                            budget=RetryBudget(max_retries=run_config.max_transient_retries)):
+                            budget=ledger.task_budget(task_id=request.task_id,
+                                input_hash=c.canonical_hash(request),
+                                max_retries=run_config.max_transient_retries)):
                 if recorder is None:
                     return await callback(request)
                 async with recorder.node_span(node, task_id=request.task_id,
@@ -99,7 +102,9 @@ def assemble_graph(*, bundle, store, run_config, checkpointer, recorder=None,
         # immutable request to a stable tracing ID and the original deadline.
         task_id = "sufficiency-" + c.canonical_hash(request)
         with call_scope(deadline_at=deadline_at, node="assess_evidence",
-                        budget=RetryBudget(max_retries=run_config.max_transient_retries)):
+                        budget=ledger.task_budget(task_id=task_id,
+                            input_hash=c.canonical_hash(request),
+                            max_retries=run_config.max_transient_retries)):
             try:
                 if recorder is None:
                     result = await bundle.assess_evidence(request)

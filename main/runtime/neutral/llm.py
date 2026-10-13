@@ -9,8 +9,8 @@ from typing import Any, Awaitable, Callable, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-from main.agents.supervisor.contracts import ErrorSummary
-from .errors import ModelOutputFailure, failure
+from main.agents.supervisor.contracts import ErrorSummary, canonical_hash
+from .errors import ModelOutputFailure, RuntimeFailure, failure
 from .retries import RetryBudget, call_scope, current_scope, retry_call, utc_now
 
 ResponseT = TypeVar("ResponseT", bound=BaseModel)
@@ -49,6 +49,24 @@ class StructuredLLMClient:
             raise failure("CONFIG_OR_AUTH_ERROR", node, "The original run deadline must be bound before generation")
         budget = scope.budget if scope is not None else RetryBudget(self.max_retries)
         prompt = system_prompt
+        operation = None
+        if hasattr(budget, "operation"):
+            operation = await budget.operation(canonical_hash({
+                "model": model, "system_prompt": system_prompt, "payload": payload,
+                "response_schema": response_model.model_json_schema(),
+            }))
+            if operation.state["completed"]:
+                return response_model.model_validate(operation.state["result"])
+            if operation.state["error"] is not None:
+                raise RuntimeFailure(ErrorSummary.model_validate(operation.state["error"]))
+            budget = operation
+        correction_prompt = system_prompt + (
+            "\nYour previous response failed schema validation. Return only a JSON object "
+            "that satisfies the supplied response schema, including all required fields. "
+            "Preserve factual uncertainty and do not invent missing evidence."
+        )
+        if operation is not None and (operation.state["corrected"] or operation.state["pending_correction"]):
+            prompt = correction_prompt
         while True:
             async def invoke():
                 try:
@@ -73,17 +91,22 @@ class StructuredLLMClient:
                         code="MODEL_OUTPUT_INVALID", node=node, retriable=False,
                         message="Model output does not satisfy the required response DTO")) from None
             try:
-                return await retry_call(invoke, node=node, deadline_at=deadline,
+                result = await retry_call(invoke, node=node, deadline_at=deadline,
                                         timeout_seconds=self.timeout_seconds, budget=budget,
                                         now=self.now, sleep=self.sleep)
-            except ModelOutputFailure:
-                if not budget.consume(correction=True):
+                if operation is not None:
+                    await operation.complete(result.model_dump(mode="json"))
+                return result
+            except ModelOutputFailure as exc:
+                if not await budget.prepare_retry(correction=True):
+                    if operation is not None:
+                        await operation.fail(exc.error.model_dump(mode="json"))
                     raise
-                prompt = system_prompt + (
-                    "\nYour previous response failed schema validation. Return only a JSON object "
-                    "that satisfies the supplied response schema, including all required fields. "
-                    "Preserve factual uncertainty and do not invent missing evidence."
-                )
+                prompt = correction_prompt
+            except RuntimeFailure as exc:
+                if operation is not None:
+                    await operation.fail(exc.error.model_dump(mode="json"))
+                raise
 
     async def _provider_generate(self, *, model, system_prompt, payload, response_model):
         messages = [

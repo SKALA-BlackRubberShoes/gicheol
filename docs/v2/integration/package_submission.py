@@ -176,7 +176,9 @@ async def package_submission(*, run_root: str | Path, run_id: str,
         provenance[archive_name] = ref.model_dump(mode="json")
     # Explicit allowlist: never copy arbitrary manifest.artifacts or raw sources.
     for name, ref in (("manifest.json", manifest_ref), ("report.pdf", manifest.report_pdf_ref),
-                      ("evaluation.json", manifest.evaluation_ref)):
+                      ("report.md", manifest.artifacts["report_md"]),
+                      ("report.json", manifest.artifacts["report_json"]),
+                      ("evaluation.json", manifest.artifacts["evaluation_json"])):
         files[name] = await asyncio.to_thread(store._verify, ref)
         provenance[name] = ref.model_dump(mode="json")
     files["trace-evidence.json"] = canonical_json(evidence).encode()
