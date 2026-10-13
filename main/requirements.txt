@@ -7,3 +7,5 @@
 -r agents/market/requirements.txt
 -r agents/report/requirements.txt
 langgraph>=1.0,<2
+langgraph-checkpoint-sqlite==3.1.2
+PyYAML==6.0.3
