@@ -195,28 +195,3 @@ def data_label(sources: list[dict[str, Any]]) -> str:
     if flags == {None}:
         return "UNVERIFIED PROVENANCE / 자료 유형 미확인"
     return "MIXED OR UNVERIFIED PROVENANCE / 혼합 또는 유형 미확인"
-
-
-def verify_neutral_quote(evidence, source, *, text: str, company_id: str,
-                         page_number: int | None = None,
-                         chunk_id: str | None = None) -> None:
-    """Check a V2 quote against acquired body text; semantic support is separate.
-
-    Callers first verify/load source.content_ref with the injected ArtifactStore
-    and select the actual PDF page or web body location. Search snippets cannot
-    be passed as acquired body text. This helper never issues ClaimSupport.
-    """
-    from main.agents.supervisor.contracts import sha256_text
-
-    if evidence.company_id != company_id or evidence.source_id != source.source_id:
-        raise ValueError("EVIDENCE_COMPANY_OR_SOURCE_MISMATCH")
-    if evidence.page_number != page_number:
-        raise ValueError("EVIDENCE_PAGE_MISMATCH")
-    if chunk_id is not None and evidence.chunk_id != chunk_id:
-        raise ValueError("EVIDENCE_CHUNK_MISMATCH")
-    if source.sha256 != source.content_ref.sha256:
-        raise ValueError("SOURCE_CONTENT_HASH_MISMATCH")
-    if (not isinstance(text, str) or not evidence.quote.strip()
-            or evidence.quote not in text
-            or evidence.quote_hash != sha256_text(evidence.quote)):
-        raise ValueError("QUOTE_NOT_IN_ORIGINAL_BODY")
