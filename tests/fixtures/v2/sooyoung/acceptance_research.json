@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "company_id": "acme",
+  "published_at": "2026-01-01",
+  "facts": {
+    "market": [
+      "An independent Acme pilot found customer demand for repetitive picking assistance.",
+      "Acme pilot operating costs included integration, maintenance and operator training."
+    ],
+    "stakeholders": [
+      "Acme operators and site managers participated in the independent deployment pilot.",
+      "Acme operators required training and retained responsibility for safe intervention."
+    ],
+    "domain_application": [
+      "The independent Acme warehouse pilot tested picking tasks on a controlled line.",
+      "Acme warehouse use required calibrated sensors and failed outside tested lighting."
+    ]
+  },
+  "limitations": ["These synthetic pilot facts establish deterministic interface coverage only."],
+  "at04_attempt_limit": 2
+}

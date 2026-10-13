@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0",
+  "scenario": "AT16",
+  "findings": [
+    {
+      "criterion": "groundedness",
+      "severity": "critical",
+      "section_id": "market",
+      "reason": "시장 수요와 운영 비용 주장을 독립 원문으로 재확인한다.",
+      "repair_kind": "research",
+      "target_perspective": "market"
+    },
+    {
+      "criterion": "perspective_coverage",
+      "severity": "critical",
+      "section_id": "domain_application",
+      "reason": "실제 도입 사례의 적용 조건과 실패 한계를 독립 원문으로 보완한다.",
+      "repair_kind": "research",
+      "target_perspective": "domain_application"
+    }
+  ],
+  "expected_gaps": [
+    {
+      "gap_id": "fixture-at16-market",
+      "perspective": "market",
+      "kind": "missing_evidence",
+      "question": "시장 수요와 운영 비용 주장을 독립 원문으로 재확인한다.",
+      "severity": "critical",
+      "query_hints": ["시장 수요와 운영 비용 주장을 독립 원문으로 재확인한다."]
+    },
+    {
+      "gap_id": "fixture-at16-domain",
+      "perspective": "domain_application",
+      "kind": "missing_evidence",
+      "question": "실제 도입 사례의 적용 조건과 실패 한계를 독립 원문으로 보완한다.",
+      "severity": "critical",
+      "query_hints": ["실제 도입 사례의 적용 조건과 실패 한계를 독립 원문으로 보완한다."]
+    }
+  ]
+}
