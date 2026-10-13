@@ -166,18 +166,35 @@ def render_pdf(
     font_path: str | None = None,
     max_pages: int = 5,
 ) -> int:
+    """Render the existing investment path with its unchanged five-page cap."""
+    return _render_pdf(document, path, font_path=font_path, max_pages=max_pages)
+
+
+def _render_pdf(
+    document: dict,
+    path: Path,
+    *,
+    font_path: str | None = None,
+    max_pages: int = 5,
+    page_limit: int = 5,
+    author: str = "Startup Investment Report",
+    metrics: dict | None = None,
+) -> int:
     """Atomically write an A4 PDF and return its page count.
 
     SUMMARY, including its heading, may occupy at most half the usable page.
     The title, subtitle, and complete SUMMARY must fit together on the first page.
     Tables may supply positive ``column_weights`` matching their header count.
-    ``max_pages`` can tighten the five-page assignment limit, but cannot relax it.
+    ``page_limit=10`` is reserved for the neutral renderer; the public legacy
+    entry point retains its five-page cap. Metrics are emitted only on success.
     Overflow or invalid input raises ValueError before an existing file is changed.
     An embedded Korean TrueType font is required to keep PDFs portable.
     """
     _validate_document(document)
-    if isinstance(max_pages, bool) or not isinstance(max_pages, int) or not 1 <= max_pages <= 5:
-        raise ValueError("max_pages must be an integer from 1 to 5.")
+    if page_limit not in (5, 10):
+        raise ValueError("page_limit must be 5 or 10.")
+    if isinstance(max_pages, bool) or not isinstance(max_pages, int) or not 1 <= max_pages <= page_limit:
+        raise ValueError(f"max_pages must be an integer from 1 to {page_limit}.")
     try:
         from reportlab.lib import colors
         from reportlab.lib.enums import TA_LEFT
@@ -192,6 +209,17 @@ def render_pdf(
         raise RuntimeError("PDF rendering requires reportlab. Install main/agents/report/requirements.txt.") from exc
 
     font_name = _register_korean_font(font_path)
+    # Reject missing glyphs instead of producing apparently valid tofu boxes.
+    from reportlab.pdfbase import pdfmetrics
+    glyphs = pdfmetrics.getFont(font_name).face.charToGlyph
+    texts = [document.get(key, "") for key in ("title", "subtitle", "summary")]
+    for section in document.get("sections", []):
+        texts.extend([section.get("title", ""), *section.get("paragraphs", []), *section.get("bullets", [])])
+        for table in section.get("tables", []):
+            texts.extend(table["headers"])
+            texts.extend(cell for row in table["rows"] for cell in row)
+    if page_limit == 10 and any(ord(char) not in glyphs for text in texts for char in _text(text, "text") if not char.isspace()):
+        raise ValueError("PDF font lacks a glyph used in the document.")
     width, height = A4
     margin_x, margin_top, margin_bottom = 40, 42, 42
     usable_width = width - 2 * margin_x
@@ -374,7 +402,7 @@ def render_pdf(
     report = SimpleDocTemplate(
         buffer, pagesize=A4, leftMargin=margin_x, rightMargin=margin_x,
         topMargin=margin_top, bottomMargin=margin_bottom,
-        title=document.get("title", ""), author="Startup Investment Report", pageCompression=1,
+        title=document.get("title", ""), author=author, pageCompression=1,
     )
     try:
         report.build(story, onFirstPage=draw_footer, onLaterPages=draw_footer,
@@ -401,4 +429,6 @@ def render_pdf(
     finally:
         if temporary is not None:
             Path(temporary).unlink(missing_ok=True)
+    if metrics is not None:
+        metrics.update(page_count=page_count, summary_page_fraction=summary_height / usable_height)
     return page_count
