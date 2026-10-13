@@ -363,7 +363,8 @@ def preflight(config: RuntimeConfig, *, run_input: RunInput | None = None, requi
     must not label ``network_skipped`` reports as live service validation.
     """
     control = config.run_config
-    missing = [name.upper() for name in _MODEL_FIELDS if not getattr(control, name) or not getattr(control, name).strip()]
+    missing = [name.upper() for name in _MODEL_FIELDS if name != "supervisor_model"
+               and (not getattr(control, name) or not getattr(control, name).strip())]
     if missing:
         raise ConfigError("Required model settings are missing: " + ", ".join(missing))
     if not control.embedding_model or not control.embedding_revision or not control.embedding_dimension:

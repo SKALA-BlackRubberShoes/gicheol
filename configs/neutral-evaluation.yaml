@@ -1,7 +1,7 @@
 # Deployment values must be explicitly supplied before validate/run succeeds.
 # Precedence: CLI --set key=value > environment > this YAML. Paths use repository root.
 run_config:
-  supervisor_model: null
+  supervisor_model: null # Optional compatibility field; routing is deterministic.
   research_model: null
   report_model: null
   judge_model: null

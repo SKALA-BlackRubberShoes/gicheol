@@ -127,7 +127,9 @@ def validate_run_settings(run_input: RunInput, run_config: RunConfig, now: datet
         raise ValueError("now must be timezone-aware UTC")
     if run_input.as_of_date > now.date():
         raise ValueError("as_of_date cannot be later than the execution date")
-    for field in ("supervisor_model", "research_model", "report_model", "judge_model"):
+    # Routing uses policy and the current evidence verdict, not a Supervisor LLM.
+    # Keep the optional field in the fingerprint so existing runs still resume.
+    for field in ("research_model", "report_model", "judge_model"):
         value = getattr(run_config, field)
         if not value or not value.strip():
             raise ValueError(f"{field} model must be configured before run")
